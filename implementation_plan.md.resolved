@@ -1,0 +1,67 @@
+# Diesel Monitoring System Implementation Plan
+
+The objective is to build a multi-tenant platform for monitoring diesel supplies to telecom sites, ensuring transparency, accountability, and streamlined operations across different companies, teams, and roles.
+
+## Project Recap
+
+The system facilitates the end-to-end diesel supply chain with a hierarchical multi-tenant structure:
+1.  **Hierarchical Multi-Tenancy & Clients**: 
+    - **Tenant (Supplier Company)**: The organization using the platform.
+    - **Clients (Vendors)**: Entities like ATC, Huawei, and MTN.
+    - **Clusters/Branches**: Local branches with dedicated teams.
+2.  **Flexible Onboarding & Authentication**:
+    - **Login Methods**: Supports both **Email** and **Phone Number** (crucial for drivers without emails).
+    - **Admin-Led Setup**: Admins create accounts with temporary passwords.
+    - **Security**: Mandatory password reset on first login; optional OTP (One-Time Password) for phone-based logins.
+3.  **Enhanced RBAC & Visibility**:
+    - **Company Superadmin & MD**: Global control and bird's-eye view.
+    - **Auditor & Central Accountant**: Flexible multi-cluster assignments and financial oversight.
+    - **Drivers (Internal/External)**: Assigned to clusters; track earnings/credit for external haulage.
+3.  **Depot & Inventory Management**: 
+    - Track manufacturer purchases; allocate to clients.
+    - **Loss Reconciliation**: Logic to handle 0.5% expansion/contraction variance with audit alerts.
+4.  **Real-Time GPS Tracking**:
+    - **Live Location**: Continuous tracking of drivers during active trips for visibility.
+    - **Dashboard Map**: MDs and Admins can see all active trucks locally or globally.
+5.  **Compliance & Safety**:
+    - **HSE Checklists**: Mandatory safety checks before a driver starts a trip.
+    - **Wait-Site Confirmation**: Capturing tank levels at destination to prevent overflow.
+6.  **Financial Workflows**:
+    - **Approval Gate**: Accountant/Auditor verification before haulage payment finalization.
+    - **Driver Ledger**: Track payments/credit specifically for external haulage partners.
+7.  **Dispensing & Community**: Record site dispensing and specific provisions for host communities.
+8.  **Verification**: Digital signatures and waybill photo uploads.
+9.  **Offline & Dark Mode**: PWA support and premium UI.
+10. **Document Management**: Universal file upload capability.
+
+## Version 2 (Future Scope)
+- **Geo-fencing (Verification)**: Automatically blocking/flagging dispensing reports if the driver is not within a specific radius of the site.
+- **Advanced Predictive Logistics**: Estimating fuel depletion rates based on past dispensing data.
+
+## Proposed Changes
+
+### [Backend] (Supabase)
+- **Database (PostgreSQL)**: Complex schema with Row-Level Security (RLS) for multi-tenant isolation.
+- **Authentication**: Supabase Auth for RBAC and identity management.
+- **Storage**: Supabase Buckets for document/photo uploads.
+- **Realtime**: Supabase Realtime for live driver location tracking.
+- **Edge Functions**: For complex server-side logic (e.g., automated audit alerts, haulage calculations).
+
+### [Frontend] (Next.js)
+- **Framework**: Next.js (App Router) for a robust, SEO-friendly, and structured application.
+- **Styling**: Vanilla CSS with modern tokens (CSS Variables) for a premium, custom design.
+- **PWA**: `next-pwa` for offline capabilities and service worker management.
+- **State Management**: React Context or Zustand for handling global cluster/tenant state.
+- **UI Components**: Custom, high-fidelity components for signatures, maps, and document uploads.
+
+## Verification Plan
+
+### Automated Tests
+- **Unit Tests**: Test haulage rate calculations and quantity difference logic.
+- **Integration Tests**: Verify multi-tenant data isolation (Company A cannot see Company B data).
+- **API Tests**: Validate role-based access to restricted endpoints.
+
+### Manual Verification
+- Simulate a full supply cycle: Admin allocation -> Driver dispensing (including community provision) -> Document upload -> Signature capture.
+- Test offline mode by disabling internet and ensuring the dispensing log is saved and synced when back online.
+- Toggle dark mode and verify UI consistency.

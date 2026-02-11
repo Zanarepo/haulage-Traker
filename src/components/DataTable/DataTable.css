@@ -1,0 +1,558 @@
+/* ═══════════════════════════════════════════════════════════
+   DataTable — Reusable responsive table with search,
+   filters, and pagination. Theme-aware via CSS variables.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Toolbar (search + filters + actions) ────────────── */
+.dt-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.dt-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.dt-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* ─── Search ──────────────────────────────────────────── */
+.dt-search {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dt-search input {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 9px 32px 9px 36px;
+    color: var(--text-main);
+    font-size: 13px;
+    width: 240px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+}
+
+.dt-search input::placeholder {
+    color: var(--text-muted);
+}
+
+.dt-search input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.dt-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.dt-search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-hover);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s, color 0.15s;
+}
+
+.dt-search-clear:hover {
+    background: var(--border-color);
+    color: var(--text-main);
+}
+
+/* ─── Filter Chips ────────────────────────────────────── */
+.dt-filter {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dt-filter select {
+    appearance: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 9px 30px 9px 12px;
+    color: var(--text-main);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 120px;
+}
+
+.dt-filter select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.dt-filter-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* ─── Filters Row (groups filter chips) ───────────────── */
+.dt-filters-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ─── Table Wrapper ───────────────────────────────────── */
+.dt-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow-x: auto;
+}
+
+/* ─── Table ───────────────────────────────────────────── */
+.dt-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dt-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--dt-th-bg, var(--bg-card));
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.dt-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.dt-table tbody tr {
+    transition: background 0.15s;
+}
+
+.dt-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+.dt-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ─── Empty & Loading ─────────────────────────────────── */
+.dt-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.dt-empty-icon {
+    margin-bottom: 12px;
+    opacity: 0.35;
+}
+
+.dt-loading {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+@keyframes dtSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.dt-spin {
+    animation: dtSpin 1s linear infinite;
+}
+
+/* ─── Pagination ──────────────────────────────────────── */
+.dt-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    background: var(--dt-th-bg, var(--bg-card));
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dt-pagination-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.dt-pagination-info strong {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.dt-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dt-page-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+}
+
+.dt-page-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.dt-page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.dt-page-btn.active {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    border-color: transparent;
+}
+
+.dt-page-btn.active:hover {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.dt-page-ellipsis {
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 0 4px;
+    user-select: none;
+}
+
+.dt-page-nav {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 5px 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+}
+
+.dt-page-nav:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.dt-page-nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ─── Page Size Selector ──────────────────────────────── */
+.dt-page-size {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.dt-page-size select {
+    appearance: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 4px 24px 4px 8px;
+    color: var(--text-main);
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+}
+
+/* ─── Dark-only overrides for subtle depth ────────────── */
+:root[data-theme='dark'] {
+    --dt-th-bg: #0c1222;
+}
+
+:root[data-theme='light'] {
+    --dt-th-bg: #eef2f7;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — Card Layout
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* Toolbar: compact vertical stack */
+    .dt-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        /* Increased for breathing room between Search and Filters */
+        margin-bottom: 16px;
+    }
+
+    .dt-toolbar-left {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* Filters sit side-by-side in a row */
+    .dt-filters-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .dt-toolbar-right {
+        width: 100%;
+    }
+
+    .dt-toolbar-right>* {
+        flex: 1;
+        justify-content: center;
+        padding: 10px;
+        /* Larger hit area */
+    }
+
+    .dt-search {
+        width: 100%;
+    }
+
+    .dt-search input {
+        width: 100%;
+        padding: 10px 30px 10px 36px;
+        font-size: 14px;
+        /* Easier to tap/read */
+    }
+
+    .dt-filter {
+        width: 100%;
+    }
+
+    .dt-filter select {
+        width: 100%;
+        padding: 10px 28px 10px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+
+    .dt-filter-label {
+        font-size: 10px;
+        position: static;
+        margin-bottom: 4px;
+        padding: 0;
+        background: transparent;
+    }
+
+    /* Hide table head */
+    .dt-table thead {
+        display: none;
+    }
+
+    /* Each row becomes a card */
+    .dt-table,
+    .dt-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .dt-table tbody tr {
+        display: block;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border-color);
+        padding: 16px;
+        margin-bottom: 0;
+    }
+
+    .dt-table tbody tr:hover {
+        background: var(--bg-hover);
+    }
+
+    .dt-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .dt-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: none;
+        gap: 12px;
+    }
+
+    .dt-table td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        flex-shrink: 0;
+        min-width: 80px;
+    }
+
+    /* Full-width cells (like user info, actions) */
+    .dt-table td[data-full] {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 8px 0;
+    }
+
+    .dt-table td[data-full]::before {
+        margin-bottom: 6px;
+    }
+
+    /* Hide columns marked hideOnMobile */
+    .dt-table td[data-hide-mobile] {
+        display: none;
+    }
+
+    /* Pagination simplifies */
+    .dt-pagination {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .dt-pagination-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dt-page-size {
+        display: none;
+    }
+}
+
+/* Extra-small phones */
+@media (max-width: 480px) {
+    .dt-table tbody tr {
+        padding: 12px;
+    }
+
+    .dt-table td {
+        font-size: 13px;
+        padding: 5px 0;
+    }
+
+    .dt-table td::before {
+        font-size: 9px;
+        min-width: 70px;
+    }
+
+    .dt-page-btn {
+        min-width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+
+    .dt-page-nav {
+        height: 30px;
+        padding: 4px 8px;
+    }
+}
+
+/* Micro phones (320px) */
+@media (max-width: 400px) {
+    .dt-toolbar {
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .dt-search input {
+        padding: 9px 28px 9px 34px;
+        font-size: 13px;
+    }
+
+    .dt-filter select {
+        padding: 9px 24px 9px 10px;
+        font-size: 12px;
+    }
+
+    .dt-table tbody tr {
+        padding: 10px;
+    }
+
+    .dt-pagination-info {
+        font-size: 11px;
+    }
+}
