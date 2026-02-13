@@ -34,6 +34,7 @@ interface UseUsersReturn {
     }) => Promise<void>;
     handleUpdateUser: (userId: string, fields: UpdateUserInput) => Promise<void>;
     handleToggleActive: (userId: string, currentlyActive: boolean) => Promise<void>;
+    handleDeleteUser: (userId: string) => Promise<void>;
     submitting: boolean;
 }
 
@@ -150,6 +151,20 @@ export function useUsers(): UseUsersReturn {
         }
     };
 
+    // Delete user
+    const handleDeleteUser = async (userId: string) => {
+        setSubmitting(true);
+        try {
+            await userService.deleteUser(userId);
+            showToast('User deleted successfully', 'success');
+            await loadUsers();
+        } catch (err: any) {
+            showToast(`Failed to delete user: ${err.message}`, 'error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return {
         users,
         filteredUsers,
@@ -168,6 +183,7 @@ export function useUsers(): UseUsersReturn {
         handleCreateUser,
         handleUpdateUser,
         handleToggleActive,
+        handleDeleteUser,
         submitting,
     };
 }

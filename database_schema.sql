@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS sites (
 CREATE TABLE IF NOT EXISTS depot_purchases (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
     manufacturer_name TEXT,
     total_quantity DECIMAL(15, 2) NOT NULL,
     remaining_quantity DECIMAL(15, 2) NOT NULL,
@@ -97,12 +98,23 @@ CREATE TABLE IF NOT EXISTS client_allocations (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 7. INVENTORY LOGS (Unified audit trail)
+CREATE TABLE IF NOT EXISTS inventory_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+    client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('IN', 'OUT')),
+    quantity DECIMAL(15, 2) NOT NULL,
+    reference_id UUID, -- Can be depot_purchase_id or trip_id
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 7. LOGISTICS & TRIPS
 CREATE TABLE IF NOT EXISTS trips (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     cluster_id UUID REFERENCES clusters(id) ON DELETE CASCADE,
     driver_id UUID REFERENCES users(id),
-    client_allocation_id UUID REFERENCES client_allocations(id),
+    client_id UUID REFERENCES clients(id),
     truck_plate_number TEXT,
     loaded_quantity DECIMAL(10, 2) NOT NULL,
     status trip_status DEFAULT 'pending',
@@ -127,6 +139,15 @@ CREATE TABLE IF NOT EXISTS dispensing_logs (
     geo_lat DECIMAL(10, 8),
     geo_lng DECIMAL(11, 8),
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS trip_itineraries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+    site_id UUID REFERENCES sites(id),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'dispensed')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(trip_id, site_id)
 );
 
 -- 8. FINANCIALS & AUDIT
@@ -221,6 +242,8 @@ ALTER TABLE client_allocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dispensing_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE financials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_itineraries ENABLE ROW LEVEL SECURITY;
 
 -- Helper functions (SECURITY DEFINER bypasses RLS to avoid recursion)
 CREATE OR REPLACE FUNCTION get_my_company() RETURNS UUID AS $$
@@ -319,6 +342,15 @@ DROP POLICY IF EXISTS "Management can manage allocations" ON client_allocations;
 CREATE POLICY "Management can manage allocations" ON client_allocations
 FOR ALL USING (client_id IN (SELECT id FROM clients WHERE company_id = get_my_company()) AND get_my_role() IN ('superadmin', 'admin', 'accountant'));
 
+-- INVENTORY LOGS Policies
+DROP POLICY IF EXISTS "Company users can view inventory logs" ON inventory_logs;
+CREATE POLICY "Company users can view inventory logs" ON inventory_logs
+FOR SELECT USING (company_id = get_my_company());
+
+DROP POLICY IF EXISTS "Management can manage inventory logs" ON inventory_logs;
+CREATE POLICY "Management can manage inventory logs" ON inventory_logs
+FOR ALL USING (company_id = get_my_company() AND get_my_role() IN ('superadmin', 'admin', 'md', 'accountant', 'auditor'));
+
 -- TRIPS Policies
 DROP POLICY IF EXISTS "Company users can view trips" ON trips;
 CREATE POLICY "Company users can view trips" ON trips
@@ -335,11 +367,16 @@ FOR ALL USING (cluster_id IN (SELECT id FROM clusters WHERE company_id = get_my_
 -- DISPENSING LOGS Policies
 DROP POLICY IF EXISTS "Company users can view dispensing logs" ON dispensing_logs;
 CREATE POLICY "Company users can view dispensing logs" ON dispensing_logs
-FOR SELECT USING (trip_id IN (SELECT id FROM trips WHERE cluster_id IN (SELECT id FROM clusters WHERE company_id = get_my_company())));
+FOR SELECT USING (
+    trip_id IN (SELECT id FROM trips WHERE cluster_id IN (SELECT id FROM clusters WHERE company_id = get_my_company()))
+    OR trip_id IN (SELECT id FROM trips WHERE driver_id = auth.uid())
+);
 
 DROP POLICY IF EXISTS "Drivers can insert logs for their trips" ON dispensing_logs;
 CREATE POLICY "Drivers can insert logs for their trips" ON dispensing_logs
-FOR INSERT WITH CHECK (trip_id IN (SELECT id FROM trips WHERE driver_id = auth.uid()));
+FOR INSERT WITH CHECK (
+    trip_id IN (SELECT id FROM trips WHERE driver_id = auth.uid())
+);
 
 DROP POLICY IF EXISTS "Admins and Auditors can manage logs" ON dispensing_logs;
 CREATE POLICY "Admins and Auditors can manage logs" ON dispensing_logs
@@ -348,19 +385,234 @@ FOR ALL USING (get_my_role() IN ('superadmin', 'admin', 'auditor'));
 -- FINANCIALS Policies
 DROP POLICY IF EXISTS "Only finance and MD can view financials" ON financials;
 CREATE POLICY "Only finance and MD can view financials" ON financials
-FOR SELECT USING (get_my_role() IN ('superadmin', 'md', 'accountant', 'auditor'));
+FOR SELECT USING (get_my_role() IN ('superadmin', 'md', 'accountant', 'auditor', 'admin'));
 
 DROP POLICY IF EXISTS "Finance can manage financials" ON financials;
 CREATE POLICY "Finance can manage financials" ON financials
-FOR ALL USING (get_my_role() IN ('superadmin', 'accountant', 'auditor'));
+FOR ALL USING (get_my_role() IN ('superadmin', 'accountant', 'auditor', 'admin'));
+
+-- TRIP_ITINERARIES Policies
+DROP POLICY IF EXISTS "Company users can view itineraries" ON trip_itineraries;
+CREATE POLICY "Company users can view itineraries" ON trip_itineraries
+FOR SELECT USING (trip_id IN (SELECT id FROM trips WHERE cluster_id IN (SELECT id FROM clusters WHERE company_id = get_my_company())));
+
+DROP POLICY IF EXISTS "Drivers can update itinerary status" ON trip_itineraries;
+CREATE POLICY "Drivers can update itinerary status" ON trip_itineraries
+FOR UPDATE USING (trip_id IN (SELECT id FROM trips WHERE driver_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Admins can manage all itineraries" ON trip_itineraries;
+CREATE POLICY "Admins can manage all itineraries" ON trip_itineraries
+FOR ALL USING (trip_id IN (SELECT id FROM trips WHERE cluster_id IN (SELECT id FROM clusters WHERE company_id = get_my_company())) AND get_my_role() IN ('superadmin', 'admin'));
 
 -- 12. STORAGE RLS
-INSERT INTO storage.buckets (id, name, public) VALUES ('alldocs', 'alldocs', false) ON CONFLICT DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('alldocs', 'alldocs', true) ON CONFLICT (id) DO UPDATE SET public = true;
 
 DROP POLICY IF EXISTS "Users can view docs from their company" ON storage.objects;
 CREATE POLICY "Users can view docs from their company" ON storage.objects
-FOR SELECT USING (bucket_id = 'alldocs' AND get_my_company() IS NOT NULL);
+FOR SELECT USING (bucket_id = 'alldocs');
 
 DROP POLICY IF EXISTS "Drivers can upload trip documents" ON storage.objects;
 CREATE POLICY "Drivers can upload trip documents" ON storage.objects
-FOR INSERT WITH CHECK (bucket_id = 'alldocs' AND get_my_role() = 'driver');
+FOR INSERT WITH CHECK (
+    bucket_id = 'alldocs' AND 
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('driver', 'superadmin', 'admin', 'site_engineer')
+);
+-- ============================================================
+-- 13. AUTOMATIC STOCK REDUCTION (FIFO)
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.handle_trip_stock_reduction()
+RETURNS TRIGGER AS $$
+DECLARE
+    remaining_to_deduct DECIMAL(15, 2);
+    batch_record RECORD;
+    deduction_qty DECIMAL(15, 2);
+BEGIN
+    remaining_to_deduct := NEW.loaded_quantity;
+
+    -- PASS 1: Deduct from the intended client's stock
+    FOR batch_record IN 
+        SELECT id, remaining_quantity 
+        FROM public.depot_purchases 
+        WHERE client_id = NEW.client_id 
+          AND remaining_quantity > 0 
+        ORDER BY purchase_date ASC, created_at ASC
+    LOOP
+        IF remaining_to_deduct <= 0 THEN EXIT; END IF;
+
+        IF batch_record.remaining_quantity >= remaining_to_deduct THEN
+            UPDATE public.depot_purchases SET remaining_quantity = remaining_quantity - remaining_to_deduct WHERE id = batch_record.id;
+            remaining_to_deduct := 0;
+        ELSE
+            deduction_qty := batch_record.remaining_quantity;
+            UPDATE public.depot_purchases SET remaining_quantity = 0 WHERE id = batch_record.id;
+            remaining_to_deduct := remaining_to_deduct - deduction_qty;
+        END IF;
+    END LOOP;
+
+    -- PASS 2: "BORROWING" - If still have quantity to deduct, take from ANY other available stock
+    IF remaining_to_deduct > 0 THEN
+        FOR batch_record IN 
+            SELECT id, remaining_quantity 
+            FROM public.depot_purchases 
+            WHERE client_id != NEW.client_id  -- Other clients
+              AND remaining_quantity > 0 
+            ORDER BY purchase_date ASC, created_at ASC
+        LOOP
+            IF remaining_to_deduct <= 0 THEN EXIT; END IF;
+
+            IF batch_record.remaining_quantity >= remaining_to_deduct THEN
+                UPDATE public.depot_purchases SET remaining_quantity = remaining_quantity - remaining_to_deduct WHERE id = batch_record.id;
+                remaining_to_deduct := 0;
+            ELSE
+                deduction_qty := batch_record.remaining_quantity;
+                UPDATE public.depot_purchases SET remaining_quantity = 0 WHERE id = batch_record.id;
+                remaining_to_deduct := remaining_to_deduct - deduction_qty;
+            END IF;
+        END LOOP;
+    END IF;
+
+    -- LOG INDIVIDUAL REDUCTION (Unified History)
+    INSERT INTO public.inventory_logs (company_id, client_id, type, quantity, reference_id)
+    SELECT company_id, NEW.client_id, 'OUT', NEW.loaded_quantity, NEW.id
+    FROM public.clients WHERE id = NEW.client_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 14. FINANCIALS & FEES
+CREATE OR REPLACE FUNCTION public.handle_dispensing_financials()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_client_id UUID;
+    v_rate DECIMAL(10, 2);
+    v_haulage_fee DECIMAL(15, 2);
+BEGIN
+    -- Get client_id directly from site (more resilient for multi-site pooling)
+    -- We use a more robust selection here.
+    SELECT client_id INTO v_client_id 
+    FROM public.sites 
+    WHERE id = NEW.site_id;
+    
+    -- If site doesn't have a direct client (unlikely), try to get it from the trip
+    IF v_client_id IS NULL THEN
+        SELECT client_id INTO v_client_id FROM public.trips WHERE id = NEW.trip_id;
+    END IF;
+    
+    -- Get haulage rate from client
+    SELECT COALESCE(haulage_rate_per_liter, 0) INTO v_rate 
+    FROM public.clients 
+    WHERE id = v_client_id;
+    
+    -- Calculate fee (ensure no NULLs)
+    v_haulage_fee := COALESCE(NEW.quantity_dispensed, 0) * COALESCE(v_rate, 0);
+    
+    -- Insert financial record
+    -- We use an explicit INSERT with all needed fields
+    INSERT INTO public.financials (
+        dispensing_log_id, 
+        calculated_haulage_fee, 
+        loss_amount,
+        is_audit_flagged,
+        accountant_approval,
+        auditor_approval
+    )
+    VALUES (
+        NEW.id, 
+        v_haulage_fee, 
+        0,
+        FALSE,
+        FALSE,
+        FALSE
+    );
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create the triggers
+DROP TRIGGER IF EXISTS on_trip_created_reduce_stock ON public.trips;
+CREATE TRIGGER on_trip_created_reduce_stock
+    AFTER INSERT ON public.trips
+    FOR EACH ROW EXECUTE FUNCTION public.handle_trip_stock_reduction();
+
+-- Re-bind the trigger to ensure it exists and is active
+DROP TRIGGER IF EXISTS on_dispensing_create_financials ON public.dispensing_logs;
+CREATE TRIGGER on_dispensing_create_financials
+    AFTER INSERT ON public.dispensing_logs
+    FOR EACH ROW EXECUTE FUNCTION public.handle_dispensing_financials();
+
+-- 15. DRIVER TRACKING
+CREATE TABLE IF NOT EXISTS public.driver_locations (
+    driver_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    trip_id UUID REFERENCES public.trips(id) ON DELETE SET NULL,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT FALSE
+);
+
+-- Enable RLS
+ALTER TABLE public.driver_locations ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DROP POLICY IF EXISTS "Anyone in company can view driver locations" ON public.driver_locations;
+CREATE POLICY "Anyone in company can view driver locations" ON public.driver_locations
+FOR SELECT USING (
+    driver_id IN (SELECT id FROM public.users WHERE company_id = get_my_company())
+);
+
+DROP POLICY IF EXISTS "Drivers can update their own location" ON public.driver_locations;
+CREATE POLICY "Drivers can update their own location" ON public.driver_locations
+FOR ALL USING (driver_id = auth.uid());
+
+-- Enable Realtime
+-- Note: This is usually done via Supabase Dashboard but we can attempt to add to the publication
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'driver_locations'
+    ) THEN
+        BEGIN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.driver_locations;
+        EXCEPTION WHEN OTHERS THEN
+            -- In some environments, this might fail if the publication doesn't exist yet
+            NULL;
+        END;
+    END IF;
+END $$;
+
+-- 16. DIESEL RECONCILIATION
+CREATE TABLE IF NOT EXISTS public.fuel_reconciliations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    driver_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    period_start TIMESTAMPTZ NOT NULL,
+    period_end TIMESTAMPTZ NOT NULL,
+    total_allocated DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    total_supplied DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    balance DECIMAL(15, 2) GENERATED ALWAYS AS (total_supplied - total_allocated) STORED,
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'completed')),
+    reconciled_by UUID REFERENCES public.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    metadata JSONB
+);
+
+-- Enable RLS
+ALTER TABLE public.fuel_reconciliations ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DROP POLICY IF EXISTS "Users can view reconciliations from their company" ON public.fuel_reconciliations;
+CREATE POLICY "Users can view reconciliations from their company" ON public.fuel_reconciliations
+FOR SELECT USING (company_id = get_my_company());
+
+DROP POLICY IF EXISTS "Management can manage reconciliations" ON public.fuel_reconciliations;
+CREATE POLICY "Management can manage reconciliations" ON public.fuel_reconciliations
+FOR ALL USING (
+    company_id = get_my_company() AND 
+    get_my_role() IN ('superadmin', 'md', 'accountant', 'admin', 'auditor')
+);

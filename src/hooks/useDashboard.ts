@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { getItem, setItem, STORES } from '@/lib/indexedDB';
+import { dashboardService } from '@/services/dashboardService';
 
 const IDB_STATS_KEY = 'dashboard_stats';
 const IDB_ACTIVITIES_KEY = 'dashboard_activities';
@@ -41,47 +42,31 @@ export function useDashboard() {
 
     // When online: fetch fresh data and persist to IndexedDB
     useEffect(() => {
-        if (!isOnline) return;
+        if (!isOnline || !profile?.company_id) return;
 
-        const demoStats = {
-            superadmin: [
-                { title: "Active Trips", value: "12", sub: "4 pending approval", color: "blue", trend: "+2" },
-                { title: "Fuel Dispensed", value: "45,200L", sub: "Current month", color: "emerald", trend: "+15%" },
-                { title: "Audit Alerts", value: "3", sub: "Requires attention", color: "rose", trend: "-1" },
-                { title: "Active Clusters", value: "8", sub: "Across 3 regions", color: "purple" }
-            ],
-            driver: [
-                { title: "Active Trip", value: "TR-9021", sub: "MTN Site: LAG-402", color: "blue" },
-                { title: "Completed", value: "8", sub: "Target: 10", color: "emerald", trend: "+3" },
-                { title: "Next Delivery", value: "1,500L", sub: "Scheduled: 2pm", color: "blue" }
-            ]
-        };
-
-        const demoActivities = [
-            { user: "John Driver", action: "Dispensed 1,500L", target: "LAG-001", time: "12m ago", status: "reconciled" },
-            { user: "Sarah Admin", action: "Allocated 10kL", target: "Lagos", time: "45m ago", status: "completed" },
-            { user: "System", action: "Audit Flag: Variance", target: "TR-8822", time: "2h ago", status: "alert" }
-        ];
-
-        const roleStats = profile?.role === 'driver' ? demoStats.driver : demoStats.superadmin;
-        const now = new Date().toISOString();
-
-        setStats(roleStats);
-        setActivities(demoActivities);
-        setLastUpdated(now);
-
-        // Persist to IndexedDB for offline use
         (async () => {
             try {
-                await setItem(STORES.DASHBOARD, IDB_STATS_KEY, roleStats);
-                await setItem(STORES.DASHBOARD, IDB_ACTIVITIES_KEY, demoActivities);
+                const [realStats, realActivities] = await Promise.all([
+                    dashboardService.getStats(profile.company_id, profile.role, profile.id),
+                    dashboardService.getActivities(profile.company_id, profile.role, profile.id)
+                ]);
+
+                const now = new Date().toISOString();
+
+                setStats(realStats);
+                setActivities(realActivities);
+                setLastUpdated(now);
+
+                // Persist to IndexedDB for offline use
+                await setItem(STORES.DASHBOARD, IDB_STATS_KEY, realStats);
+                await setItem(STORES.DASHBOARD, IDB_ACTIVITIES_KEY, realActivities);
                 await setItem(STORES.DASHBOARD, 'lastUpdated', now);
-                console.log('[Dashboard] Cached to IndexedDB');
+                console.log('[Dashboard] Fresh data fetched and cached');
             } catch (err) {
-                console.warn('[Dashboard] IndexedDB write failed:', err);
+                console.error('[Dashboard] Fetch failed:', err);
             }
         })();
-    }, [isOnline, profile?.role]);
+    }, [isOnline, profile?.role, profile?.company_id, profile?.id]);
 
     return useMemo(() => ({
         profile,

@@ -4,6 +4,7 @@ import './clusters.css';
 import { useState } from 'react';
 import { useClusters, NIGERIAN_STATES } from '@/hooks/useClusters';
 import DataTable, { DataTableColumn, DataTableFilter } from '@/components/DataTable/DataTable';
+import Modal from '@/components/Modal/Modal';
 import {
     MapPin,
     Plus,
@@ -11,8 +12,12 @@ import {
     Trash2,
     X,
     Loader2,
-    Globe
+    Globe,
+    MoreVertical
 } from 'lucide-react';
+import RowActions, { RowActionItem } from '@/components/RowActions/RowActions';
+import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ClustersPage() {
     const {
@@ -33,6 +38,10 @@ export default function ClustersPage() {
         submitting,
         clusters,
     } = useClusters();
+
+    const { profile } = useAuth();
+    const isSuperAdmin = profile?.role === 'superadmin';
+    const [deletingCluster, setDeletingCluster] = useState<any | null>(null);
 
     // Derive unique states for the filter
     const uniqueStates = [...new Set(clusters.map(c => c.state).filter(Boolean))] as string[];
@@ -69,24 +78,28 @@ export default function ClustersPage() {
         {
             key: 'actions',
             label: 'Actions',
-            render: (cluster) => (
-                <div className="actions-cell">
-                    <button
-                        className="btn-action"
-                        title="Edit cluster"
-                        onClick={() => openEditModal(cluster)}
-                    >
-                        <Edit3 size={14} />
-                    </button>
-                    <button
-                        className="btn-action danger"
-                        title="Delete cluster"
-                        onClick={() => handleDeleteCluster(cluster.id)}
-                    >
-                        <Trash2 size={14} />
-                    </button>
-                </div>
-            ),
+            render: (cluster) => {
+                const actions: RowActionItem[] = [
+                    {
+                        label: 'Edit',
+                        icon: <Edit3 size={14} />,
+                        onClick: () => openEditModal(cluster),
+                        tooltip: 'Edit Cluster'
+                    }
+                ];
+
+                if (isSuperAdmin) {
+                    actions.push({
+                        label: 'Delete',
+                        icon: <Trash2 size={14} />,
+                        onClick: () => setDeletingCluster(cluster),
+                        variant: 'danger',
+                        tooltip: 'Delete Cluster'
+                    });
+                }
+
+                return <RowActions actions={actions} />;
+            },
         },
     ];
 
@@ -162,6 +175,20 @@ export default function ClustersPage() {
                     submitting={submitting}
                 />
             )}
+
+            {deletingCluster && (
+                <ConfirmationModal
+                    isOpen={!!deletingCluster}
+                    onClose={() => setDeletingCluster(null)}
+                    onConfirm={async () => {
+                        await handleDeleteCluster(deletingCluster.id);
+                        setDeletingCluster(null);
+                    }}
+                    title="Delete Cluster"
+                    message={`Are you sure you want to delete ${deletingCluster.name}?`}
+                    loading={submitting}
+                />
+            )}
         </div>
     );
 }
@@ -194,50 +221,46 @@ function ClusterModal({
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>{isEdit ? 'Edit Cluster' : 'Add New Cluster'}</h2>
-                    <button className="modal-close" onClick={onClose} type="button">
-                        <X size={20} />
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title={isEdit ? 'Edit Cluster' : 'Add New Cluster'}
+            footer={
+                <>
+                    <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+                    <button type="submit" form="cluster-form" className="btn-submit" disabled={submitting || !name.trim()}>
+                        {submitting ? (
+                            <><Loader2 size={14} className="spinning" /> Saving...</>
+                        ) : (
+                            isEdit ? 'Save Changes' : 'Create Cluster'
+                        )}
                     </button>
+                </>
+            }
+        >
+            <form id="cluster-form" onSubmit={handleSubmit}>
+                <div className="form-group">
+                    <label>Cluster Name</label>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Lagos Hub"
+                        required
+                        autoFocus
+                    />
                 </div>
-                <form onSubmit={handleSubmit}>
-                    <div className="modal-body">
-                        <div className="form-group">
-                            <label>Cluster Name</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g. Lagos Hub"
-                                required
-                                autoFocus
-                            />
-                        </div>
 
-                        <div className="form-group">
-                            <label>State</label>
-                            <select value={state} onChange={(e) => setState(e.target.value)}>
-                                <option value="">Select state...</option>
-                                {NIGERIAN_STATES.map((s) => (
-                                    <option key={s} value={s}>{s}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn-submit" disabled={submitting || !name.trim()}>
-                            {submitting ? (
-                                <><Loader2 size={14} className="spinning" /> Saving...</>
-                            ) : (
-                                isEdit ? 'Save Changes' : 'Create Cluster'
-                            )}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div className="form-group">
+                    <label>State</label>
+                    <select value={state} onChange={(e) => setState(e.target.value)}>
+                        <option value="">Select state...</option>
+                        {NIGERIAN_STATES.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+                </div>
+            </form>
+        </Modal>
     );
 }

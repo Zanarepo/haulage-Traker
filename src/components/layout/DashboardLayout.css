@@ -37,15 +37,20 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   z-index: 95;
   animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ========== Sidebar ========== */
@@ -60,6 +65,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
 }
+
 .sidebar.collapsed {
   width: 80px;
 }
@@ -76,11 +82,13 @@
   align-items: center;
   justify-content: space-between;
 }
+
 .brand {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
+
 .logo-icon {
   background: #3b82f6;
   padding: 0.5rem;
@@ -88,12 +96,14 @@
   color: white;
   display: flex;
 }
+
 .brand-name {
   font-weight: 700;
   font-size: 1.25rem;
   letter-spacing: -0.025em;
   white-space: nowrap;
 }
+
 .toggle-btn {
   background: transparent;
   border: none;
@@ -103,6 +113,7 @@
   border-radius: 0.5rem;
   transition: all 0.2s;
 }
+
 .toggle-btn:hover {
   background: var(--bg-hover);
   color: var(--text-main);
@@ -112,12 +123,14 @@
 .user-capsule {
   padding: 0 1.5rem 1.5rem;
 }
+
 .profile-info {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   padding: 1rem;
   border-radius: 1rem;
 }
+
 .user-name {
   font-weight: 600;
   font-size: 0.9rem;
@@ -126,6 +139,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .role-tag {
   display: inline-block;
   font-size: 10px;
@@ -136,8 +150,16 @@
   background: #334155;
   color: #94a3b8;
 }
-.role-tag.superadmin { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
-.role-tag.admin { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+
+.role-tag.superadmin {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.role-tag.admin {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
 
 /* ========== Navigation ========== */
 .nav-list {
@@ -145,6 +167,7 @@
   padding: 0 0.75rem;
   overflow-y: auto;
 }
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -156,10 +179,12 @@
   transition: all 0.2s;
   margin-bottom: 0.25rem;
 }
+
 .nav-item:hover {
   background: #3b82f6;
   color: white;
 }
+
 .sidebar.collapsed .nav-item {
   justify-content: center;
   padding: 1rem;
@@ -170,6 +195,7 @@
   padding: 1rem 0.75rem;
   border-top: 1px solid var(--border-color);
 }
+
 .status-pill {
   display: flex;
   align-items: center;
@@ -181,8 +207,14 @@
   border-radius: 0.5rem;
   margin-bottom: 0.5rem;
 }
-.status-pill.online { color: #10b981; }
-.status-pill.offline { color: #ef4444; }
+
+.status-pill.online {
+  color: #10b981;
+}
+
+.status-pill.offline {
+  color: #ef4444;
+}
 
 .last-sync {
   font-size: 0.65rem;
@@ -204,10 +236,12 @@
   font-size: 0.9rem;
   transition: all 0.2s;
 }
+
 .footer-btn:hover {
   background: var(--bg-hover);
   color: var(--text-main);
 }
+
 .footer-btn.logout:hover {
   color: #fb7185;
   background: rgba(251, 113, 133, 0.1);
@@ -221,9 +255,11 @@
   padding: 2.5rem;
   width: 100%;
 }
+
 .main-container.expanded {
   margin-left: 80px;
 }
+
 .content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
@@ -238,7 +274,10 @@
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --border-color: #1e293b;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
 }
+
 :root[data-theme='light'] {
   --bg-main: #f8fafc;
   --bg-sidebar: #ffffff;
@@ -247,21 +286,34 @@
   --text-main: #0f172a;
   --text-muted: #64748b;
   --border-color: #e2e8f0;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
 }
 
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
-  .mobile-header { display: flex; }
-  .desktop-only { display: none; }
+  .mobile-header {
+    display: flex;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
   .sidebar {
     width: 260px;
     transform: translateX(-100%);
     z-index: 100;
   }
+
   .sidebar.mobile-open {
     transform: translateX(0);
   }
-  .sidebar.collapsed { width: 260px; }
+
+  .sidebar.collapsed {
+    width: 260px;
+  }
+
   .main-container {
     margin-left: 0 !important;
     padding: 5.5rem 1rem 1.5rem;

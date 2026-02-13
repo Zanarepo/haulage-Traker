@@ -49,6 +49,8 @@ export interface DataTableProps<T> {
     emptyIcon?: React.ReactNode;
     /** Empty state message */
     emptyMessage?: string;
+    /** On row click handler */
+    onRowClick?: (item: T) => void;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -68,6 +70,7 @@ export default function DataTable<T>({
     loading = false,
     emptyIcon,
     emptyMessage = 'No results found.',
+    onRowClick,
 }: DataTableProps<T>) {
     const {
         paginatedItems,
@@ -156,7 +159,11 @@ export default function DataTable<T>({
                             </thead>
                             <tbody>
                                 {paginatedItems.map((item) => (
-                                    <tr key={keyExtractor(item)}>
+                                    <tr
+                                        key={keyExtractor(item)}
+                                        onClick={() => onRowClick?.(item)}
+                                        className={onRowClick ? 'dt-clickable-row' : ''}
+                                    >
                                         {columns.map((col) => (
                                             <td
                                                 key={col.key}

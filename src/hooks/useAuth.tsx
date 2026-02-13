@@ -18,6 +18,7 @@ interface AuthContextType {
     profile: UserProfile | null;
     loading: boolean;
     signOut: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -107,13 +108,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const refreshProfile = async () => {
+        if (user) await fetchProfile(user.id);
+    };
+
     const signOut = async () => {
         await deleteItem(STORES.AUTH, AUTH_CACHE_KEY);
         await supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+        <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     );

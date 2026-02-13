@@ -1,0 +1,79 @@
+.row-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.row-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    padding: 0;
+}
+
+.row-action-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+/* Variants */
+.row-action-btn.default:hover {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.row-action-btn.danger:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.row-action-btn.success:hover {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.row-action-btn.warning:hover {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.row-action-btn.info:hover {
+    color: #06b6d4;
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.2);
+}
+
+.action-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mobile responsive - allow wrapping inside table cells if needed */
+@media (max-width: 768px) {
+    .row-actions {
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .row-action-btn {
+        width: 36px;
+        height: 36px;
+        background: var(--bg-card);
+        border-color: var(--border-color);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+}

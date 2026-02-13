@@ -4,6 +4,7 @@ import './company.css';
 import { useState } from 'react';
 import { useCompany } from '@/hooks/useCompany';
 import { useAuth } from '@/hooks/useAuth';
+import Modal from '@/components/Modal/Modal';
 import {
     ShieldCheck,
     Edit3,
@@ -13,7 +14,7 @@ import {
     Globe,
     MapPin,
     Package,
-    Users,
+    Users as UsersIcon,
     Truck,
     AlertCircle,
     Loader2
@@ -117,7 +118,7 @@ export default function CompanyManagementPage() {
                     <OrgStatCard
                         title="Active Users"
                         value={stats.activeUsersCount}
-                        icon={<Users size={22} />}
+                        icon={<UsersIcon size={22} />}
                         color="#10b981"
                     />
                     <OrgStatCard
@@ -146,40 +147,36 @@ export default function CompanyManagementPage() {
                 </div>
             </div>
 
-            {/* Edit Company Modal - Now outside for proper fixed positioning */}
+            {/* Edit Company Modal */}
             {isEditing && (
-                <div className="modal-overlay" onClick={cancelEditing}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Edit Organization Name</h2>
-                            <button className="btn-close" onClick={cancelEditing}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label>Company Name</label>
-                                <input
-                                    type="text"
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
-                                    placeholder="Enter organization name"
-                                    autoFocus
-                                    onKeyDown={(e) => e.key === 'Enter' && saveName()}
-                                />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn-secondary" onClick={cancelEditing} disabled={submitting}>
+                <Modal
+                    isOpen={true}
+                    onClose={cancelEditing}
+                    title="Edit Organization Name"
+                    footer={
+                        <>
+                            <button className="btn-cancel" onClick={cancelEditing} disabled={submitting}>
                                 Cancel
                             </button>
-                            <button className="btn-primary" onClick={saveName} disabled={submitting || !editName.trim()}>
-                                {submitting ? <Loader2 size={18} className="spinning" /> : <Check size={18} />}
+                            <button className="btn-submit" onClick={saveName} disabled={submitting || !editName.trim()}>
+                                {submitting ? <Loader2 size={16} className="spinning" /> : <Check size={16} />}
                                 <span>{submitting ? 'Saving...' : 'Save Changes'}</span>
                             </button>
-                        </div>
+                        </>
+                    }
+                >
+                    <div className="form-group">
+                        <label>Company Name</label>
+                        <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Enter organization name"
+                            autoFocus
+                            onKeyDown={(e) => e.key === 'Enter' && saveName()}
+                        />
                     </div>
-                </div>
+                </Modal>
             )}
         </>
     );

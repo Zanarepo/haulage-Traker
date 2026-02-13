@@ -3,10 +3,11 @@
 import './DashboardLayout.css';
 import { useState, useEffect } from 'react';
 import { useLayout } from '@/hooks/useLayout';
+import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { getItem, STORES } from '@/lib/indexedDB';
 import {
   BarChart3,
-  Users,
+  Users as UsersIcon,
   Truck,
   MapPin,
   FileText,
@@ -20,7 +21,9 @@ import {
   ShieldCheck,
   Package,
   Wifi,
-  WifiOff
+  WifiOff,
+  Navigation,
+  Calculator
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -33,12 +36,14 @@ interface SidebarItem {
 const sidebarItems: SidebarItem[] = [
   { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['superadmin', 'md', 'accountant', 'auditor', 'admin', 'driver', 'site_engineer'] },
   { title: 'Company Management', icon: <ShieldCheck size={20} />, path: '/dashboard/company', roles: ['superadmin'] },
-  { title: 'Teams & Users', icon: <Users size={20} />, path: '/dashboard/users', roles: ['superadmin', 'admin'] },
+  { title: 'Teams & Users', icon: <UsersIcon size={20} />, path: '/dashboard/users', roles: ['superadmin', 'admin'] },
   { title: 'Clusters', icon: <MapPin size={20} />, path: '/dashboard/clusters', roles: ['superadmin', 'admin', 'md'] },
   { title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { title: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { title: 'Trips & Logistics', icon: <Truck size={20} />, path: '/dashboard/trips', roles: ['superadmin', 'admin', 'md', 'auditor', 'driver'] },
   { title: 'Financials', icon: <BarChart3 size={20} />, path: '/dashboard/financials', roles: ['superadmin', 'md', 'accountant', 'auditor'] },
+  { title: 'Supplies Reconciliation', icon: <Calculator size={20} />, path: '/dashboard/reconciliation', roles: ['superadmin', 'admin', 'md', 'accountant', 'driver'] },
+  { title: 'Live Tracking', icon: <Navigation size={20} />, path: '/dashboard/tracking', roles: ['superadmin', 'admin', 'md'] },
   { title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
   { title: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
 ];
@@ -56,6 +61,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     closeMobile,
     handleLogout
   } = useLayout();
+
+  // Activate background location tracking
+  useLocationTracking();
 
   // Read lastUpdated directly from IndexedDB after mount (avoids hydration mismatch)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);

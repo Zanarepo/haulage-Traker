@@ -5,17 +5,22 @@ import { useState } from 'react';
 import { useUsers } from '@/hooks/useUsers';
 import { UserRole } from '@/types/database';
 import DataTable, { DataTableColumn, DataTableFilter } from '@/components/DataTable/DataTable';
+import Modal from '@/components/Modal/Modal';
 import {
     UserPlus,
     Users,
     Shield,
     Edit3,
+    Trash2,
     UserX,
     UserCheck,
     X,
     Loader2,
     UserCircle
 } from 'lucide-react';
+import RowActions, { RowActionItem } from '@/components/RowActions/RowActions';
+import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
+import { useAuth } from '@/hooks/useAuth';
 
 const ROLES: { value: UserRole; label: string }[] = [
     { value: 'superadmin', label: 'Super Admin' },
@@ -57,9 +62,14 @@ export default function UsersPage() {
         handleCreateUser,
         handleUpdateUser,
         handleToggleActive,
+        handleDeleteUser,
         submitting,
         users,
     } = useUsers();
+
+    const { profile } = useAuth();
+    const isSuperAdmin = profile?.role === 'superadmin';
+    const [deletingUser, setDeletingUser] = useState<any | null>(null);
 
     const { clusters } = useClusters();
 
@@ -126,24 +136,35 @@ export default function UsersPage() {
         {
             key: 'actions',
             label: 'Actions',
-            render: (user) => (
-                <div className="actions-cell">
-                    <button
-                        className="btn-action"
-                        title="Edit user"
-                        onClick={() => openEditModal(user)}
-                    >
-                        <Edit3 size={14} />
-                    </button>
-                    <button
-                        className={`btn-action ${user.is_active ? 'danger' : 'success'}`}
-                        title={user.is_active ? 'Deactivate' : 'Reactivate'}
-                        onClick={() => handleToggleActive(user.id, user.is_active)}
-                    >
-                        {user.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
-                    </button>
-                </div>
-            ),
+            render: (user) => {
+                const actions: RowActionItem[] = [
+                    {
+                        label: 'Edit',
+                        icon: <Edit3 size={14} />,
+                        onClick: () => openEditModal(user),
+                        tooltip: 'Edit User'
+                    },
+                    {
+                        label: user.is_active ? 'Deactivate' : 'Reactivate',
+                        icon: user.is_active ? <UserX size={14} /> : <UserCheck size={14} />,
+                        onClick: () => handleToggleActive(user.id, user.is_active),
+                        variant: user.is_active ? 'danger' : 'success',
+                        tooltip: user.is_active ? 'Deactivate User' : 'Reactivate User'
+                    }
+                ];
+
+                if (isSuperAdmin) {
+                    actions.push({
+                        label: 'Delete',
+                        icon: <Trash2 size={14} />,
+                        onClick: () => setDeletingUser(user),
+                        variant: 'danger',
+                        tooltip: 'Delete User'
+                    });
+                }
+
+                return <RowActions actions={actions} />;
+            },
         },
     ];
 
@@ -224,7 +245,6 @@ export default function UsersPage() {
                 }
             />
 
-            {/* Modal */}
             {isModalOpen && (
                 <UserModal
                     editingUser={editingUser}
@@ -233,6 +253,20 @@ export default function UsersPage() {
                     onCreate={handleCreateUser}
                     onUpdate={handleUpdateUser}
                     submitting={submitting}
+                />
+            )}
+
+            {deletingUser && (
+                <ConfirmationModal
+                    isOpen={!!deletingUser}
+                    onClose={() => setDeletingUser(null)}
+                    onConfirm={async () => {
+                        await handleDeleteUser(deletingUser.id);
+                        setDeletingUser(null);
+                    }}
+                    title="Delete User"
+                    message={`Are you sure you want to delete ${deletingUser.full_name}?`}
+                    loading={submitting}
                 />
             )}
         </div>
@@ -300,157 +334,154 @@ function UserModal({
     );
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>{isEdit ? 'Edit User' : 'Add New User'}</h2>
-                    <button className="modal-close" onClick={onClose} type="button">
-                        <X size={20} />
+        <Modal
+            isOpen={true} // Controlled by parent
+            onClose={onClose}
+            title={isEdit ? 'Edit User' : 'Add New User'}
+            maxWidth="550px"
+            footer={
+                <>
+                    <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+                    <button type="submit" form="user-form" className="btn-submit" disabled={submitting || !fullName}>
+                        {submitting ? (
+                            <><Loader2 size={14} className="spinning" /> Saving...</>
+                        ) : (
+                            isEdit ? 'Save Changes' : 'Create User'
+                        )}
                     </button>
+                </>
+            }
+        >
+            <form id="user-form" onSubmit={handleSubmit}>
+                <div className="form-group">
+                    <label>Full Name</label>
+                    <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="John Doe"
+                        required
+                    />
                 </div>
-                <form onSubmit={handleSubmit}>
-                    <div className="modal-body">
+
+                {!isEdit && (
+                    <div className="form-row">
                         <div className="form-group">
-                            <label>Full Name</label>
+                            <label>Email Address</label>
                             <input
-                                type="text"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                placeholder="John Doe"
-                                required
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="john@company.com"
                             />
                         </div>
-
-                        {!isEdit && (
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Email</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="john@company.com"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        placeholder="+234..."
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Role</label>
-                                <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-                                    {ROLES.map((r) => (
-                                        <option key={r.value} value={r.value}>{r.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            {role === 'driver' && (
-                                <div className="form-group">
-                                    <label>Driver Type</label>
-                                    <select value={driverType} onChange={(e) => setDriverType(e.target.value)}>
-                                        <option value="">Select...</option>
-                                        <option value="internal">Internal</option>
-                                        <option value="external">External</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-
                         <div className="form-group">
-                            <label>Operational Branches (Clusters)</label>
-                            <div className="form-row" style={{ gap: '8px', marginBottom: '8px' }}>
-                                <select
-                                    className="cluster-select"
-                                    value={selectedState}
-                                    onChange={(e) => setSelectedState(e.target.value)}
-                                >
-                                    <option value="">Filter by State...</option>
-                                    {NIGERIAN_STATES.map(state => (
-                                        <option key={state} value={state}>{state}</option>
-                                    ))}
-                                </select>
-
-                                <select
-                                    className="cluster-select"
-                                    value=""
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            toggleCluster(e.target.value);
-                                            e.target.value = ""; // Reset dropdown
-                                        }
-                                    }}
-                                    disabled={!selectedState && clusters.length > 10}
-                                >
-                                    <option value="">{selectedState ? `Select Cluster in ${selectedState}...` : 'Select Cluster...'}</option>
-                                    {filteredAvailableClusters.map(cluster => (
-                                        <option key={cluster.id} value={cluster.id}>
-                                            {cluster.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="selected-clusters-list">
-                                {selectedClusterIds.map(id => {
-                                    const cluster = clusters.find(c => c.id === id);
-                                    if (!cluster) return null;
-                                    return (
-                                        <div key={id} className="selected-cluster-item">
-                                            <div className="cluster-item-header">
-                                                <span className="cluster-item-name">{cluster.name}</span>
-                                                <span className="cluster-item-state">{cluster.state}</span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                className="btn-remove-cluster"
-                                                onClick={() => toggleCluster(id)}
-                                            >
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                                {selectedClusterIds.length === 0 && (
-                                    <p className="no-data-text">No branches selected.</p>
-                                )}
-                            </div>
+                            <label>Phone Number</label>
+                            <input
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="+234..."
+                            />
                         </div>
+                    </div>
+                )}
 
-                        {!isEdit && (
-                            <div className="form-group">
-                                <label>Temporary Password</label>
-                                <input
-                                    type="password"
-                                    value={tempPassword}
-                                    onChange={(e) => setTempPassword(e.target.value)}
-                                    placeholder="Min 6 characters"
-                                    required
-                                    minLength={6}
-                                />
-                            </div>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Role</label>
+                        <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+                            {ROLES.map((r) => (
+                                <option key={r.value} value={r.value}>{r.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    {role === 'driver' && (
+                        <div className="form-group">
+                            <label>Driver Type</label>
+                            <select value={driverType} onChange={(e) => setDriverType(e.target.value)}>
+                                <option value="">Select...</option>
+                                <option value="internal">Internal</option>
+                                <option value="external">External</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
+
+                <div className="form-group">
+                    <label>Operational Branches (Clusters)</label>
+                    <div className="form-row" style={{ gap: '8px', marginBottom: '8px' }}>
+                        <select
+                            className="cluster-select"
+                            value={selectedState}
+                            onChange={(e) => setSelectedState(e.target.value)}
+                        >
+                            <option value="">Filter by State...</option>
+                            {NIGERIAN_STATES.map(state => (
+                                <option key={state} value={state}>{state}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            className="cluster-select"
+                            value=""
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    toggleCluster(e.target.value);
+                                    e.target.value = ""; // Reset dropdown
+                                }
+                            }}
+                            disabled={!selectedState && clusters.length > 10}
+                        >
+                            <option value="">{selectedState ? `Select Cluster in ${selectedState}...` : 'Select Cluster...'}</option>
+                            {filteredAvailableClusters.map(cluster => (
+                                <option key={cluster.id} value={cluster.id}>
+                                    {cluster.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="selected-clusters-list">
+                        {selectedClusterIds.map(id => {
+                            const cluster = clusters.find(c => c.id === id);
+                            if (!cluster) return null;
+                            return (
+                                <div key={id} className="selected-cluster-item">
+                                    <div className="cluster-item-header">
+                                        <span className="cluster-item-name">{cluster.name}</span>
+                                        <span className="cluster-item-state">{cluster.state}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn-remove-cluster"
+                                        onClick={() => toggleCluster(id)}
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                        {selectedClusterIds.length === 0 && (
+                            <p className="no-data-text">No branches selected.</p>
                         )}
                     </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn-submit" disabled={submitting || !fullName}>
-                            {submitting ? (
-                                <><Loader2 size={14} className="spinning" /> Saving...</>
-                            ) : (
-                                isEdit ? 'Save Changes' : 'Create User'
-                            )}
-                        </button>
+                </div>
+
+                {!isEdit && (
+                    <div className="form-group">
+                        <label>Temporary Password</label>
+                        <input
+                            type="password"
+                            value={tempPassword}
+                            onChange={(e) => setTempPassword(e.target.value)}
+                            placeholder="Min 6 characters"
+                            required
+                            minLength={6}
+                        />
                     </div>
-                </form>
-            </div>
-        </div>
+                )}
+            </form>
+        </Modal>
     );
 }

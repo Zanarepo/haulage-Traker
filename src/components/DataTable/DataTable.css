@@ -180,6 +180,18 @@
     background: var(--bg-hover);
 }
 
+.dt-clickable-row {
+    cursor: pointer !important;
+}
+
+.dt-clickable-row:hover {
+    background: var(--bg-hover) !important;
+}
+
+.dt-clickable-row:active {
+    background: var(--border-color) !important;
+}
+
 .dt-table tbody tr:last-child td {
     border-bottom: none;
 }

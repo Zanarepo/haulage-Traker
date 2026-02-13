@@ -56,5 +56,17 @@ export const clusterService = {
 
         if (error) throw error;
         return data as Site;
-    }
+    },
+
+    /**
+     * Deletes a cluster.
+     */
+    async deleteCluster(id: string) {
+        const { error } = await supabase
+            .from('clusters')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    },
 };

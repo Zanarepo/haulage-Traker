@@ -56,7 +56,7 @@ export interface Trip {
     id: string;
     cluster_id: string;
     driver_id: string;
-    client_allocation_id: string;
+    client_id: string;
     truck_plate_number: string;
     loaded_quantity: number;
     status: TripStatus;
@@ -81,4 +81,17 @@ export interface DispensingLog {
     geo_lat?: number;
     geo_lng?: number;
     created_at: string;
+}
+
+export interface TripItinerary {
+    id: string;
+    trip_id: string;
+    site_id: string;
+    status: 'pending' | 'dispensed';
+    created_at: string;
+    // Joined data
+    sites?: {
+        name: string;
+        site_id_code: string;
+    };
 }

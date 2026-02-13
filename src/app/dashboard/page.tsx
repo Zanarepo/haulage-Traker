@@ -5,7 +5,7 @@ import { useDashboard } from '@/hooks/useDashboard';
 import {
     Truck,
     Package,
-    Users,
+    Users as UsersIcon,
     CheckCircle2,
     AlertTriangle,
     ArrowUpRight,
@@ -19,9 +19,9 @@ import {
 // Map icons at render time — React components can't survive JSON serialization
 function getStatIcon(title: string) {
     if (title.includes('Trip')) return Truck;
-    if (title.includes('Fuel') || title.includes('Delivery')) return Package;
+    if (title.includes('Product') || title.includes('Supplies') || title.includes('Fuel') || title.includes('Delivery')) return Package;
     if (title.includes('Alert')) return AlertTriangle;
-    if (title.includes('Clusters')) return Users;
+    if (title.includes('Clusters')) return UsersIcon;
     if (title.includes('Completed')) return CheckCircle2;
     return Clock;
 }
@@ -48,7 +48,7 @@ export default function DashboardPage() {
                     )}
                 </div>
                 <div className="header-meta">
-                    <p>Your control center for diesel monitoring and logistics.</p>
+                    <p>Your control center for supply monitoring and logistics.</p>
                     {lastUpdated && (
                         <span className="sync-time">
                             <Clock size={10} /> Last synced: {new Date(lastUpdated).toLocaleTimeString()}

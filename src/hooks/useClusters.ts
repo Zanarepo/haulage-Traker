@@ -124,17 +124,15 @@ export function useClusters(): UseClustersReturn {
 
     // Delete cluster
     const handleDeleteCluster = async (clusterId: string) => {
+        setSubmitting(true);
         try {
-            const { supabase } = await import('@/lib/supabase');
-            const { error } = await supabase
-                .from('clusters')
-                .delete()
-                .eq('id', clusterId);
-            if (error) throw error;
+            await clusterService.deleteCluster(clusterId);
             showToast('Cluster deleted', 'info');
             await loadClusters();
         } catch (err: any) {
             showToast(`Failed to delete cluster: ${err.message}`, 'error');
+        } finally {
+            setSubmitting(false);
         }
     };
 
