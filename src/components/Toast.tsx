@@ -1,18 +1,20 @@
 "use client";
 
 import { useToast } from '@/hooks/useToast';
-import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, XCircle, Info, X, AlertTriangle } from 'lucide-react';
 
 const icons = {
     success: CheckCircle2,
     error: XCircle,
     info: Info,
+    warning: AlertTriangle,
 };
 
 const colors = {
     success: { bg: '#05261e', border: '#10b981', text: '#34d399', icon: '#10b981' },
     error: { bg: '#2a0a0a', border: '#ef4444', text: '#fca5a5', icon: '#ef4444' },
     info: { bg: '#0a1a2a', border: '#3b82f6', text: '#93c5fd', icon: '#3b82f6' },
+    warning: { bg: '#2a1e05', border: '#f59e0b', text: '#fcd34d', icon: '#f59e0b' },
 };
 
 export function ToastContainer() {
