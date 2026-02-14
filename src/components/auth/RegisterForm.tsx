@@ -1,6 +1,7 @@
 'use client';
 
 import { useRegister } from '@/hooks/useRegister';
+import NexHaulLogo from '@/components/NexHaulLogo';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -84,7 +85,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
   return (
     <div className="login-container">
       <form onSubmit={handleRegister} className="login-form">
-        <h1>Haulage Tracker</h1>
+        <NexHaulLogo className="auth-logo-wrap" size={60} />
         <p>Register Your Company & Become Superadmin</p>
 
         {error && <div className="error-message">{error}</div>}
@@ -179,14 +180,9 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
           width: 100%;
           max-width: 500px;
         }
-        h1 {
-          margin-bottom: 0.5rem;
-          font-size: 2rem;
-          font-weight: 700;
-          text-align: center;
-          background: linear-gradient(to right, #38bdf8, #818cf8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+        .auth-logo-wrap {
+          justify-content: center;
+          margin-bottom: 1.5rem;
         }
         p {
           color: #94a3b8;

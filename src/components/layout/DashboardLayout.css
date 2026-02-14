@@ -87,20 +87,27 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  cursor: pointer;
 }
 
-.logo-icon {
-  background: #3b82f6;
-  padding: 0.5rem;
-  border-radius: 0.75rem;
-  color: white;
-  display: flex;
+.logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-img.small {
+  height: 24px;
 }
 
 .brand-name {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.25rem;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
+  background: linear-gradient(to right, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   white-space: nowrap;
 }
 

@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
+import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 
 export default function Home() {
   const { user, loading } = useAuth();
-  const [view, setView] = useState<'login' | 'register'>('login');
+  const [view, setView] = useState<'login' | 'register' | 'forgot-password'>('login');
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    // Check if we are in a password recovery flow to prevent premature dashboard redirect
+    const isRecovery = window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery');
+
+    if (!loading && user && !isRecovery) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
@@ -55,7 +60,18 @@ export default function Home() {
     );
   }
 
-  return view === 'login'
-    ? <LoginForm onShowRegister={() => setView('register')} />
-    : <RegisterForm onBackToLogin={() => setView('login')} />;
+  if (view === 'login') {
+    return (
+      <LoginForm
+        onShowRegister={() => setView('register')}
+        onShowForgotPassword={() => setView('forgot-password')}
+      />
+    );
+  }
+
+  if (view === 'register') {
+    return <RegisterForm onBackToLogin={() => setView('login')} />;
+  }
+
+  return <ForgotPasswordForm onBackToLogin={() => setView('login')} />;
 }

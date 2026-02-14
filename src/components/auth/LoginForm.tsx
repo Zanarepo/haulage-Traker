@@ -1,12 +1,14 @@
 'use client';
 
 import { useLogin } from '@/hooks/useLogin';
+import NexHaulLogo from '@/components/NexHaulLogo';
 
 interface LoginFormProps {
   onShowRegister: () => void;
+  onShowForgotPassword: () => void;
 }
 
-export default function LoginForm({ onShowRegister }: LoginFormProps) {
+export default function LoginForm({ onShowRegister, onShowForgotPassword }: LoginFormProps) {
   const {
     identifier,
     setIdentifier,
@@ -20,7 +22,7 @@ export default function LoginForm({ onShowRegister }: LoginFormProps) {
   return (
     <div className="login-container">
       <form onSubmit={handleLogin} className="login-form">
-        <h1>Haulage Tracker</h1>
+        <NexHaulLogo className="auth-logo-wrap" size={60} />
         <p>Sign in to manage your diesel logistics</p>
 
         {error && <div className="error-message">{error}</div>}
@@ -37,7 +39,12 @@ export default function LoginForm({ onShowRegister }: LoginFormProps) {
         </div>
 
         <div className="input-group">
-          <label>Password</label>
+          <div className="label-row">
+            <label>Password</label>
+            <button type="button" onClick={onShowForgotPassword} className="link-btn small">
+              Forgot password?
+            </button>
+          </div>
           <input
             type="password"
             value={password}
@@ -77,14 +84,9 @@ export default function LoginForm({ onShowRegister }: LoginFormProps) {
           width: 100%;
           max-width: 400px;
         }
-        h1 {
-          margin-bottom: 0.5rem;
-          font-size: 1.875rem;
-          font-weight: 700;
-          text-align: center;
-          background: linear-gradient(to right, #38bdf8, #818cf8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+        .auth-logo-wrap {
+          justify-content: center;
+          margin-bottom: 2rem;
         }
         p {
           color: #94a3b8;
@@ -100,6 +102,15 @@ export default function LoginForm({ onShowRegister }: LoginFormProps) {
           margin-bottom: 0.5rem;
           font-size: 0.875rem;
           color: #cbd5e1;
+        }
+        .label-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+        .label-row label {
+          margin-bottom: 0;
         }
         input {
           width: 100%;
@@ -155,6 +166,10 @@ export default function LoginForm({ onShowRegister }: LoginFormProps) {
           cursor: pointer;
           margin-left: 0.5rem;
           padding: 0;
+        }
+        .link-btn.small {
+          font-size: 0.75rem;
+          font-weight: 500;
         }
 
         @media (max-width: 480px) {

@@ -2,39 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 export default function ConfirmEmailPage() {
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error' | 'recovery'>('verifying');
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        // Supabase appends tokens to the URL hash after email confirmation redirect.
-        // The Supabase client automatically picks up the hash and exchanges it for a session.
+        // Detect recovery mode from URL hash or search
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const type = hashParams.get('type') || urlParams.get('type');
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
+        const code = urlParams.get('code');
 
         if (accessToken && refreshToken) {
-          // Set the session from the URL tokens
           await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
-        }
-
-        // Also handle the newer PKCE flow with ?code= query param
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        if (code) {
+        } else if (code) {
           await supabase.auth.exchangeCodeForSession(code);
         }
 
-        // If we get here without error, confirmation succeeded
+        if (type === 'recovery' || hashParams.get('type') === 'recovery') {
+          setStatus('recovery');
+          return;
+        }
+
         setStatus('success');
       } catch (err) {
-        console.error('Email confirmation error:', err);
+        console.error('Confirmation error:', err);
         setStatus('error');
       }
     };
@@ -42,7 +44,7 @@ export default function ConfirmEmailPage() {
     handleEmailConfirmation();
   }, []);
 
-  // Countdown and redirect after success
+  // Countdown and redirect after success (only for regular email verification)
   useEffect(() => {
     if (status !== 'success') return;
 
@@ -50,7 +52,6 @@ export default function ConfirmEmailPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Sign out so user lands on the login page (not the welcome card)
           supabase.auth.signOut().then(() => {
             window.location.href = '/';
           });
@@ -65,13 +66,17 @@ export default function ConfirmEmailPage() {
 
   return (
     <div className="confirm-container">
-      <div className="confirm-card">
+      <div className={status === 'recovery' ? 'recovery-mode' : 'confirm-card'}>
         {status === 'verifying' && (
           <>
             <div className="icon-wrap">⏳</div>
-            <h1>Verifying your email...</h1>
-            <p>Please wait while we confirm your account.</p>
+            <h1>Verifying...</h1>
+            <p>Please wait while we confirm your request.</p>
           </>
+        )}
+
+        {status === 'recovery' && (
+          <ResetPasswordForm />
         )}
 
         {status === 'success' && (
@@ -92,7 +97,7 @@ export default function ConfirmEmailPage() {
           <>
             <div className="icon-wrap error">❌</div>
             <h1>Verification Failed</h1>
-            <p>The link may have expired or is invalid. Please register again.</p>
+            <p>The link may have expired or is invalid. Please try again.</p>
             <button onClick={() => window.location.href = '/'} className="action-btn">
               Back to Home
             </button>
@@ -108,6 +113,7 @@ export default function ConfirmEmailPage() {
           min-height: 100vh;
           background: #0f172a;
           color: white;
+          padding: 1rem;
         }
         .confirm-card {
           background: #1e293b;
@@ -118,6 +124,11 @@ export default function ConfirmEmailPage() {
           max-width: 440px;
           text-align: center;
           border: 1px solid #334155;
+        }
+        .recovery-mode {
+          width: 100%;
+          display: flex;
+          justify-content: center;
         }
         .icon-wrap {
           font-size: 3.5rem;

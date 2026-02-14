@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Haulage Monitoring System",
-  description: "Monitor diesel supplies to telecom sites",
+  title: "NexHaul | Haulage Monitoring System",
+  description: "Secure and real-time diesel supply monitoring for logistics and telecom sites.",
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  }
 };
 
 export default function RootLayout({

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useLayout } from '@/hooks/useLayout';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { getItem, STORES } from '@/lib/indexedDB';
+import NexHaulLogo from '@/components/NexHaulLogo';
 import {
   BarChart3,
   Users as UsersIcon,
@@ -83,10 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="layout-root">
       {/* Mobile Header */}
       <header className="mobile-header">
-        <div className="brand">
-          <div className="logo-icon"><Truck size={18} /></div>
-          <span className="brand-name">HT</span>
-        </div>
+        <NexHaulLogo size={32} />
         <button onClick={() => toggleMobileOpen(true)} className="menu-trigger">
           <Menu size={24} />
         </button>
@@ -100,10 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="sidebar-content">
           {/* Logo Section */}
           <div className="logo-section">
-            <div className="brand">
-              <div className="logo-icon"><Truck size={20} /></div>
-              {!isCollapsed && <span className="brand-name">HaulageTracker</span>}
-            </div>
+            <NexHaulLogo size={40} showText={!isCollapsed} className="brand-link" />
             <button onClick={toggleSidebar} className="toggle-btn desktop-only">
               {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
             </button>
