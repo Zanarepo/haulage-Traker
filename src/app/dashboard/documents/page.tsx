@@ -15,22 +15,30 @@ import {
 import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 import Modal from '@/components/Modal/Modal';
 import { documentService } from '@/services/documentService';
+import { useAuth } from '@/hooks/useAuth';
 import './documents.css';
 
 export default function DocumentCentre() {
+    const { profile } = useAuth();
     const [documents, setDocuments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDoc, setSelectedDoc] = useState<any>(null);
 
+    const isDriver = profile?.role === 'driver';
+
     useEffect(() => {
-        loadDocuments();
-    }, []);
+        if (profile?.id) {
+            loadDocuments();
+        }
+    }, [profile?.id]);
 
     const loadDocuments = async () => {
         try {
             setLoading(true);
-            const data = await documentService.getDeliveryDocuments();
+            const data = await documentService.getDeliveryDocuments(
+                isDriver ? profile?.id : undefined
+            );
             setDocuments(data || []);
         } catch (error) {
             console.error('Failed to load documents:', error);

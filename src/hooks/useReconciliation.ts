@@ -63,7 +63,8 @@ export function useReconciliation() {
             const summaries = await reconciliationService.getPendingReconciliations(
                 profile.company_id,
                 start,
-                end
+                end,
+                isDriver ? profile.id : undefined
             );
             setData(summaries);
             setCurrentPage(1);
@@ -133,16 +134,6 @@ export function useReconciliation() {
         loadData();
     }, [profile?.company_id, selectedMonth, selectedYear, selectedQuarter, dateMode]);
 
-    const stats = {
-        totalAllocated: data.reduce((sum, d) => sum + d.total_allocated, 0),
-        totalSupplied: data.reduce((sum, d) => sum + d.total_supplied, 0),
-        totalCommunity: data.reduce((sum, d) => sum + d.total_community, 0),
-        netBalance: data.reduce((sum, d) => sum + d.balance, 0),
-        pendingDrivers: data.length
-    };
-
-    const uniqueDrivers = Array.from(new Set(data.map(d => d.full_name))).sort();
-
     const filteredData = data.filter(d => {
         if (isDriver) {
             return d.driver_id === profile?.id || d.full_name === profile?.full_name;
@@ -151,6 +142,16 @@ export function useReconciliation() {
         const matchesDriver = selectedDriver === 'all' || d.full_name === selectedDriver;
         return matchesSearch && matchesDriver;
     });
+
+    const stats = {
+        totalAllocated: filteredData.reduce((sum, d) => sum + d.total_allocated, 0),
+        totalSupplied: filteredData.reduce((sum, d) => sum + d.total_supplied, 0),
+        totalCommunity: filteredData.reduce((sum, d) => sum + d.total_community, 0),
+        netBalance: filteredData.reduce((sum, d) => sum + d.balance, 0),
+        pendingDrivers: filteredData.length
+    };
+
+    const uniqueDrivers = Array.from(new Set(filteredData.map(d => d.full_name))).sort();
 
     const totalPages = Math.ceil(filteredData.length / pageSize);
     const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);

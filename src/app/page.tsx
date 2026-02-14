@@ -6,27 +6,36 @@ import { useAuth } from "@/hooks/useAuth";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
+import LandingPage from "@/components/landing/LandingPage";
+import AuthNavbar from "@/components/auth/AuthNavbar";
 
 export default function Home() {
   const { user, loading } = useAuth();
-  const [view, setView] = useState<'login' | 'register' | 'forgot-password'>('login');
+  const [view, setView] = useState<'landing' | 'login' | 'register' | 'forgot-password'>('landing');
   const router = useRouter();
 
   useEffect(() => {
-    // Check if we are in a password recovery flow to prevent premature dashboard redirect
-    const isRecovery = window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery');
+    // Check if we are in a password recovery flow
+    const isRecovery = typeof window !== 'undefined' && (
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery')
+    );
 
-    if (!loading && user && !isRecovery) {
+    if (isRecovery) {
+      setView('forgot-password');
+      return;
+    }
+
+    if (!loading && user) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
-  if (loading || user) {
+  if (loading || (user && view === 'landing')) {
     return (
       <div className="loading-screen">
         <div className="loader"></div>
-        <p>{user ? 'Redirecting to Dashboard...' : 'Loading Haulage Tracker...'}</p>
+        <p>{user ? 'Redirecting to Dashboard...' : 'Loading NexHaul...'}</p>
         <style jsx>{`
           .loading-screen {
             display: flex;
@@ -34,7 +43,7 @@ export default function Home() {
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: #0f172a;
+            background: #020617;
             color: white;
             gap: 1.5rem;
           }
@@ -60,18 +69,48 @@ export default function Home() {
     );
   }
 
-  if (view === 'login') {
+  const renderAuthView = () => {
+    switch (view) {
+      case 'login':
+        return (
+          <LoginForm
+            onShowRegister={() => setView('register')}
+            onShowForgotPassword={() => setView('forgot-password')}
+          />
+        );
+      case 'register':
+        return <RegisterForm onBackToLogin={() => setView('login')} />;
+      case 'forgot-password':
+        return <ForgotPasswordForm onBackToLogin={() => setView('login')} />;
+      default:
+        return null;
+    }
+  };
+
+  if (view === 'landing') {
     return (
-      <LoginForm
-        onShowRegister={() => setView('register')}
-        onShowForgotPassword={() => setView('forgot-password')}
+      <LandingPage
+        onLogin={() => setView('login')}
+        onRegister={() => setView('register')}
       />
     );
   }
 
-  if (view === 'register') {
-    return <RegisterForm onBackToLogin={() => setView('login')} />;
-  }
-
-  return <ForgotPasswordForm onBackToLogin={() => setView('login')} />;
+  return (
+    <div className="auth-layout">
+      <AuthNavbar onBackToHome={() => setView('landing')} />
+      <div className="auth-content">
+        {renderAuthView()}
+      </div>
+      <style jsx>{`
+        .auth-layout {
+          min-height: 100vh;
+          background: #0f172a;
+        }
+        .auth-content {
+          padding-top: 64px;
+        }
+      `}</style>
+    </div>
+  );
 }

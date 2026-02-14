@@ -168,7 +168,8 @@ export const dashboardService = {
             .select(`
                 *,
                 sites (name),
-                trip:trips!trip_id (
+                trip:trips!inner (
+                    driver_id,
                     truck_plate_number,
                     driver:users!driver_id (full_name)
                 )

@@ -16,15 +16,21 @@ export function useLogin() {
 
         try {
             let loginData;
+            const isEmail = identifier.includes('@');
 
-            if (identifier.includes('@')) {
+            // Basic cleansing for phone numbers
+            const cleanIdentifier = identifier.trim();
+
+            if (isEmail) {
                 loginData = await supabase.auth.signInWithPassword({
-                    email: identifier,
+                    email: cleanIdentifier,
                     password,
                 });
             } else {
+                // Ensure phone number has '+' prefix if it starts with digits
+                const phoneInput = cleanIdentifier.startsWith('+') ? cleanIdentifier : `+${cleanIdentifier}`;
                 loginData = await supabase.auth.signInWithPassword({
-                    phone: identifier,
+                    phone: phoneInput,
                     password,
                 });
             }

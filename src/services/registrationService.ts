@@ -31,6 +31,7 @@ export const registrationService = {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
+                phone: phone || undefined,
                 options: {
                     data: {
                         full_name: fullName,

@@ -4,74 +4,69 @@ import { useForgotPassword } from '@/hooks/useForgotPassword';
 import NexHaulLogo from '@/components/NexHaulLogo';
 
 interface ForgotPasswordFormProps {
-    onBackToLogin: () => void;
+  onBackToLogin: () => void;
 }
 
 export default function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordFormProps) {
-    const {
-        email,
-        setEmail,
-        loading,
-        error,
-        success,
-        handleResetRequest
-    } = useForgotPassword();
+  const {
+    email,
+    setEmail,
+    loading,
+    error,
+    success,
+    handleResetRequest
+  } = useForgotPassword();
 
-    return (
-        <div className="login-container">
-            <form onSubmit={handleResetRequest} className="login-form">
-                <NexHaulLogo className="auth-logo-wrap" size={60} />
-                <p>Enter your email to receive a recovery link</p>
+  return (
+    <div className="auth-form-wrapper">
+      <form onSubmit={handleResetRequest} className="login-form">
+        <h2>Reset Password</h2>
+        <p>Enter your email to receive a recovery link</p>
 
-                {error && <div className="error-message">{error}</div>}
-                {success && (
-                    <div className="success-message">
-                        Recovery link sent! Please check your email inbox.
-                    </div>
-                )}
+        {error && <div className="error-message">{error}</div>}
+        {success && (
+          <div className="success-message">
+            Recovery link sent! Please check your email inbox.
+          </div>
+        )}
 
-                {!success ? (
-                    <>
-                        <div className="input-group">
-                            <label>Email Address</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="example@co.com"
-                                required
-                            />
-                        </div>
+        {!success ? (
+          <>
+            <div className="input-group">
+              <label>Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@co.com"
+                required
+              />
+            </div>
 
-                        <button type="submit" disabled={loading}>
-                            {loading ? 'Sending link...' : 'Send Recovery Link'}
-                        </button>
-                    </>
-                ) : (
-                    <button type="button" onClick={onBackToLogin}>
-                        Back to Login
-                    </button>
-                )}
+            <button type="submit" disabled={loading}>
+              {loading ? 'Sending link...' : 'Send Recovery Link'}
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={onBackToLogin}>
+            Back to Login
+          </button>
+        )}
 
-                {!success && (
-                    <div className="footer-links">
-                        <button type="button" onClick={onBackToLogin} className="link-btn">
-                            Back to Login
-                        </button>
-                    </div>
-                )}
-            </form>
+        {!success && (
+          <div className="footer-links">
+            <button type="button" onClick={onBackToLogin} className="link-btn">
+              Back to Login
+            </button>
+          </div>
+        )}
+      </form>
 
-            <style jsx>{`
-        .login-container {
+      <style jsx>{`
+        .auth-form-wrapper {
           display: flex;
           justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background: #0f172a;
-          color: white;
-          font-family: inherit;
-          padding: 1rem;
+          padding: 2rem 1rem;
         }
         .login-form {
           background: #1e293b;
@@ -80,10 +75,14 @@ export default function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordForm
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
           width: 100%;
           max-width: 400px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .auth-logo-wrap {
-          justify-content: center;
-          margin-bottom: 2rem;
+        h2 {
+          text-align: center;
+          color: #38bdf8;
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+          font-weight: 700;
         }
         p {
           color: #94a3b8;
@@ -173,6 +172,6 @@ export default function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordForm
           p { margin-bottom: 1.5rem; }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

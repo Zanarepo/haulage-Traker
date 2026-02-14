@@ -94,9 +94,22 @@ export default function DashboardPage() {
                         )}
                     </div>
                     <div className={`action-buttons ${!isOnline ? 'offline' : ''}`}>
-                        <ActionButton label="Dispatch Trip" sub="Assign driver" icon={<Truck size={18} />} color="blue" />
-                        <ActionButton label="Finance Review" sub="Approve haulage" icon={<BarChart3 size={18} />} color="purple" />
-                        <ActionButton label="Site Audit" sub="Verify levels" icon={<AlertTriangle size={18} />} color="rose" />
+                        {profile?.role !== 'driver' ? (
+                            <>
+                                <ActionButton label="Dispatch Trip" sub="Assign driver" icon={<Truck size={18} />} color="blue" />
+                                <ActionButton label="Finance Review" sub="Approve haulage" icon={<BarChart3 size={18} />} color="purple" />
+                                <ActionButton label="Site Audit" sub="Verify levels" icon={<AlertTriangle size={18} />} color="rose" />
+                            </>
+                        ) : (
+                            <>
+                                <a href="/dashboard/reconciliation" style={{ textDecoration: 'none' }}>
+                                    <ActionButton label="My Balance" sub="View reconciliation" icon={<RefreshCcw size={18} />} color="blue" />
+                                </a>
+                                <a href="/dashboard/trips" style={{ textDecoration: 'none' }}>
+                                    <ActionButton label="Recent Trips" sub="View history" icon={<Truck size={18} />} color="purple" />
+                                </a>
+                            </>
+                        )}
                     </div>
                 </section>
             </div>

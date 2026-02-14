@@ -29,7 +29,10 @@ export function useTrips() {
 
         try {
             setLoading(true);
-            const data = await tripService.getTrips(profile.company_id);
+            const data = await tripService.getTrips(
+                profile.company_id,
+                !isManager ? profile.id : undefined
+            );
             setTrips(data || []);
         } catch (error: any) {
             console.error('Failed to load trips:', error);

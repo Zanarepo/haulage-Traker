@@ -155,8 +155,8 @@ export default function TripsDashboard() {
         <div className="trips-page">
             <header className="page-header">
                 <div className="header-info">
-                    <h1>Trips & Logistics</h1>
-                    <p>Dispatch trucks, track delivery status, and manage supply distribution</p>
+                    <h1>{isManager ? 'Trips & Logistics' : 'My Trips'}</h1>
+                    <p>{isManager ? 'Dispatch trucks, track delivery status, and manage supply distribution' : 'Track your assigned trips and record deliveries'}</p>
                 </div>
                 <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
                     {isManager && (
@@ -170,7 +170,7 @@ export default function TripsDashboard() {
 
             <div className="trips-stats">
                 <StatCard
-                    label="Total Trips"
+                    label={isManager ? "Total Trips" : "My Trips"}
                     value={stats.total}
                     icon={<Truck size={24} />}
                     color="rgba(59, 130, 246, 0.1)"

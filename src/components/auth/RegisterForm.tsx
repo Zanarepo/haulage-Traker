@@ -19,7 +19,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
 
   if (success) {
     return (
-      <div className="login-container">
+      <div className="auth-form-wrapper">
         <div className="login-form success-message">
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
           <h2>Account Created Successfully!</h2>
@@ -34,13 +34,10 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
           </button>
         </div>
         <style jsx>{`
-          .login-container {
+          .auth-form-wrapper {
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #0f172a;
-            color: white;
+            padding: 2rem 1rem;
           }
           .login-form {
             background: #1e293b;
@@ -83,9 +80,9 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
   }
 
   return (
-    <div className="login-container">
+    <div className="auth-form-wrapper">
       <form onSubmit={handleRegister} className="login-form">
-        <NexHaulLogo className="auth-logo-wrap" size={60} />
+        <h2>Create Account</h2>
         <p>Register Your Company & Become Superadmin</p>
 
         {error && <div className="error-message">{error}</div>}
@@ -127,13 +124,14 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
             />
           </div>
           <div className="input-group">
-            <label>Phone (Optional)</label>
+            <label>Phone Number</label>
             <input
               type="text"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
               placeholder="+234..."
+              required
             />
           </div>
         </div>
@@ -162,15 +160,10 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
       </form>
 
       <style jsx>{`
-        .login-container {
+        .auth-form-wrapper {
           display: flex;
           justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background: #0f172a;
-          color: white;
-          font-family: inherit;
-          padding: 1rem;
+          padding: 2rem 1rem;
         }
         .login-form {
           background: #1e293b;
@@ -179,10 +172,14 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
           width: 100%;
           max-width: 500px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .auth-logo-wrap {
-          justify-content: center;
-          margin-bottom: 1.5rem;
+        h2 {
+          text-align: center;
+          color: #38bdf8;
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+          font-weight: 700;
         }
         p {
           color: #94a3b8;

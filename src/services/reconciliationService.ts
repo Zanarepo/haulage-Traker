@@ -12,11 +12,11 @@ export interface ReconciliationSummary {
 
 export const reconciliationService = {
     /**
-     * Get pending reconciliation data for all drivers within a company for a specific period
+     * Get pending reconciliation data for specific or all drivers within a company for a specific period
      */
-    async getPendingReconciliations(companyId: string, startDate: string, endDate: string) {
+    async getPendingReconciliations(companyId: string, startDate: string, endDate: string, driverId?: string) {
         // 1. Fetch all trips started within the period (Allocated)
-        const { data: trips, error: tripsError } = await supabase
+        let tripsQuery = supabase
             .from('trips')
             .select(`
                 id,
@@ -27,10 +27,16 @@ export const reconciliationService = {
             .gte('created_at', startDate)
             .lte('created_at', endDate);
 
+        if (driverId) {
+            tripsQuery = tripsQuery.eq('driver_id', driverId);
+        }
+
+        const { data: trips, error: tripsError } = await tripsQuery;
+
         if (tripsError) throw tripsError;
 
         // 2. Fetch all dispensing logs within the period (Supplied)
-        const { data: logs, error: logsError } = await supabase
+        let logsQuery = supabase
             .from('dispensing_logs')
             .select(`
                 quantity_dispensed,
@@ -39,6 +45,12 @@ export const reconciliationService = {
             `)
             .gte('created_at', startDate)
             .lte('created_at', endDate);
+
+        if (driverId) {
+            logsQuery = logsQuery.eq('trip.driver_id', driverId);
+        }
+
+        const { data: logs, error: logsError } = await logsQuery;
 
         if (logsError) throw logsError;
 

@@ -5,9 +5,10 @@ export const tripService = {
     /**
      * Fetches all trips for a company.
      * Joins with clusters, users (driver), and clients.
+     * Supports optional filtering by driver.
      */
-    async getTrips(companyId: string) {
-        const { data, error } = await supabase
+    async getTrips(companyId: string, driverId?: string) {
+        let query = supabase
             .from('trips')
             .select(`
                 *,
@@ -20,6 +21,12 @@ export const tripService = {
                 )
             `)
             .order('created_at', { ascending: false });
+
+        if (driverId) {
+            query = query.eq('driver_id', driverId);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching trips:', error);

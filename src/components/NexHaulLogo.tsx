@@ -50,43 +50,41 @@ export default function NexHaulLogo({ className = "", size = 48, showText = true
             </svg>
 
             {showText && (
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline' }}>
                         <span style={{
-                            fontSize: '1.6rem',
-                            fontWeight: '900',
-                            color: '#f49454',
-                            letterSpacing: '0.02em',
-                            textTransform: 'uppercase'
+                            fontSize: '1.8rem',
+                            fontWeight: '800',
+                            color: '#FFFFFF',
+                            letterSpacing: '-0.02em',
                         }}>
-                            NEX
+                            Nex
                         </span>
                         <span style={{
-                            fontSize: '1.6rem',
-                            fontWeight: '900',
-                            color: '#477baa',
-                            letterSpacing: '0.02em',
-                            textTransform: 'uppercase'
+                            fontSize: '1.8rem',
+                            fontWeight: '800',
+                            color: '#f49454',
+                            letterSpacing: '-0.02em',
                         }}>
-                            HAUL
+                            Haul
                         </span>
                     </div>
                     <span style={{
-                        fontSize: '0.6rem',
-                        color: '#477baa',
-                        fontWeight: '700',
+                        fontSize: '0.65rem',
+                        color: '#94a3b8',
+                        fontWeight: '600',
                         textTransform: 'none',
-                        letterSpacing: '0.05em',
-                        marginTop: '2px'
+                        letterSpacing: '0.02em',
+                        marginTop: '0px'
                     }}>
                         by Sellytics
                     </span>
                     <span style={{
-                        fontSize: '0.7rem',
-                        color: '#94a3b8',
-                        fontWeight: '500',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
+                        fontSize: '0.55rem',
+                        color: '#64748b',
+                        fontWeight: '700',
+                        textTransform: '',
+                        letterSpacing: '0.15em',
                         marginTop: '4px'
                     }}>
                         Effortless Tracking
