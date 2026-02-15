@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   title: "NexHaul | Haulage Monitoring System",
   description: "Secure and real-time diesel supply monitoring for logistics and telecom sites.",
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/logo1.png',
+    apple: '/logo1.png',
   }
 };
 
