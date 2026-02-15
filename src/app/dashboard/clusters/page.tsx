@@ -18,6 +18,8 @@ import {
 import RowActions, { RowActionItem } from '@/components/RowActions/RowActions';
 import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 
 export default function ClustersPage() {
     const {
@@ -42,6 +44,28 @@ export default function ClustersPage() {
     const { profile } = useAuth();
     const isSuperAdmin = profile?.role === 'superadmin';
     const [deletingCluster, setDeletingCluster] = useState<any | null>(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    const { plan, isFreePlan, effectivePlanId, canAddCluster } = useSubscription(profile?.company_id || null);
+
+    const handleAddCluster = async () => {
+        try {
+            // Check local state first for immediate response
+            if (clusters.length >= plan.limits.maxClusters) {
+                setShowUpgradeModal(true);
+                return;
+            }
+
+            const check = await canAddCluster();
+            if (!check.allowed) {
+                setShowUpgradeModal(true);
+                return;
+            }
+            openAddModal();
+        } catch {
+            openAddModal();
+        }
+    };
 
     // Derive unique states for the filter
     const uniqueStates = [...new Set(clusters.map(c => c.state).filter(Boolean))] as string[];
@@ -130,7 +154,7 @@ export default function ClustersPage() {
             <div className="cluster-stats">
                 <div className="stat-chip">
                     <MapPin size={16} style={{ color: '#3b82f6' }} />
-                    <span className="stat-value">{clusters.length}</span>
+                    <span className="stat-value">{clusters.length} / {plan.limits.maxClusters}</span>
                     <span className="stat-label">Total</span>
                 </div>
                 <div className="stat-chip">
@@ -158,7 +182,7 @@ export default function ClustersPage() {
                         : 'No clusters found. Create your first cluster!'
                 }
                 actions={
-                    <button className="btn-add-cluster" onClick={openAddModal}>
+                    <button className="btn-add-cluster" onClick={handleAddCluster}>
                         <Plus size={15} />
                         Add Cluster
                     </button>
@@ -187,6 +211,16 @@ export default function ClustersPage() {
                     title="Delete Cluster"
                     message={`Are you sure you want to delete ${deletingCluster.name}?`}
                     loading={submitting}
+                />
+            )}
+
+            {showUpgradeModal && profile?.company_id && (
+                <UpgradeModal
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentPlan={effectivePlanId}
+                    companyId={profile.company_id}
+                    userEmail={profile.email || ''}
                 />
             )}
         </div>

@@ -22,6 +22,7 @@ interface DispatchModalProps {
     clusters: any[];
     sites: any[];
     allocations: any[];
+    isFreePlan?: boolean;
 }
 
 export default function DispatchModal({
@@ -32,7 +33,8 @@ export default function DispatchModal({
     drivers,
     clusters,
     sites,
-    allocations
+    allocations,
+    isFreePlan = false
 }: DispatchModalProps) {
     const [plateNumber, setPlateNumber] = useState('');
     const [driverId, setDriverId] = useState('');
@@ -57,6 +59,9 @@ export default function DispatchModal({
 
     const addToItinerary = () => {
         if (!selectedSiteId || itinerary.includes(selectedSiteId)) return;
+
+        // Free plan: limit to 1 stop
+        if (isFreePlan && itinerary.length >= 1) return;
 
         const site = sites.find(s => s.id === selectedSiteId);
         if (site) {
@@ -165,7 +170,9 @@ export default function DispatchModal({
                         <button
                             type="button"
                             onClick={addToItinerary}
-                            style={{ height: '40px', padding: '0 1rem', background: '#3b82f6', color: 'white', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+                            disabled={isFreePlan && itinerary.length >= 1}
+                            title={isFreePlan && itinerary.length >= 1 ? 'Upgrade to add multiple stops' : 'Add stop to route'}
+                            style={{ height: '40px', padding: '0 1rem', background: isFreePlan && itinerary.length >= 1 ? '#4b5563' : '#3b82f6', color: 'white', borderRadius: '0.5rem', border: 'none', cursor: isFreePlan && itinerary.length >= 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, opacity: isFreePlan && itinerary.length >= 1 ? 0.5 : 1 }}
                         >
                             <Plus size={16} /> Add Stop
                         </button>

@@ -6,6 +6,9 @@ import { useLayout } from '@/hooks/useLayout';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { getItem, STORES } from '@/lib/indexedDB';
 import NexHaulLogo from '@/components/NexHaulLogo';
+import { useSubscription } from '@/hooks/useSubscription';
+import PlanBadge from '@/components/subscription/PlanBadge';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 import {
   BarChart3,
   Users as UsersIcon,
@@ -24,7 +27,9 @@ import {
   Wifi,
   WifiOff,
   Navigation,
-  Calculator
+  Calculator,
+  Crown,
+  Lock
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -32,6 +37,7 @@ interface SidebarItem {
   icon: React.ReactNode;
   path: string;
   roles: string[];
+  premiumOnly?: boolean; // If true, locked on free plan
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -42,10 +48,10 @@ const sidebarItems: SidebarItem[] = [
   { title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { title: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { title: 'Trips & Logistics', icon: <Truck size={20} />, path: '/dashboard/trips', roles: ['superadmin', 'admin', 'md', 'auditor', 'driver'] },
-  { title: 'Financials', icon: <BarChart3 size={20} />, path: '/dashboard/financials', roles: ['superadmin', 'md', 'accountant', 'auditor'] },
-  { title: 'Supplies Reconciliation', icon: <Calculator size={20} />, path: '/dashboard/reconciliation', roles: ['superadmin', 'admin', 'md', 'accountant', 'driver'] },
-  { title: 'Live Tracking', icon: <Navigation size={20} />, path: '/dashboard/tracking', roles: ['superadmin', 'admin', 'md'] },
-  { title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
+  { title: 'Financials', icon: <BarChart3 size={20} />, path: '/dashboard/financials', roles: ['superadmin', 'md', 'accountant', 'auditor'], premiumOnly: true },
+  { title: 'Supplies Reconciliation', icon: <Calculator size={20} />, path: '/dashboard/reconciliation', roles: ['superadmin', 'admin', 'md', 'accountant', 'driver'], premiumOnly: true },
+  { title: 'Live Tracking', icon: <Navigation size={20} />, path: '/dashboard/tracking', roles: ['superadmin', 'admin', 'md'], premiumOnly: true },
+  { title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'], premiumOnly: true },
   { title: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
 ];
 
@@ -62,6 +68,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     closeMobile,
     handleLogout
   } = useLayout();
+
+  // Subscription state for feature gates
+  const { effectivePlanId, isFreePlan } = useSubscription(profile?.company_id || null);
+  const [showSidebarUpgrade, setShowSidebarUpgrade] = useState(false);
 
   // Activate background location tracking
   useLocationTracking();
@@ -111,22 +121,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="user-name">{profile?.full_name || 'User'}</p>
                 <div className={`role-tag ${profile?.role}`}>{profile?.role}</div>
               </div>
+              {profile?.company_id && (
+                <PlanBadgeWrapper companyId={profile.company_id} email={profile.email || ''} />
+              )}
             </div>
           )}
 
           {/* Navigation */}
           <nav className="nav-list">
-            {filteredItems.map((item) => (
-              <a
-                key={item.title}
-                href={item.path}
-                className="nav-item"
-                onClick={closeMobile}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {!isCollapsed && <span className="nav-title">{item.title}</span>}
-              </a>
-            ))}
+            {filteredItems.map((item) => {
+              const isLocked = (() => {
+                if (isFreePlan && item.premiumOnly) return true;
+
+                // Specific feature locks for Small Business (Keep Enterprise-only features locked)
+                if (effectivePlanId === 'small_business') {
+                  if (item.title === 'Financials' || item.title === 'Supplies Reconciliation') return true;
+                }
+
+                return false;
+              })();
+
+              return isLocked ? (
+                <button
+                  key={item.title}
+                  className="nav-item locked"
+                  onClick={() => setShowSidebarUpgrade(true)}
+                  title="Upgrade to unlock"
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  {!isCollapsed && (
+                    <>
+                      <span className="nav-title">{item.title}</span>
+                      <Lock size={13} className="lock-icon" />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <a
+                  key={item.title}
+                  href={item.path}
+                  className="nav-item"
+                  onClick={closeMobile}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  {!isCollapsed && <span className="nav-title">{item.title}</span>}
+                </a>
+              );
+            })}
           </nav>
 
           {/* Sidebar Footer */}
@@ -161,6 +202,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </main>
+
+      {/* Sidebar feature-gate Upgrade Modal */}
+      {showSidebarUpgrade && profile?.company_id && (
+        <UpgradeModal
+          isOpen={showSidebarUpgrade}
+          onClose={() => setShowSidebarUpgrade(false)}
+          currentPlan={effectivePlanId}
+          companyId={profile.company_id}
+          userEmail={profile.email || ''}
+        />
+      )}
     </div>
+  );
+}
+
+/** Small wrapper to isolate the useSubscription hook from the layout */
+function PlanBadgeWrapper({ companyId, email }: { companyId: string; email: string }) {
+  const { effectivePlanId, trialDaysRemaining, isTrialActive, isFreePlan } = useSubscription(companyId);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const showUpgradeButton = isTrialActive || isFreePlan;
+
+  return (
+    <>
+      <PlanBadge
+        plan={effectivePlanId}
+        trialDaysRemaining={trialDaysRemaining}
+        onClick={() => setShowUpgrade(true)}
+      />
+      {showUpgradeButton && (
+        <button
+          className="sidebar-upgrade-btn"
+          onClick={() => setShowUpgrade(true)}
+        >
+          <Crown size={14} />
+          Upgrade Plan
+        </button>
+      )}
+      {showUpgrade && (
+        <UpgradeModal
+          isOpen={showUpgrade}
+          onClose={() => setShowUpgrade(false)}
+          currentPlan={effectivePlanId}
+          companyId={companyId}
+          userEmail={email}
+        />
+      )}
+    </>
   );
 }

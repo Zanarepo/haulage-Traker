@@ -25,6 +25,8 @@ import {
 import RowActions, { RowActionItem } from '@/components/RowActions/RowActions';
 import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 
 export default function SitesManagementPage() {
     const { profile } = useAuth();
@@ -53,6 +55,44 @@ export default function SitesManagementPage() {
     const [isSiteModalOpen, setIsSiteModalOpen] = useState(false);
     const [editingEntity, setEditingEntity] = useState<any>(null);
     const [deletingEntity, setDeletingEntity] = useState<any>(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    const { plan, isFreePlan, effectivePlanId, canAddClient, canAddSite } = useSubscription(profile?.company_id || null);
+
+    const handleAddEntity = async () => {
+        try {
+            if (activeTab === 'clients') {
+                // Check local state first for immediate response
+                if (clients.length >= plan.limits.maxClients) {
+                    setShowUpgradeModal(true);
+                    return;
+                }
+
+                const check = await canAddClient();
+                if (!check.allowed) {
+                    setShowUpgradeModal(true);
+                    return;
+                }
+                openClientModal();
+            } else {
+                // Check local state first for immediate response
+                if (sites.length >= plan.limits.maxSites) {
+                    setShowUpgradeModal(true);
+                    return;
+                }
+
+                const check = await canAddSite();
+                if (!check.allowed) {
+                    setShowUpgradeModal(true);
+                    return;
+                }
+                openSiteModal();
+            }
+        } catch {
+            // Fallback: allow if check fails
+            activeTab === 'clients' ? openClientModal() : openSiteModal();
+        }
+    };
 
     const openClientModal = (client: any = null) => {
         setEditingEntity(client);
@@ -182,7 +222,7 @@ export default function SitesManagementPage() {
                 </div>
                 <button
                     className="btn-add-entity"
-                    onClick={() => activeTab === 'clients' ? openClientModal() : openSiteModal()}
+                    onClick={handleAddEntity}
                 >
                     <Plus size={18} />
                     <span>{activeTab === 'clients' ? 'Add Client' : 'Add Site'}</span>
@@ -208,14 +248,14 @@ export default function SitesManagementPage() {
                 <div className="stat-chip">
                     <Building2 size={20} color="#3b82f6" />
                     <div>
-                        <div className="stat-value">{clients.length}</div>
+                        <div className="stat-value">{clients.length} / {plan.limits.maxClients}</div>
                         <div className="stat-label">Clients</div>
                     </div>
                 </div>
                 <div className="stat-chip">
                     <Globe size={20} color="#10b981" />
                     <div>
-                        <div className="stat-value">{sites.length}</div>
+                        <div className="stat-value">{sites.length} / {plan.limits.maxSites}</div>
                         <div className="stat-label">Active Sites</div>
                     </div>
                 </div>
@@ -286,6 +326,16 @@ export default function SitesManagementPage() {
                     title={`Delete ${deletingEntity.type === 'client' ? 'Client' : 'Site'}`}
                     message={`Are you sure you want to delete ${deletingEntity.name}?`}
                     loading={submittingClient || submittingSite}
+                />
+            )}
+
+            {showUpgradeModal && profile?.company_id && (
+                <UpgradeModal
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentPlan={effectivePlanId}
+                    companyId={profile.company_id}
+                    userEmail={profile.email || ''}
                 />
             )}
         </div>

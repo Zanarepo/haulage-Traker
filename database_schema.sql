@@ -214,11 +214,22 @@ BEGIN
             FALSE,
             TRUE
         );
+
+        -- AUTO-CREATE 21-day Enterprise trial subscription
+        INSERT INTO public.subscriptions (company_id, plan, status, trial_start, trial_end)
+        VALUES (
+            new_company_id,
+            'trial',
+            'active',
+            NOW(),
+            NOW() + INTERVAL '21 days'
+        );
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- Drop and recreate the trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -616,3 +627,62 @@ FOR ALL USING (
     company_id = get_my_company() AND 
     get_my_role() IN ('superadmin', 'md', 'accountant', 'admin', 'auditor')
 );
+
+-- ============================================================
+-- 17. SUBSCRIPTIONS & PLAN MANAGEMENT
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE UNIQUE,
+    plan TEXT NOT NULL DEFAULT 'trial' CHECK (plan IN ('trial', 'free', 'small_business', 'enterprise')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
+    trial_start TIMESTAMPTZ DEFAULT NOW(),
+    trial_end TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '21 days'),
+    current_period_start TIMESTAMPTZ,
+    current_period_end TIMESTAMPTZ,
+    paystack_customer_code TEXT,
+    paystack_subscription_code TEXT,
+    paystack_email_token TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DROP POLICY IF EXISTS "Users can view their company subscription" ON public.subscriptions;
+CREATE POLICY "Users can view their company subscription" ON public.subscriptions
+FOR SELECT USING (company_id = get_my_company());
+
+DROP POLICY IF EXISTS "Superadmins can manage subscription" ON public.subscriptions;
+CREATE POLICY "Superadmins can manage subscription" ON public.subscriptions
+FOR ALL USING (
+    company_id = get_my_company() AND
+    get_my_role() = 'superadmin'
+);
+
+-- Grant permissions
+GRANT ALL ON public.subscriptions TO anon, authenticated, service_role;
+
+-- Helper function to get current company plan
+CREATE OR REPLACE FUNCTION get_company_plan() RETURNS TEXT AS $$
+DECLARE
+    sub_plan TEXT;
+    sub_trial_end TIMESTAMPTZ;
+    sub_status TEXT;
+BEGIN
+    SELECT plan, trial_end, status INTO sub_plan, sub_trial_end, sub_status
+    FROM public.subscriptions
+    WHERE company_id = get_my_company();
+
+    -- No subscription found
+    IF sub_plan IS NULL THEN RETURN 'free'; END IF;
+    -- Cancelled or expired
+    IF sub_status IN ('cancelled', 'expired') THEN RETURN 'free'; END IF;
+    -- Trial expired
+    IF sub_plan = 'trial' AND sub_trial_end < NOW() THEN RETURN 'free'; END IF;
+
+    RETURN sub_plan;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;

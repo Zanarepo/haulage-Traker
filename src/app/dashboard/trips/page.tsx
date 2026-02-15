@@ -27,6 +27,8 @@ import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 import DispatchModal from './components/DispatchModal';
 import TripHistoryModal from './components/TripHistoryModal';
 import RowActions from '@/components/RowActions/RowActions';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export default function TripsDashboard() {
     const {
@@ -59,6 +61,9 @@ export default function TripsDashboard() {
     const { users } = useUsers();
     const { sites } = useSites();
     const { aggregatedData } = useInventory(); // Using aggregated data for pooled stock
+
+    const { profile } = useAuth();
+    const { isFreePlan } = useSubscription(profile?.company_id || null);
 
     const drivers = users.filter(u => u.role === 'driver');
 
@@ -252,6 +257,7 @@ export default function TripsDashboard() {
                 clusters={clusters}
                 sites={sites}
                 allocations={aggregatedData}
+                isFreePlan={isFreePlan}
             />
 
             <TripHistoryModal

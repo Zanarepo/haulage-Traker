@@ -16,11 +16,14 @@ import {
     UserCheck,
     X,
     Loader2,
-    UserCircle
+    UserCircle,
+    Crown
 } from 'lucide-react';
 import RowActions, { RowActionItem } from '@/components/RowActions/RowActions';
 import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 
 const ROLES: { value: UserRole; label: string }[] = [
     { value: 'superadmin', label: 'Super Admin' },
@@ -70,11 +73,31 @@ export default function UsersPage() {
     const { profile } = useAuth();
     const isSuperAdmin = profile?.role === 'superadmin';
     const [deletingUser, setDeletingUser] = useState<any | null>(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [userLimitInfo, setUserLimitInfo] = useState({ current: 0, max: 0 });
 
     const { clusters } = useClusters();
+    const { effectivePlanId, plan, canAddUser } = useSubscription(profile?.company_id || null);
 
     const activeCount = users.filter(u => u.is_active).length;
     const inactiveCount = users.filter(u => !u.is_active).length;
+
+    const handleAddUser = async () => {
+        try {
+            const check = await canAddUser();
+            console.log('[Users] canAddUser result:', check);
+            if (!check.allowed) {
+                setUserLimitInfo({ current: check.current, max: check.max });
+                setShowUpgradeModal(true);
+                return;
+            }
+            openAddModal();
+        } catch (err) {
+            console.error('[Users] canAddUser failed:', err);
+            // If subscription check fails, still open modal (graceful degradation)
+            openAddModal();
+        }
+    };
 
     // Column definitions for DataTable
     const columns: DataTableColumn<any>[] = [
@@ -238,7 +261,7 @@ export default function UsersPage() {
                         : 'No users found. Add your first team member!'
                 }
                 actions={
-                    <button className="btn-add-user" onClick={openAddModal}>
+                    <button className="btn-add-user" onClick={handleAddUser}>
                         <UserPlus size={15} />
                         Add User
                     </button>
@@ -267,6 +290,19 @@ export default function UsersPage() {
                     title="Delete User"
                     message={`Are you sure you want to delete ${deletingUser.full_name}?`}
                     loading={submitting}
+                />
+            )}
+
+            {showUpgradeModal && profile?.company_id && (
+                <UpgradeModal
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentPlan={effectivePlanId}
+                    companyId={profile.company_id}
+                    userEmail={profile.email || ''}
+                    limitType="users"
+                    currentUsage={userLimitInfo.current}
+                    maxAllowed={userLimitInfo.max}
                 />
             )}
         </div>

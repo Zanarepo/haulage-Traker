@@ -10,20 +10,28 @@ import {
     Calendar,
     Image as ImageIcon,
     PenTool,
-    User
+    User,
+    Lock
 } from 'lucide-react';
 import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 import Modal from '@/components/Modal/Modal';
 import { documentService } from '@/services/documentService';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import './documents.css';
 
 export default function DocumentCentre() {
-    const { profile } = useAuth();
-    const [documents, setDocuments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDoc, setSelectedDoc] = useState<any>(null);
+    const [documents, setDocuments] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const { profile } = useAuth();
+    const { effectivePlanId, isFeatureEnabled } = useSubscription(profile?.company_id || null);
+
+    // Check if user has full access (Enterprise or Trial)
+    const hasFullAuditAccess = isFeatureEnabled('fullDocumentAudit');
+    const isSmallBusiness = effectivePlanId === 'small_business';
 
     const isDriver = profile?.role === 'driver';
 
@@ -106,11 +114,16 @@ export default function DocumentCentre() {
         }
     ];
 
-    const filteredDocs = documents.filter(doc =>
+    const filteredDocs = documents.filter((doc: any) =>
         doc.trips?.truck_plate_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.sites?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.trips?.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Limit to 3 for Small Business users
+    const displayDocs = isSmallBusiness && !hasFullAuditAccess
+        ? filteredDocs.slice(0, 3)
+        : filteredDocs;
 
     return (
         <div className="document-centre-container">
@@ -136,11 +149,17 @@ export default function DocumentCentre() {
             <div className="documents-content">
                 <DataTable
                     columns={columns}
-                    data={filteredDocs}
+                    data={displayDocs}
                     loading={loading}
                     keyExtractor={(it: any) => it.id}
                     emptyMessage="No delivery documents found."
                 />
+
+                {isSmallBusiness && !hasFullAuditAccess && filteredDocs.length > 3 && (
+                    <div className="premium-upgrade-banner">
+                        <p>You are viewing 3 of {filteredDocs.length} historical documents. Upgrade to Enterprise for full audit history.</p>
+                    </div>
+                )}
             </div>
 
             {/* Document Review Modal */}
@@ -176,11 +195,13 @@ export default function DocumentCentre() {
                                     <div className="block-label">
                                         <ImageIcon size={14} /> Waybill Proof
                                     </div>
-                                    <div className="proof-image-wrapper">
+                                    <div className={`proof-image-wrapper ${isSmallBusiness && !hasFullAuditAccess ? 'blurred-proof' : ''}`}>
                                         <img src={selectedDoc.waybill_photo_url} alt="Waybill" />
-                                        <a href={selectedDoc.waybill_photo_url} target="_blank" rel="noreferrer" className="img-download-link">
-                                            <Download size={14} />
-                                        </a>
+                                        {!isSmallBusiness && (
+                                            <a href={selectedDoc.waybill_photo_url} target="_blank" rel="noreferrer" className="img-download-link">
+                                                <Download size={14} />
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -191,7 +212,7 @@ export default function DocumentCentre() {
                                         <div className="block-label">
                                             <User size={14} /> Driver Sign-off
                                         </div>
-                                        <div className="sig-display-box">
+                                        <div className={`sig-display-box ${isSmallBusiness && !hasFullAuditAccess ? 'blurred-proof' : ''}`}>
                                             <img src={selectedDoc.driver_signature_url} alt="Driver Sign" />
                                         </div>
                                         <p className="sig-author">{selectedDoc.trips?.driver?.full_name}</p>
@@ -203,13 +224,20 @@ export default function DocumentCentre() {
                                         <div className="block-label">
                                             <PenTool size={14} /> Engineer Sign-off
                                         </div>
-                                        <div className="sig-display-box">
+                                        <div className={`sig-display-box ${isSmallBusiness && !hasFullAuditAccess ? 'blurred-proof' : ''}`}>
                                             <img src={selectedDoc.engineer_signature_url} alt="Engineer Sign" />
                                         </div>
                                         <p className="sig-author">{selectedDoc.engineer_name || 'Site Engineer'}</p>
                                     </div>
                                 )}
                             </div>
+
+                            {isSmallBusiness && !hasFullAuditAccess && (
+                                <div className="blur-overlay-notice">
+                                    <Lock size={16} />
+                                    <span>Proof images are blurred on Small Business plan. <br /> <strong>Upgrade to Enterprise</strong> to view clear audit signatures and waybills.</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

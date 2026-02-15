@@ -167,33 +167,35 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
 
                 <div className="pricing-grid">
                     <div className="pricing-card">
-                        <div className="trial-badge">1 Month Free</div>
+                        <div className="trial-badge">21 Days Free</div>
                         <div className="plan-name">Small Business</div>
                         <div className="plan-price">
                             <span className="currency">₦</span>25,000<span className="period">/mo</span>
                         </div>
-                        <p className="plan-desc">For individual operators managing small fleets.</p>
+                        <p className="plan-desc">For growing operations managing multiple teams and sites.</p>
                         <button className="btn-pricing outline" onClick={onRegister}>Get Started</button>
                         <ul className="features-list">
-                            <li><Check size={18} /> Manage up to 5 Teams</li>
-                            <li><Check size={18} /> Basic Reconciliation</li>
-                            <li><Check size={18} /> Digital Logbook</li>
+                            <li><Check size={18} /> Up to 7 Teams & Clusters</li>
+                            <li><Check size={18} /> Up to 7 Clients & Sites</li>
+                            <li><Check size={18} /> Live Tracking Included</li>
+                            <li><Check size={18} /> Basic Document Access</li>
                             <li><Check size={18} /> Standard Support</li>
                         </ul>
                     </div>
 
                     <div className="pricing-card featured">
-                        <div className="trial-badge">1 Month Free</div>
+                        <div className="trial-badge">Most Popular</div>
                         <div className="plan-name">Enterprise / Teams</div>
                         <div className="plan-price">
                             <span className="currency">₦</span>40,000<span className="period">/mo</span>
                         </div>
-                        <p className="plan-desc">For large logistics companies with multiple clusters.</p>
+                        <p className="plan-desc">Unlimited scale for large logistics companies and critical infra.</p>
                         <button className="btn-pricing solid" onClick={onRegister}>Start Free Trial</button>
                         <ul className="features-list">
-                            <li><Check size={18} /> Manage up to 20 Teams</li>
+                            <li><Check size={18} /> <strong>Unlimited</strong> Teams & Clusters</li>
+                            <li><Check size={18} /> <strong>Unlimited</strong> Clients & Sites</li>
                             <li><Check size={18} /> Advanced Period Reconciliation</li>
-                            <li><Check size={18} /> Full Document Centre Audit</li>
+                            <li><Check size={18} /> Full Document Audit Centre</li>
                             <li><Check size={18} /> Priority 24/7 Support</li>
                             <li><Check size={18} /> Multi-Cluster Analytics</li>
                         </ul>
