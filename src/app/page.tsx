@@ -26,12 +26,14 @@ export default function Home() {
       return;
     }
 
-    if (!loading && user) {
+    // Only redirect to dashboard if user is already logged in 
+    // and trying to access login/register views
+    if (!loading && user && (view === 'login' || view === 'register')) {
       router.push('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, view]);
 
-  if (loading || (user && view === 'landing')) {
+  if (loading) {
     return (
       <div className="loading-screen">
         <div className="loader"></div>

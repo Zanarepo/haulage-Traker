@@ -1,14 +1,16 @@
 import React from 'react';
+import Link from 'next/link';
 
 interface LogoProps {
     className?: string;
     size?: number;
     showText?: boolean;
+    href?: string;
 }
 
-export default function NexHaulLogo({ className = "", size = 48, showText = true }: LogoProps) {
-    return (
-        <div className={`flex items-center gap-3 ${className}`} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+export default function NexHaulLogo({ className = "", size = 48, showText = true, href = "/" }: LogoProps) {
+    const logoContent = (
+        <div className={`flex items-center gap-3 ${className}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: href ? 'pointer' : 'default' }}>
             <svg
                 width={size}
                 height={size * 0.8}
@@ -93,4 +95,14 @@ export default function NexHaulLogo({ className = "", size = 48, showText = true
             )}
         </div>
     );
+
+    if (href) {
+        return (
+            <Link href={href} style={{ textDecoration: 'none' }}>
+                {logoContent}
+            </Link>
+        );
+    }
+
+    return logoContent;
 }

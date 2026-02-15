@@ -16,7 +16,9 @@ import {
 } from 'lucide-react';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import ProductShowcase from './ProductShowcase';
+import { useAuth } from '@/hooks/useAuth';
 import './landing.css';
+import { useRouter } from 'next/navigation';
 
 interface LandingPageProps {
     onLogin: () => void;
@@ -25,6 +27,8 @@ interface LandingPageProps {
 
 export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { user, loading } = useAuth();
+    const router = useRouter();
 
     const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
@@ -49,8 +53,15 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                     <a href="#problem" onClick={() => setMobileMenuOpen(false)}>The Problem</a>
                     <a href="#features" onClick={() => setMobileMenuOpen(false)}>Solution</a>
                     <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
-                    <button className="btn-nav-login" onClick={() => handleNavAction(onLogin)}>Login</button>
-                    <button className="btn-nav-create" onClick={() => handleNavAction(onRegister)}>Create Account</button>
+
+                    {!loading && user ? (
+                        <button className="btn-nav-create" onClick={() => router.push('/dashboard')}>Dashboard</button>
+                    ) : (
+                        <>
+                            <button className="btn-nav-login" onClick={() => handleNavAction(onLogin)}>Login</button>
+                            <button className="btn-nav-create" onClick={() => handleNavAction(onRegister)}>Create Account</button>
+                        </>
+                    )}
                 </div>
             </nav>
 
@@ -66,12 +77,20 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                         IT hubs, and critical infrastructure.
                     </p>
                     <div className="hero-actions">
-                        <button className="btn-primary" onClick={onRegister}>
-                            Start Free Trial <ArrowRight size={18} style={{ marginLeft: '8px' }} />
-                        </button>
-                        <button className="btn-secondary" onClick={onLogin}>
-                            Live Demo
-                        </button>
+                        {!loading && user ? (
+                            <button className="btn-primary" onClick={() => router.push('/dashboard')}>
+                                Back to Dashboard <ArrowRight size={18} style={{ marginLeft: '8px' }} />
+                            </button>
+                        ) : (
+                            <>
+                                <button className="btn-primary" onClick={onRegister}>
+                                    Start Free Trial <ArrowRight size={18} style={{ marginLeft: '8px' }} />
+                                </button>
+                                <button className="btn-secondary" onClick={onLogin}>
+                                    Live Demo
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
