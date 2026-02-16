@@ -81,7 +81,11 @@ export const tripService = {
             .from('dispensing_logs')
             .select(`
                 *,
-                sites (name, site_id_code)
+                sites (
+                    name, 
+                    site_id_code,
+                    clusters (name)
+                )
             `)
             .eq('trip_id', tripId)
             .order('created_at', { ascending: true });

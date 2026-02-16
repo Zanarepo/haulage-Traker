@@ -1,17 +1,16 @@
 "use client";
 
 import './sites.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useClients } from '@/hooks/useClients';
 import { useSites } from '@/hooks/useSites';
-import { useClusters } from '@/hooks/useClusters';
+import { useClusters, NIGERIAN_STATES } from '@/hooks/useClusters';
 import { Client } from '@/services/clientService';
 import { Site } from '@/services/siteService';
 import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 import Modal from '@/components/Modal/Modal';
 import {
-    Briefcase,
-    MapPin,
+
     Plus,
     Building2,
     Globe,
@@ -19,8 +18,7 @@ import {
 
     Edit3,
     Loader2,
-    X,
-    MoreVertical
+
 } from 'lucide-react';
 import RowActions, { RowActionItem } from '@/components/RowActions/RowActions';
 import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
@@ -414,10 +412,25 @@ function SiteModal({ isOpen, onClose, onSave, editingSite, clusters, clients, su
     const [name, setName] = useState(editingSite?.name || '');
     const [siteCode, setSiteCode] = useState(editingSite?.site_id_code || '');
     const [capacity, setCapacity] = useState(editingSite?.tank_capacity || '');
+    const [selectedState, setSelectedState] = useState(editingSite?.clusters?.state || '');
     const [clusterId, setClusterId] = useState(editingSite?.cluster_id || '');
     const [clientId, setClientId] = useState(editingSite?.client_id || '');
     const [clientName, setClientName] = useState(''); // Text input for client name
     const [community, setCommunity] = useState(editingSite?.host_community || '');
+
+    const filteredClusters = selectedState
+        ? clusters.filter(c => c.state === selectedState)
+        : clusters;
+
+    useEffect(() => {
+        if (!editingSite && selectedState && !filteredClusters.some(c => c.id === clusterId)) {
+            if (filteredClusters.length === 1) {
+                setClusterId(filteredClusters[0].id);
+            } else {
+                setClusterId('');
+            }
+        }
+    }, [selectedState, filteredClusters, clusterId, editingSite]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -515,14 +528,25 @@ function SiteModal({ isOpen, onClose, onSave, editingSite, clusters, clients, su
                     )}
                 </div>
 
-                <div className="form-group">
-                    <label>Operational Cluster</label>
-                    <select value={clusterId} onChange={e => setClusterId(e.target.value)} required>
-                        <option value="">Select Cluster...</option>
-                        {clusters.map((c: any) => (
-                            <option key={c.id} value={c.id}>{c.name} ({c.state})</option>
-                        ))}
-                    </select>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Operational Region (State)</label>
+                        <select value={selectedState} onChange={e => setSelectedState(e.target.value)} required>
+                            <option value="">Select State...</option>
+                            {NIGERIAN_STATES.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Operational Cluster</label>
+                        <select value={clusterId} onChange={e => setClusterId(e.target.value)} disabled={!selectedState} required>
+                            <option value="">{selectedState ? 'Select Cluster...' : 'Select State First'}</option>
+                            {filteredClusters.map((c: any) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div className="form-group">

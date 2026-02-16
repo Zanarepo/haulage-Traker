@@ -7,6 +7,7 @@ export interface Company {
     name: string;
     created_at: string;
     metadata?: any;
+    active_modules?: string[]; // ['infra_supply'] | ['maintain'] | ['infra_supply','maintain']
 }
 
 export interface Cluster {
@@ -95,3 +96,113 @@ export interface TripItinerary {
         site_id_code: string;
     };
 }
+
+// ============================================================
+// NexHaul Maintain Types (maintain schema)
+// ============================================================
+
+export type AssetType = 'generator' | 'inverter' | 'ac_unit' | 'rectifier' | 'battery_bank' | 'ups' | 'solar_panel' | 'other';
+export type AssetStatus = 'active' | 'inactive' | 'decommissioned';
+export type WorkOrderType = 'preventive' | 'reactive' | 'inspection' | 'emergency';
+export type WorkOrderPriority = 'low' | 'medium' | 'high' | 'critical';
+export type WorkOrderStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold';
+
+export interface Asset {
+    id: string;
+    site_id: string;
+    company_id: string;
+    type: AssetType;
+    make_model?: string;
+    serial_number?: string;
+    qr_code?: string;
+    hour_meter: number;
+    service_interval_hrs: number;
+    service_interval_days: number;
+    last_service_date?: string;
+    last_service_hour_meter: number;
+    fuel_tank_capacity?: number;
+    status: AssetStatus;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WorkOrder {
+    id: string;
+    company_id: string;
+    asset_id?: string;
+    site_id: string;
+    engineer_id?: string;
+    created_by?: string;
+    type: WorkOrderType;
+    priority: WorkOrderPriority;
+    title: string;
+    description?: string;
+    sla_target_hrs?: number;
+    status: WorkOrderStatus;
+    scheduled_date?: string;
+    assigned_at?: string;
+    started_at?: string;
+    completed_at?: string;
+    fault_code?: string;
+    rca_category?: string;
+    tags?: string[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface VisitReport {
+    id: string;
+    work_order_id: string;
+    engineer_id: string;
+    before_photos?: string[];
+    hour_meter_before?: number;
+    diesel_level_before?: number;
+    site_condition_notes?: string;
+    after_photos?: string[];
+    hour_meter_after?: number;
+    diesel_level_after?: number;
+    geo_lat?: number;
+    geo_lng?: number;
+    geofence_valid?: boolean;
+    arrived_at?: string;
+    departed_at?: string;
+    offline_synced?: boolean;
+    synced_at?: string;
+    created_at: string;
+}
+
+export interface SafetyChecklist {
+    id: string;
+    visit_report_id: string;
+    checklist_json: any;
+    passed: boolean;
+    notes?: string;
+    signed_by?: string;
+    created_at: string;
+}
+
+export interface SupplyAllocation {
+    id: string;
+    work_order_id: string;
+    company_id: string;
+    item_name: string;
+    item_category?: string;
+    qty_allocated: number;
+    qty_used: number;
+    qty_returned: number;
+    unit: string;
+    notes?: string;
+    created_at: string;
+}
+
+export interface MaintenanceTask {
+    id: string;
+    visit_report_id: string;
+    task_type: string;
+    description?: string;
+    parts_used?: string[];
+    issues_found?: string;
+    created_at: string;
+}
+

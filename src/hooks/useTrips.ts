@@ -23,6 +23,7 @@ export function useTrips() {
     const [selectedTrip, setSelectedTrip] = useState<any>(null);
 
     const isManager = ['superadmin', 'admin', 'md', 'accountant', 'auditor'].includes(profile?.role || '');
+    const isEngineer = profile?.role === 'site_engineer';
 
     const loadTrips = useCallback(async () => {
         if (!profile?.company_id) return;
@@ -31,16 +32,23 @@ export function useTrips() {
             setLoading(true);
             const data = await tripService.getTrips(
                 profile.company_id,
-                !isManager ? profile.id : undefined
+                (!isManager && !isEngineer) ? profile.id : undefined
             );
-            setTrips(data || []);
+
+            // If engineer, further filter by their assigned clusters
+            let visibleTrips = data || [];
+            if (isEngineer && profile.cluster_ids) {
+                visibleTrips = visibleTrips.filter(t => profile.cluster_ids?.includes(t.cluster_id));
+            }
+
+            setTrips(visibleTrips);
         } catch (error: any) {
             console.error('Failed to load trips:', error);
             showToast('Failed to load trips: ' + error.message, 'error');
         } finally {
             setLoading(false);
         }
-    }, [profile?.company_id, showToast]);
+    }, [profile?.company_id, profile?.id, profile?.cluster_ids, isManager, isEngineer, showToast]);
 
     useEffect(() => {
         loadTrips();

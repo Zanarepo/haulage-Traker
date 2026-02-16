@@ -16,13 +16,20 @@ export function useSites() {
         try {
             setLoading(true);
             const data = await siteService.getSites();
-            setSites(data);
+
+            // Filter by cluster assignment if site_engineer
+            let visibleSites = data || [];
+            if (profile?.role === 'site_engineer' && profile?.cluster_ids) {
+                visibleSites = visibleSites.filter(s => profile.cluster_ids?.includes(s.cluster_id));
+            }
+
+            setSites(visibleSites);
         } catch (err: any) {
             showToast('Failed to load sites: ' + err.message, 'error');
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, profile?.role, profile?.cluster_ids]);
 
     useEffect(() => { loadSites(); }, [loadSites]);
 

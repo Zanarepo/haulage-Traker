@@ -162,10 +162,13 @@ export default function DispatchModal({
                             onChange={e => setSelectedSiteId(e.target.value)}
                             style={{ width: '100%', height: '40px', borderRadius: '0.5rem', padding: '0 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
                         >
-                            <option value="">Add Site to Route...</option>
-                            {sites.filter(s => !itinerary.includes(s.id)).map(s => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.clients?.name})</option>
-                            ))}
+                            <option value="">{clusterId ? 'Add Site from Cluster...' : 'Add Site to Route...'}</option>
+                            {sites
+                                .filter(s => !itinerary.includes(s.id))
+                                .filter(s => !clusterId || s.cluster_id === clusterId)
+                                .map(s => (
+                                    <option key={s.id} value={s.id}>{s.name} ({s.clients?.name})</option>
+                                ))}
                         </select>
                         <button
                             type="button"
@@ -219,13 +222,20 @@ export default function DispatchModal({
                         <select
                             value={clusterId}
                             onChange={e => setClusterId(e.target.value)}
-                            style={{ width: '100%', height: '44px', borderRadius: '0.5rem', padding: '0 1rem', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', color: 'var(--text-main)', appearance: 'none' }}
+                            style={{ width: '100%', height: '44px', borderRadius: '0.5rem', padding: '0 1rem', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', color: 'var(--text-main)', appearance: 'none', cursor: itinerary.length > 0 ? 'not-allowed' : 'pointer' }}
                             required
                         >
-                            <option value="">Select Cluster</option>
-                            {clusters.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
+                            <option value="">{itinerary.length > 0 ? 'Assigned Cluster' : 'Select Cluster'}</option>
+                            {clusters
+                                .filter(c => {
+                                    if (itinerary.length === 0) return true;
+                                    // If stops added, only show cluster(s) that match first stop's cluster
+                                    const firstSite = sites.find(s => s.id === itinerary[0]);
+                                    return c.id === firstSite?.cluster_id;
+                                })
+                                .map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
                         </select>
                     </div>
 

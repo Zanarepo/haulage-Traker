@@ -4,9 +4,11 @@ import './DashboardLayout.css';
 import { useState, useEffect } from 'react';
 import { useLayout } from '@/hooks/useLayout';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
+import { useCompanyModules } from '@/hooks/useCompanyModules';
 import { getItem, STORES } from '@/lib/indexedDB';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PRODUCTS, isSharedItem, ProductId } from '@/config/productConfig';
 import PlanBadge from '@/components/subscription/PlanBadge';
 import UpgradeModal from '@/components/subscription/UpgradeModal';
 import {
@@ -29,30 +31,60 @@ import {
   Navigation,
   Calculator,
   Crown,
-  Lock
+  Lock,
+  // Maintain icons
+  Wrench,
+  ClipboardList,
+  Cpu,
+  Camera,
+  PackageCheck,
+  CalendarClock,
+  ShieldAlert,
+  FileBarChart,
+  BookOpen
 } from 'lucide-react';
 
 interface SidebarItem {
+  key: string;           // Unique key for product filtering
   title: string;
   icon: React.ReactNode;
   path: string;
   roles: string[];
-  premiumOnly?: boolean; // If true, locked on free plan
+  premiumOnly?: boolean;
 }
 
-const sidebarItems: SidebarItem[] = [
-  { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['superadmin', 'md', 'accountant', 'auditor', 'admin', 'driver', 'site_engineer'] },
-  { title: 'Company Management', icon: <ShieldCheck size={20} />, path: '/dashboard/company', roles: ['superadmin'] },
-  { title: 'Teams & Users', icon: <UsersIcon size={20} />, path: '/dashboard/users', roles: ['superadmin', 'admin'] },
-  { title: 'Clusters', icon: <MapPin size={20} />, path: '/dashboard/clusters', roles: ['superadmin', 'admin', 'md'] },
-  { title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
-  { title: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['superadmin', 'admin', 'md', 'accountant'] },
-  { title: 'Trips & Logistics', icon: <Truck size={20} />, path: '/dashboard/trips', roles: ['superadmin', 'admin', 'md', 'auditor', 'driver'] },
-  { title: 'Financials', icon: <BarChart3 size={20} />, path: '/dashboard/financials', roles: ['superadmin', 'md', 'accountant', 'auditor'], premiumOnly: true },
-  { title: 'Supplies Reconciliation', icon: <Calculator size={20} />, path: '/dashboard/reconciliation', roles: ['superadmin', 'admin', 'md', 'accountant', 'driver'], premiumOnly: true },
-  { title: 'Live Tracking', icon: <Navigation size={20} />, path: '/dashboard/tracking', roles: ['superadmin', 'admin', 'md'], premiumOnly: true },
-  { title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'], premiumOnly: true },
-  { title: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
+/**
+ * All possible sidebar items across both products.
+ * Each has a `key` used by productConfig to determine visibility.
+ */
+const allSidebarItems: SidebarItem[] = [
+  // ── Shared Core ──
+  { key: 'dashboard', title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['superadmin', 'md', 'accountant', 'auditor', 'admin', 'driver', 'site_engineer'] },
+  { key: 'company', title: 'Company Management', icon: <ShieldCheck size={20} />, path: '/dashboard/company', roles: ['superadmin'] },
+  { key: 'users', title: 'Teams & Users', icon: <UsersIcon size={20} />, path: '/dashboard/users', roles: ['superadmin', 'admin'] },
+  { key: 'clusters', title: 'Clusters', icon: <MapPin size={20} />, path: '/dashboard/clusters', roles: ['superadmin', 'admin', 'md'] },
+  { key: 'sites', title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
+
+  // ── InfraSupply ──
+  { key: 'inventory', title: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['superadmin', 'admin', 'md', 'accountant'] },
+  { key: 'trips', title: 'Trips & Logistics', icon: <Truck size={20} />, path: '/dashboard/trips', roles: ['superadmin', 'admin', 'md', 'auditor', 'driver', 'site_engineer'] },
+  { key: 'financials', title: 'Financials', icon: <BarChart3 size={20} />, path: '/dashboard/financials', roles: ['superadmin', 'md', 'accountant', 'auditor'], premiumOnly: true },
+  { key: 'reconciliation', title: 'Supplies Reconciliation', icon: <Calculator size={20} />, path: '/dashboard/reconciliation', roles: ['superadmin', 'admin', 'md', 'accountant', 'driver', 'site_engineer'], premiumOnly: true },
+  { key: 'tracking', title: 'Live Tracking', icon: <Navigation size={20} />, path: '/dashboard/tracking', roles: ['superadmin', 'admin', 'md'], premiumOnly: true },
+  { key: 'documents', title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'], premiumOnly: true },
+
+  // ── Maintain ──
+  { key: 'work-orders', title: 'Work Orders', icon: <ClipboardList size={20} />, path: '/dashboard/maintain/work-orders', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
+  { key: 'assets', title: 'Asset Registry', icon: <Cpu size={20} />, path: '/dashboard/maintain/assets', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
+  { key: 'visit-reports', title: 'Visit Reports', icon: <Camera size={20} />, path: '/dashboard/maintain/visit-reports', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
+  { key: 'supplies', title: 'Supply Tracking', icon: <PackageCheck size={20} />, path: '/dashboard/maintain/supplies', roles: ['superadmin', 'admin', 'md', 'accountant'] },
+  { key: 'schedule', title: 'PM Schedule', icon: <CalendarClock size={20} />, path: '/dashboard/maintain/schedule', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
+  { key: 'safety', title: 'Safety Compliance', icon: <ShieldAlert size={20} />, path: '/dashboard/maintain/safety', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
+  { key: 'reports', title: 'Reports Centre', icon: <FileBarChart size={20} />, path: '/dashboard/maintain/reports', roles: ['superadmin', 'admin', 'md', 'accountant'] },
+  { key: 'knowledge-base', title: 'Knowledge Base', icon: <BookOpen size={20} />, path: '/dashboard/maintain/knowledge-base', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
+
+  // ── Shared (bottom) ──
+  { key: 'settings', title: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -68,6 +100,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     closeMobile,
     handleLogout
   } = useLayout();
+
+  // Product modules
+  const { activeModules, activeProduct, setActiveProduct, isMultiProduct } = useCompanyModules(profile?.company_id || null);
 
   // Subscription state for feature gates
   const { effectivePlanId, isFreePlan } = useSubscription(profile?.company_id || null);
@@ -86,9 +121,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     });
   }, []);
 
-  const filteredItems = sidebarItems.filter(item =>
-    profile?.role && item.roles.includes(profile.role)
-  );
+  // Filter sidebar items: role + product module visibility
+  const filteredItems = allSidebarItems.filter(item => {
+    // Must have the right role
+    if (!profile?.role || !item.roles.includes(profile.role)) return false;
+
+    // Shared items always visible
+    if (isSharedItem(item.key)) return true;
+
+    // Product-specific: check if the current active product includes this key
+    const product = PRODUCTS[activeProduct];
+    return product?.sidebarKeys.includes(item.key) || false;
+  });
+
+  // Split items: shared top, product-specific, shared bottom (settings)
+  const topSharedItems = filteredItems.filter(i => isSharedItem(i.key) && i.key !== 'settings');
+  const productItems = filteredItems.filter(i => !isSharedItem(i.key));
+  const bottomItems = filteredItems.filter(i => i.key === 'settings');
 
   return (
     <div className="layout-root">
@@ -114,6 +163,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
+          {/* ── Product App Bar (only if multi-product) ── */}
+          {isMultiProduct && !isCollapsed && (
+            <div className="product-app-bar">
+              {activeModules.map((modId) => {
+                const product = PRODUCTS[modId];
+                return (
+                  <button
+                    key={modId}
+                    className={`app-bar-tab ${activeProduct === modId ? 'active' : ''}`}
+                    onClick={() => setActiveProduct(modId)}
+                    style={{ '--tab-color': product.color } as React.CSSProperties}
+                  >
+                    <span className="tab-icon">{product.icon}</span>
+                    <span className="tab-name">{product.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Collapsed: show product icon only */}
+          {isMultiProduct && isCollapsed && (
+            <div className="product-app-bar collapsed">
+              {activeModules.map((modId) => {
+                const product = PRODUCTS[modId];
+                return (
+                  <button
+                    key={modId}
+                    className={`app-bar-tab ${activeProduct === modId ? 'active' : ''}`}
+                    onClick={() => setActiveProduct(modId)}
+                    title={product.name}
+                  >
+                    <span className="tab-icon">{product.icon}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* User Profile Info */}
           {!isCollapsed && (
             <div className="user-capsule">
@@ -129,45 +217,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Navigation */}
           <nav className="nav-list">
-            {filteredItems.map((item) => {
-              const isLocked = (() => {
-                if (isFreePlan && item.premiumOnly) return true;
+            {/* Shared top items */}
+            {topSharedItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade))}
 
-                // Specific feature locks for Small Business (Keep Enterprise-only features locked)
-                if (effectivePlanId === 'small_business') {
-                  if (item.title === 'Financials' || item.title === 'Supplies Reconciliation') return true;
-                }
+            {/* Product section separator */}
+            {productItems.length > 0 && !isCollapsed && (
+              <div className="nav-section-label">
+                <span>{PRODUCTS[activeProduct]?.icon} {PRODUCTS[activeProduct]?.name}</span>
+              </div>
+            )}
+            {productItems.length > 0 && isCollapsed && (
+              <div className="nav-section-divider" />
+            )}
 
-                return false;
-              })();
+            {/* Product-specific items */}
+            {productItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade))}
 
-              return isLocked ? (
-                <button
-                  key={item.title}
-                  className="nav-item locked"
-                  onClick={() => setShowSidebarUpgrade(true)}
-                  title="Upgrade to unlock"
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  {!isCollapsed && (
-                    <>
-                      <span className="nav-title">{item.title}</span>
-                      <Lock size={13} className="lock-icon" />
-                    </>
-                  )}
-                </button>
-              ) : (
-                <a
-                  key={item.title}
-                  href={item.path}
-                  className="nav-item"
-                  onClick={closeMobile}
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  {!isCollapsed && <span className="nav-title">{item.title}</span>}
-                </a>
-              );
-            })}
+            {/* Settings at bottom */}
+            {bottomItems.length > 0 && <div className="nav-section-divider" />}
+            {bottomItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade))}
           </nav>
 
           {/* Sidebar Footer */}
@@ -214,6 +282,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
     </div>
+  );
+}
+
+/** Render a single nav item (handles locked state) */
+function renderNavItem(
+  item: SidebarItem,
+  isCollapsed: boolean,
+  isFreePlan: boolean,
+  effectivePlanId: string,
+  closeMobile: () => void,
+  setShowSidebarUpgrade: (v: boolean) => void
+) {
+  const isLocked = (() => {
+    if (isFreePlan && item.premiumOnly) return true;
+    if (effectivePlanId === 'small_business') {
+      if (item.title === 'Financials' || item.title === 'Supplies Reconciliation') return true;
+    }
+    return false;
+  })();
+
+  return isLocked ? (
+    <button
+      key={item.key}
+      className="nav-item locked"
+      onClick={() => setShowSidebarUpgrade(true)}
+      title="Upgrade to unlock"
+    >
+      <span className="nav-icon">{item.icon}</span>
+      {!isCollapsed && (
+        <>
+          <span className="nav-title">{item.title}</span>
+          <Lock size={13} className="lock-icon" />
+        </>
+      )}
+    </button>
+  ) : (
+    <a
+      key={item.key}
+      href={item.path}
+      className="nav-item"
+      onClick={closeMobile}
+    >
+      <span className="nav-icon">{item.icon}</span>
+      {!isCollapsed && <span className="nav-title">{item.title}</span>}
+    </a>
   );
 }
 

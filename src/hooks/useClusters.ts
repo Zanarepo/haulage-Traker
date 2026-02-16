@@ -69,6 +69,12 @@ export function useClusters(): UseClustersReturn {
 
     // Filtered clusters
     const filteredClusters = clusters.filter((c) => {
+        // First, check roles
+        const isEngineer = profile?.role === 'site_engineer';
+        if (isEngineer && profile?.cluster_ids) {
+            if (!profile.cluster_ids.includes(c.id)) return false;
+        }
+
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             const matchesSearch =
@@ -79,6 +85,11 @@ export function useClusters(): UseClustersReturn {
         if (stateFilter && c.state !== stateFilter) return false;
         return true;
     });
+
+    // We also want the base 'clusters' list to be filtered for engineers in some contexts (like dropdowns)
+    const visibleClusters = profile?.role === 'site_engineer' && profile?.cluster_ids
+        ? clusters.filter(c => profile.cluster_ids?.includes(c.id))
+        : clusters;
 
     // Modal controls
     const openAddModal = () => { setEditingCluster(null); setIsModalOpen(true); };
@@ -137,7 +148,7 @@ export function useClusters(): UseClustersReturn {
     };
 
     return {
-        clusters,
+        clusters: visibleClusters,
         filteredClusters,
         loading,
         searchQuery,

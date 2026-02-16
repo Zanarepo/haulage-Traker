@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { tripService } from '@/services/tripService';
+import ConfirmSupplyModal from '@/app/dashboard/maintain/components/ConfirmSupplyModal';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TripHistoryModalProps {
     isOpen: boolean;
@@ -27,6 +29,7 @@ interface TripHistoryModalProps {
     onClearAll: () => Promise<void>;
     submitting: boolean;
     isManager: boolean;
+    onConfirmed?: () => void;
 }
 
 export default function TripHistoryModal({
@@ -35,12 +38,19 @@ export default function TripHistoryModal({
     trips,
     onClearAll,
     submitting,
-    isManager
+    isManager,
+    onConfirmed
 }: TripHistoryModalProps) {
+    const { profile } = useAuth();
     const [showConfirmClear, setShowConfirmClear] = useState(false);
     const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
     const [tripLogs, setTripLogs] = useState<Record<string, any[]>>({});
     const [loadingLogs, setLoadingLogs] = useState<Record<string, boolean>>({});
+
+    const [confirmingLog, setConfirmingLog] = useState<any>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+    const isEngineer = profile?.role === 'site_engineer';
 
     const toggleTrip = async (tripId: string) => {
         if (expandedTripId === tripId) {
@@ -253,10 +263,33 @@ export default function TripHistoryModal({
                                                                         {format(new Date(log.created_at), 'HH:mm')}
                                                                     </span>
                                                                 </div>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#10b981' }}>
-                                                                        {log.quantity_dispensed?.toLocaleString()} L
-                                                                    </span>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        {log.confirmed_at ? (
+                                                                            <span style={{
+                                                                                fontSize: '0.65rem', color: '#10b981', fontWeight: 800,
+                                                                                background: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: '4px'
+                                                                            }}>CONFIRMED</span>
+                                                                        ) : isEngineer ? (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setConfirmingLog(log);
+                                                                                    setIsConfirmModalOpen(true);
+                                                                                }}
+                                                                                style={{
+                                                                                    fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px',
+                                                                                    borderRadius: '4px', background: '#10b981', color: 'white',
+                                                                                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                                                                                }}
+                                                                            >
+                                                                                <CheckCircle2 size={10} /> Confirm
+                                                                            </button>
+                                                                        ) : null}
+                                                                        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#10b981' }}>
+                                                                            {log.quantity_dispensed?.toLocaleString()} L
+                                                                        </span>
+                                                                    </div>
                                                                     {log.community_provision_qty > 0 && (
                                                                         <span style={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 600 }}>
                                                                             + {log.community_provision_qty} L Community
@@ -308,6 +341,24 @@ export default function TripHistoryModal({
                     </div>
                 </div>
             )}
+
+            <ConfirmSupplyModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                log={confirmingLog}
+                onConfirmed={() => {
+                    if (confirmingLog?.trip_id) {
+                        // Refresh logs for this trip
+                        setTripLogs(prev => {
+                            const newLogs = { ...prev };
+                            delete newLogs[confirmingLog.trip_id];
+                            return newLogs;
+                        });
+                        toggleTrip(confirmingLog.trip_id);
+                    }
+                    if (onConfirmed) onConfirmed();
+                }}
+            />
         </Modal>
     );
 }

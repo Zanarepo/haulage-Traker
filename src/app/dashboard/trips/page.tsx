@@ -53,7 +53,8 @@ export default function TripsDashboard() {
         handleClearAllHistory,
         stats,
         isManager,
-        trips
+        trips,
+        loadTrips
     } = useTrips();
 
     // Data needed for Dispatch Modal
@@ -267,6 +268,7 @@ export default function TripsDashboard() {
                 onClearAll={handleClearAllHistory}
                 submitting={submitting}
                 isManager={isManager}
+                onConfirmed={loadTrips}
             />
         </div>
     );
