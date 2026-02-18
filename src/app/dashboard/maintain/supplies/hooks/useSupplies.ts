@@ -3,23 +3,27 @@ import { useAuth } from '@/hooks/useAuth';
 import { maintainService } from '@/services/maintainService';
 import { supabase } from '@/lib/supabase';
 
-export type TabType = 'stock' | 'inventory' | 'history' | 'receiving_history';
+export type TabType = 'stock' | 'inventory' | 'history' | 'receiving_history' | 'requests' | 'reports';
 
 export function useSupplies() {
     const { profile } = useAuth();
     const [allocations, setAllocations] = useState<any[]>([]);
     const [restockHistory, setRestockHistory] = useState<any[]>([]);
     const [receivingHistory, setReceivingHistory] = useState<any[]>([]);
+    const [stockRequests, setStockRequests] = useState<any[]>([]);
+    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('stock');
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+    const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [restockProduct, setRestockProduct] = useState<any>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const [selectedEngineerId, setSelectedEngineerId] = useState<string | null>(null);
     const [allEngineers, setAllEngineers] = useState<any[]>([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [fulfillmentData, setFulfillmentData] = useState<any | null>(null);
 
     const [selectedBatch, setSelectedBatch] = useState<{ id: string; name: string; type: 'issuance' | 'inflow' } | null>(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -35,6 +39,13 @@ export function useSupplies() {
         }
     }, [profile?.role, isAdmin, isEngineer]);
 
+    const [stats, setStats] = useState({
+        inflowCount: 0,
+        unitsReceived: 0,
+        unitsOutbound: 0,
+        currentBalance: 0
+    });
+
     useEffect(() => {
         if (!profile?.company_id) return;
         loadData();
@@ -44,6 +55,12 @@ export function useSupplies() {
         if (!profile?.company_id) return;
         try {
             setLoading(true);
+            const commonFilters = {
+                engineerId: isEngineer ? profile.id : (selectedEngineerId || undefined),
+                startDate,
+                endDate
+            };
+
             const loadEngineers = async () => {
                 const { data } = await supabase
                     .from('users')
@@ -55,28 +72,43 @@ export function useSupplies() {
             };
 
             const loadRestockHistory = async () => {
-                const data = await maintainService.getRestockHistory(profile.company_id, {
-                    engineerId: isEngineer ? profile.id : (selectedEngineerId || undefined),
-                    startDate,
-                    endDate
-                });
+                const data = await maintainService.getRestockHistory(profile.company_id, commonFilters);
                 setRestockHistory(data);
             };
 
             const loadReceivingHistory = async () => {
-                const data = await maintainService.getReceivingHistory(profile.company_id);
+                const data = await maintainService.getReceivingHistory(profile.company_id, {
+                    startDate,
+                    endDate
+                });
                 setReceivingHistory(data);
             };
 
             const loadAllocations = async () => {
                 const data = await maintainService.getSupplyAllocations(
                     profile.company_id,
-                    isEngineer ? profile.id : (selectedEngineerId || undefined)
+                    commonFilters
                 );
                 setAllocations(data || []);
             };
 
-            const promises = [loadRestockHistory(), loadAllocations()];
+            const loadStockRequests = async () => {
+                const data = await maintainService.getStockRequests(profile.company_id, {
+                    engineerId: commonFilters.engineerId
+                });
+                setStockRequests(data);
+                if (isAdmin) {
+                    const pending = data.filter((r: any) => r.status === 'pending').length;
+                    setPendingRequestsCount(pending);
+                }
+            };
+
+            const loadStats = async () => {
+                const data = await maintainService.getUnifiedSuppliesStats(profile.company_id, commonFilters);
+                setStats(data);
+            };
+
+            const promises = [loadRestockHistory(), loadAllocations(), loadStockRequests(), loadStats()];
             if (isAdmin) promises.push(loadReceivingHistory());
             if (!isEngineer) promises.push(loadEngineers());
 
@@ -134,6 +166,13 @@ export function useSupplies() {
         isEngineer,
         isAdmin,
         canManageReceive,
-        handleDeleteBatch
+        handleDeleteBatch,
+        stockRequests,
+        pendingRequestsCount,
+        fulfillmentData,
+        setFulfillmentData,
+        isRequestModalOpen,
+        setIsRequestModalOpen,
+        stats
     };
 }

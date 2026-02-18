@@ -7,9 +7,10 @@ interface SuppliesHeaderProps {
     canManageReceive: boolean;
     onAddInflow: () => void;
     onIssueToEngineer: () => void;
+    onRequestStock: () => void;
 }
 
-export default function SuppliesHeader({ isEngineer, isAdmin, canManageReceive, onAddInflow, onIssueToEngineer }: SuppliesHeaderProps) {
+export default function SuppliesHeader({ isEngineer, isAdmin, canManageReceive, onAddInflow, onIssueToEngineer, onRequestStock }: SuppliesHeaderProps) {
     return (
         <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="header-info">
@@ -29,6 +30,11 @@ export default function SuppliesHeader({ isEngineer, isAdmin, canManageReceive, 
                 {isAdmin && (
                     <button className="btn-maintain-action" onClick={onIssueToEngineer}>
                         <Plus size={18} /> Issue to Clusters
+                    </button>
+                )}
+                {isEngineer && (
+                    <button className="btn-maintain-action" onClick={onRequestStock} style={{ background: 'var(--brand-main)' }}>
+                        <Plus size={18} /> Request Stock
                     </button>
                 )}
             </div>

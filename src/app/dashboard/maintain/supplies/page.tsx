@@ -19,6 +19,9 @@ import ProductDetailsModal from './components/ProductDetailsModal';
 import SuppliesHeader from './components/SuppliesHeader';
 import SuppliesStats from './components/SuppliesStats';
 import SuppliesFilters from './components/SuppliesFilters';
+import StockRequests from './components/StockRequests';
+import RequestStockModal from './components/RequestStockModal';
+import ClusterReports from './components/ClusterReports';
 import { useSupplies } from './hooks/useSupplies';
 import { DataTableColumn } from '@/components/DataTable/DataTable';
 
@@ -55,7 +58,14 @@ export default function SupplyTrackingPage() {
         isEngineer,
         isAdmin,
         canManageReceive,
-        handleDeleteBatch
+        handleDeleteBatch,
+        stockRequests,
+        pendingRequestsCount,
+        fulfillmentData,
+        setFulfillmentData,
+        isRequestModalOpen,
+        setIsRequestModalOpen,
+        stats
     } = useSupplies();
 
     const historyColumns: DataTableColumn<any>[] = [
@@ -176,12 +186,15 @@ export default function SupplyTrackingPage() {
                 canManageReceive={canManageReceive}
                 onAddInflow={() => setIsReceiveModalOpen(true)}
                 onIssueToEngineer={() => setIsIssueModalOpen(true)}
+                onRequestStock={() => setIsRequestModalOpen(true)}
             />
 
             <SuppliesStats
-                inflowBatches={receivingHistory.length}
-                unitsReceived={receivingHistory.reduce((acc, b) => acc + (b.total_items || 0), 0)}
-                allocations={allocations.length}
+                inflowCount={stats.inflowCount}
+                unitsReceived={stats.unitsReceived}
+                unitsOutbound={stats.unitsOutbound}
+                currentBalance={stats.currentBalance}
+                isEngineer={isEngineer}
             />
 
             <SuppliesFilters
@@ -193,6 +206,7 @@ export default function SupplyTrackingPage() {
                 setStartDate={setStartDate}
                 endDate={endDate}
                 setEndDate={setEndDate}
+                pendingRequestsCount={pendingRequestsCount}
             />
 
             <div className="tab-content">
@@ -273,12 +287,39 @@ export default function SupplyTrackingPage() {
                         />
                     </div>
                 )}
+
+                {activeTab === 'requests' && (
+                    <StockRequests
+                        requests={stockRequests}
+                        loading={loading}
+                        isAdmin={isAdmin}
+                        userId={profile?.id || ''}
+                        onFulfill={(req) => {
+                            setFulfillmentData(req);
+                            setIsIssueModalOpen(true);
+                        }}
+                        onRefresh={() => setRefreshKey(prev => prev + 1)}
+                    />
+                )}
+
+                {activeTab === 'reports' && (
+                    <div className="history-view">
+                        <ClusterReports
+                            companyId={profile?.company_id || ''}
+                            allEngineers={allEngineers}
+                        />
+                    </div>
+                )}
             </div>
 
             <IssueStockModal
                 isOpen={isIssueModalOpen}
-                onClose={() => setIsIssueModalOpen(false)}
+                onClose={() => {
+                    setIsIssueModalOpen(false);
+                    setFulfillmentData(null);
+                }}
                 companyId={profile?.company_id || ''}
+                fulfillmentData={fulfillmentData}
                 onSuccess={() => setRefreshKey(prev => prev + 1)}
             />
 
@@ -308,6 +349,14 @@ export default function SupplyTrackingPage() {
                 isOpen={isProductModalOpen}
                 onClose={() => setIsProductModalOpen(false)}
                 product={selectedProduct}
+            />
+
+            <RequestStockModal
+                isOpen={isRequestModalOpen}
+                onClose={() => setIsRequestModalOpen(false)}
+                companyId={profile?.company_id || ''}
+                engineerId={profile?.id || ''}
+                onSuccess={() => setRefreshKey(prev => prev + 1)}
             />
         </div>
     );

@@ -20,9 +20,10 @@ interface UseIssueStockProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    fulfillmentData?: any;
 }
 
-export function useIssueStock({ companyId, isOpen, onClose, onSuccess }: UseIssueStockProps) {
+export function useIssueStock({ companyId, isOpen, onClose, onSuccess, fulfillmentData }: UseIssueStockProps) {
     const { showToast } = useToast();
     const [clusters, setClusters] = useState<any[]>([]);
     const [engineers, setEngineers] = useState<any[]>([]);
@@ -39,6 +40,39 @@ export function useIssueStock({ companyId, isOpen, onClose, onSuccess }: UseIssu
 
     // Item Staging State
     const [stagedItems, setStagedItems] = useState<StagedItem[]>([]);
+
+    // Pre-filling logic for Stock Requests
+    useEffect(() => {
+        if (isOpen && fulfillmentData && availableItems.length > 0 && engineers.length > 0) {
+            setBatchName(`Fulfillment: Request #${fulfillmentData.id.slice(0, 6)}`);
+            setSelectedEngineerId(fulfillmentData.engineer_id);
+
+            // Find cluster and region for this engineer to auto-set dropdowns
+            const eng = engineers.find(e => e.id === fulfillmentData.engineer_id);
+            if (eng && eng.cluster_ids && eng.cluster_ids.length > 0) {
+                const clusterId = eng.cluster_ids[0]; // Take first cluster
+                setSelectedClusterId(clusterId);
+                const cluster = clusters.find(c => c.id === clusterId);
+                if (cluster) setSelectedRegion(cluster.state);
+            }
+
+            // Map requested items to staged items
+            const staged = fulfillmentData.items.map((item: any) => {
+                const master = availableItems.find(m => m.product_name.toLowerCase() === item.item_name.toLowerCase());
+                return {
+                    id: crypto.randomUUID(),
+                    master_id: master?.id || '',
+                    item_name: item.item_name,
+                    item_category: item.item_category || master?.item_category || 'Parts',
+                    quantity: item.quantity,
+                    unit: item.unit || master?.unit || 'pcs',
+                    notes: `Requested: ${item.quantity} ${item.unit}`,
+                    barcodes: []
+                };
+            });
+            setStagedItems(staged);
+        }
+    }, [isOpen, fulfillmentData, availableItems, engineers]);
     const [selectedMasterItem, setSelectedMasterItem] = useState<any | null>(null);
     const [newItem, setNewItem] = useState({
         item_name: '',
@@ -236,6 +270,11 @@ export function useIssueStock({ companyId, isOpen, onClose, onSuccess }: UseIssu
                     barcodes: item.barcodes
                 }))
             });
+
+            // 3. Mark request as fulfilled if applicable
+            if (fulfillmentData?.id) {
+                await maintainService.processStockRequest(fulfillmentData.id, user?.id || '', 'fulfilled', 'Issued via dashboard');
+            }
 
             showToast(`Successfully issued batch "${batchName}" with ${stagedItems.length} items.`, 'success');
             onSuccess();

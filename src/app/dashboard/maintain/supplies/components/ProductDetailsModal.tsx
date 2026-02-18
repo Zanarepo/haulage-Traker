@@ -250,13 +250,32 @@ export default function ProductDetailsModal({
                                         borderRadius: '0.5rem',
                                         display: 'flex',
                                         alignItems: 'center',
+                                        justifyContent: 'space-between',
                                         gap: '10px'
                                     }}>
-                                        <Hash size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'monospace' }}>{u.barcode}</div>
-                                            {u.sku && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{u.sku}</div>}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                                            <Hash size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'monospace' }}>{u.barcode}</div>
+                                                {u.sku && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{u.sku}</div>}
+                                            </div>
                                         </div>
+                                        <span style={{
+                                            fontSize: '0.6rem',
+                                            fontWeight: 700,
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            textTransform: 'uppercase',
+                                            background: u.status === 'in_stock' ? 'rgba(16, 185, 129, 0.1)' :
+                                                u.status === 'fulfilled' ? 'rgba(59, 130, 246, 0.1)' :
+                                                    'rgba(107, 114, 128, 0.1)',
+                                            color: u.status === 'in_stock' ? '#10b981' :
+                                                u.status === 'fulfilled' ? '#3b82f6' :
+                                                    '#6b7280',
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                            {u.status?.replace('_', ' ')}
+                                        </span>
                                     </div>
                                 ))
                             )}

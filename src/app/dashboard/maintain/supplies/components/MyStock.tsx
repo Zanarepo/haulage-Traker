@@ -119,16 +119,18 @@ export default function MyStock({ engineerId, companyId, adminView, onRowClick, 
                                             >
                                                 <ArrowUpRight size={14} />
                                             </button>
-                                            <button
-                                                className="btn-icon-danger"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteBatch(batch.batch_id || batch.id, batch.batch_name);
-                                                }}
-                                                title="Delete Entire Batch"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {adminView && (
+                                                <button
+                                                    className="btn-icon-danger"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteBatch(batch.batch_id || batch.id, batch.batch_name);
+                                                    }}
+                                                    title="Delete Entire Batch"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     )
                                 }

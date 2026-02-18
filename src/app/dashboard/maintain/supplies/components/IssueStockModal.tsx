@@ -9,10 +9,11 @@ interface IssueStockModalProps {
     isOpen: boolean;
     onClose: () => void;
     companyId: string;
+    fulfillmentData?: any;
     onSuccess: () => void;
 }
 
-export default function IssueStockModal({ isOpen, onClose, companyId, onSuccess }: IssueStockModalProps) {
+export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmentData, onSuccess }: IssueStockModalProps) {
     const {
         loading,
         batchName,
@@ -42,7 +43,7 @@ export default function IssueStockModal({ isOpen, onClose, companyId, onSuccess 
         selectOption,
         handleBlur,
         handleSubmit
-    } = useIssueStock({ companyId, isOpen, onClose, onSuccess });
+    } = useIssueStock({ companyId, isOpen, onClose, onSuccess, fulfillmentData });
 
     return (
         <Modal

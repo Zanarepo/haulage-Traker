@@ -11,6 +11,9 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { PRODUCTS, isSharedItem, ProductId } from '@/config/productConfig';
 import PlanBadge from '@/components/subscription/PlanBadge';
 import UpgradeModal from '@/components/subscription/UpgradeModal';
+import NotificationCenter from '@/components/NotificationCenter';
+import DashboardHeader from './DashboardHeader';
+import { notificationService } from '@/services/notificationService';
 import {
   BarChart3,
   Users as UsersIcon,
@@ -141,14 +144,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const productItems = filteredItems.filter(i => !isSharedItem(i.key));
   const bottomItems = filteredItems.filter(i => i.key === 'settings');
 
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (profile?.id) {
+      loadUnreadCounts();
+      // Polling or subscription could be here
+      const interval = setInterval(loadUnreadCounts, 30000); // Poll every 30s
+      return () => clearInterval(interval);
+    }
+  }, [profile?.id]);
+
+  const loadUnreadCounts = async () => {
+    if (!profile?.id) return;
+    try {
+      const counts = await notificationService.getUnreadCounts(profile.id);
+      setUnreadCounts(counts);
+    } catch (err) {
+      console.warn('[loadUnreadCounts]', err);
+    }
+  };
+
   return (
     <div className="layout-root">
       {/* Mobile Header */}
       <header className="mobile-header">
         <NexHaulLogo size={32} />
-        <button onClick={() => toggleMobileOpen(true)} className="menu-trigger">
-          <Menu size={24} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button onClick={() => toggleMobileOpen(true)} className="menu-trigger">
+            <Menu size={24} />
+          </button>
+        </div>
       </header>
 
       {/* Mobile Backdrop */}
@@ -160,9 +186,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo Section */}
           <div className="logo-section">
             <NexHaulLogo size={40} showText={!isCollapsed} className="brand-link" />
-            <button onClick={toggleSidebar} className="toggle-btn desktop-only">
-              {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <button onClick={toggleSidebar} className="toggle-btn desktop-only">
+                {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
+              </button>
+            </div>
           </div>
 
           {/* ── Product App Bar (only if multi-product) ── */}
@@ -220,7 +248,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Navigation */}
           <nav className="nav-list">
             {/* Shared top items */}
-            {topSharedItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade))}
+            {topSharedItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
 
             {/* Product section separator */}
             {productItems.length > 0 && !isCollapsed && (
@@ -233,11 +261,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
 
             {/* Product-specific items */}
-            {productItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade))}
+            {productItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
 
             {/* Settings at bottom */}
             {bottomItems.length > 0 && <div className="nav-section-divider" />}
-            {bottomItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade))}
+            {bottomItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
           </nav>
 
           {/* Sidebar Footer */}
@@ -268,6 +296,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Container */}
       <main className={`main-container ${isCollapsed ? 'expanded' : ''}`}>
+        <DashboardHeader onNotificationUpdate={loadUnreadCounts} />
         <div className="content-wrapper">
           {children}
         </div>
@@ -294,7 +323,8 @@ function renderNavItem(
   isFreePlan: boolean,
   effectivePlanId: string,
   closeMobile: () => void,
-  setShowSidebarUpgrade: (v: boolean) => void
+  setShowSidebarUpgrade: (v: boolean) => void,
+  unreadCounts: Record<string, number> = {}
 ) {
   const isLocked = (() => {
     if (isFreePlan && item.premiumOnly) return true;
@@ -303,6 +333,10 @@ function renderNavItem(
     }
     return false;
   })();
+
+  // Determine module key for notifications
+  const moduleKey = item.key === 'supplies' ? 'maintain' : item.key; // Example mapping
+  const count = unreadCounts[moduleKey] || 0;
 
   return isLocked ? (
     <button
@@ -325,9 +359,22 @@ function renderNavItem(
       href={item.path}
       className="nav-item"
       onClick={closeMobile}
+      style={{ position: 'relative' }}
     >
-      <span className="nav-icon">{item.icon}</span>
-      {!isCollapsed && <span className="nav-title">{item.title}</span>}
+      <span className="nav-icon">
+        {item.icon}
+        {isCollapsed && count > 0 && (
+          <span className="count-badge-collapsed">{count}</span>
+        )}
+      </span>
+      {!isCollapsed && (
+        <>
+          <span className="nav-title">{item.title}</span>
+          {count > 0 && (
+            <span className="count-badge-sidebar">{count}</span>
+          )}
+        </>
+      )}
     </a>
   );
 }

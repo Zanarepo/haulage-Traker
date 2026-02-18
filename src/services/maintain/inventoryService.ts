@@ -92,14 +92,20 @@ export const inventoryService = {
         return true;
     },
 
-    async getSupplyAllocations(companyId: string, engineerId?: string) {
+    async getSupplyAllocations(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string }) {
         let woQuery = supabase
             .from('maintain_work_orders')
             .select('id')
             .eq('company_id', companyId);
 
-        if (engineerId) {
-            woQuery = woQuery.eq('engineer_id', engineerId);
+        if (filters?.engineerId) {
+            woQuery = woQuery.eq('engineer_id', filters.engineerId);
+        }
+        if (filters?.startDate) {
+            woQuery = woQuery.gte('created_at', filters.startDate);
+        }
+        if (filters?.endDate) {
+            woQuery = woQuery.lte('created_at', filters.endDate);
         }
 
         const { data: woIds } = await woQuery;
@@ -555,8 +561,8 @@ export const inventoryService = {
         return batch;
     },
 
-    async getReceivingHistory(companyId: string) {
-        const { data, error } = await supabase
+    async getReceivingHistory(companyId: string, filters?: { startDate?: string; endDate?: string }) {
+        let query = supabase
             .from('maintain_receiving_batches')
             .select(`
                 *,
@@ -565,8 +571,12 @@ export const inventoryService = {
                     master:master_id(product_name)
                 )
             `)
-            .eq('company_id', companyId)
-            .order('created_at', { ascending: false });
+            .eq('company_id', companyId);
+
+        if (filters?.startDate) query = query.gte('created_at', filters.startDate);
+        if (filters?.endDate) query = query.lte('created_at', filters.endDate);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
 
@@ -579,6 +589,72 @@ export const inventoryService = {
                 product_names: uniqueNames.length > 0 ? uniqueNames.join(', ') : null
             };
         });
+    },
+
+    async getUnifiedSuppliesStats(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string }) {
+        const isPersonal = !!filters?.engineerId;
+
+        // 1. Inflow / Restock Stats
+        let inflowQuery = supabase
+            .from(isPersonal ? 'maintain_inventory_ledger' : 'maintain_receiving_batches')
+            .select(isPersonal ? 'quantity' : 'total_items')
+            .eq('company_id', companyId);
+
+        if (isPersonal) {
+            inflowQuery = inflowQuery.eq('engineer_id', filters.engineerId).eq('transaction_type', 'restock');
+        }
+
+        if (filters?.startDate) inflowQuery = inflowQuery.gte('created_at', filters.startDate);
+        if (filters?.endDate) inflowQuery = inflowQuery.lte('created_at', filters.endDate);
+
+        const { data: inflowData } = await inflowQuery as { data: any[] | null };
+
+        const unitsReceived = isPersonal
+            ? (inflowData || []).reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)
+            : (inflowData || []).reduce((acc: number, b: any) => acc + (b.total_items || 0), 0);
+
+        // 2. Outflow / Usage Stats
+        let outflowQuery = supabase
+            .from('maintain_inventory_ledger')
+            .select('quantity')
+            .eq('company_id', companyId);
+
+        if (isPersonal) {
+            // Engineer's personal usage on work orders
+            outflowQuery = outflowQuery.eq('engineer_id', filters.engineerId).eq('transaction_type', 'usage');
+        } else {
+            // Admin sees total issuance (restock transactions recorded in ledger)
+            outflowQuery = outflowQuery.eq('transaction_type', 'restock');
+        }
+
+        if (filters?.startDate) outflowQuery = outflowQuery.gte('created_at', filters.startDate);
+        if (filters?.endDate) outflowQuery = outflowQuery.lte('created_at', filters.endDate);
+
+        const { data: outflowData } = await outflowQuery;
+        const netOutflow = outflowData?.reduce((acc, i) => acc + Math.abs(i.quantity), 0) || 0;
+
+        // 3. Stock Balance (Warehouse Total vs Engineer Wallet)
+        let balance = 0;
+        if (isPersonal) {
+            const { data: walletData } = await supabase
+                .from('maintain_engineer_stock')
+                .select('balance')
+                .eq('engineer_id', filters.engineerId);
+            balance = walletData?.reduce((acc, i) => acc + (Number(i.balance) || 0), 0) || 0;
+        } else {
+            const { data: stockData } = await supabase
+                .from('maintain_inventory_master')
+                .select('total_in_stock')
+                .eq('company_id', companyId);
+            balance = stockData?.reduce((acc, i) => acc + (i.total_in_stock || 0), 0) || 0;
+        }
+
+        return {
+            inflowCount: isPersonal ? inflowData?.length || 0 : inflowData?.length || 0,
+            unitsReceived,
+            unitsOutbound: netOutflow, // usage for eng, allocations for admin
+            currentBalance: balance
+        };
     },
 
     async getReceivingBatchDetails(batchId: string) {
@@ -645,19 +721,27 @@ export const inventoryService = {
         const batchId = crypto.randomUUID();
 
         for (const item of issuanceData.items) {
-            if (item.barcodes && item.barcodes.length > 0) {
+            const hasBarcodes = item.barcodes && item.barcodes.length > 0;
+
+            // 1. Handle Serialized Units if provided
+            if (hasBarcodes) {
                 const { error: unitErr } = await supabase
                     .from('maintain_inventory_units')
                     .update({
-                        status: 'issued',
+                        status: 'fulfilled', // Flag specific IDs as fulfilled
                         current_holder_id: issuanceData.engineerId,
                         issued_at: new Date().toISOString()
                     })
-                    .in('barcode', item.barcodes)
+                    .in('barcode', item.barcodes || [])
                     .eq('master_id', item.masterId);
 
                 if (unitErr) throw unitErr;
-            } else {
+                // Note: Trigger trg_units_stats_update handles total_in_stock decrement
+            }
+
+            // 2. Decrement the Master stock ONLY for non-serialized items
+            // (Database trigger handles serialized ones automatically on status change)
+            if (!hasBarcodes) {
                 const { data: master } = await supabase
                     .from('maintain_inventory_master')
                     .select('total_in_stock')
@@ -671,6 +755,8 @@ export const inventoryService = {
                         .eq('id', item.masterId);
                 }
             }
+
+            // 3. Record in Ledger
 
             await this.recordStockTransaction({
                 engineer_id: issuanceData.engineerId,
@@ -689,5 +775,107 @@ export const inventoryService = {
         }
 
         return batchId;
+    },
+
+    async createStockRequest(companyId: string, engineerId: string, items: any[], notes?: string) {
+        const { data, error } = await supabase
+            .from('maintain_stock_requests')
+            .insert({
+                company_id: companyId,
+                engineer_id: engineerId,
+                items,
+                status: 'pending',
+                notes
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getStockRequests(companyId: string, filters?: { engineerId?: string; status?: string }) {
+        let query = supabase
+            .from('maintain_stock_requests')
+            .select(`
+                *,
+                engineer:engineer_id(full_name)
+            `)
+            .eq('company_id', companyId);
+
+        if (filters?.engineerId) query = query.eq('engineer_id', filters.engineerId);
+        if (filters?.status) query = query.eq('status', filters.status);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+    },
+
+    async updateStockRequest(requestId: string, updates: { items?: any[]; notes?: string }) {
+        const { data, error } = await supabase
+            .from('maintain_stock_requests')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', requestId)
+            .eq('status', 'pending') // Only allow editing pending requests
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    async processStockRequest(requestId: string, adminId: string, status: 'approved' | 'rejected' | 'fulfilled', adminNotes?: string) {
+        const { data, error } = await supabase
+            .from('maintain_stock_requests')
+            .update({
+                status,
+                approved_by: adminId,
+                admin_notes: adminNotes,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', requestId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getMonthlyClusterInventory(companyId: string, clusterId: string, month: string) {
+        // month format: YYYY-MM
+        const startDate = `${month}-01T00:00:00.000Z`;
+        const endDate = new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1)).toISOString();
+
+        const { data: ledger, error } = await supabase
+            .from('maintain_inventory_ledger')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('engineer_id', clusterId)
+            .gte('created_at', startDate)
+            .lt('created_at', endDate);
+
+        if (error) throw error;
+
+        // Calculate opening balance (all transactions before startDate)
+        const { data: before, error: beforeErr } = await supabase
+            .from('maintain_inventory_ledger')
+            .select('quantity')
+            .eq('company_id', companyId)
+            .eq('engineer_id', clusterId)
+            .lt('created_at', startDate);
+
+        if (beforeErr) throw beforeErr;
+
+        const opening = (before || []).reduce((acc, curr) => acc + curr.quantity, 0);
+        const received = (ledger || []).filter(l => l.transaction_type === 'restock').reduce((acc, curr) => acc + curr.quantity, 0);
+        const used = Math.abs((ledger || []).filter(l => l.transaction_type === 'usage').reduce((acc, curr) => acc + curr.quantity, 0));
+        const closing = opening + received - used;
+
+        return {
+            month,
+            opening,
+            received,
+            used,
+            closing
+        };
     }
 };

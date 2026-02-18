@@ -41,15 +41,15 @@
 /* Stats Chip System */
 .supplies-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
 }
 
 .stat-chip {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 1.25rem;
-    padding: 1.5rem;
+    border-radius: 1rem;
+    padding: 1rem;
     display: flex;
     gap: 1.25rem;
     align-items: center;
@@ -63,9 +63,9 @@
 }
 
 .chip-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,13 +78,13 @@
 }
 
 .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: var(--text-main);
 }
 
 .stat-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
