@@ -64,14 +64,83 @@ async function getAdminStats(companyId: string) {
     ];
 }
 
+
 /**
- * Get driver specific stats
+ * Get cluster-specific stats for Site Engineers (InfraSupply)
  */
+async function getEngineerStats(companyId: string, clusterIds: string[], userId: string) {
+    if (!clusterIds || clusterIds.length === 0) {
+        return [
+            { title: "Active Trips", value: "0", sub: "No assigned clusters", color: "blue" },
+            { title: "Product Dispensed", value: "0 L", sub: "This month", color: "emerald" },
+            { title: "Audit Alerts", value: "0", sub: "Requires attention", color: "rose" },
+            { title: "Active Clusters", value: "0", sub: "Your regions", color: "purple" }
+        ];
+    }
+
+    // 1. Active Trips in these clusters
+    const { count: activeTrips } = await supabase
+        .from('trips')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .in('cluster_id', clusterIds);
+
+    // 2. Fuel Dispensed by this engineer (Current month)
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { data: dispensingData } = await supabase
+        .from('dispensing_logs')
+        .select('quantity_dispensed, community_provision_qty')
+        .gte('created_at', startOfMonth.toISOString())
+        .eq('confirmed_by', userId);
+
+    const totalFuel = (dispensingData || []).reduce(
+        (sum, log) => sum + (Number(log.quantity_dispensed) || 0) + (Number(log.community_provision_qty) || 0),
+        0
+    );
+
+    // 3. Maintenance Reports (Individual Site Visits)
+    const { count: reportCount } = await supabase
+        .from('maintain_diesel_readings')
+        .select('*', { count: 'exact', head: true })
+        .eq('recorded_by', userId)
+        .gte('created_at', startOfMonth.toISOString());
+
+    return [
+        {
+            title: "Active Trips",
+            value: activeTrips?.toString() || "0",
+            sub: "In your clusters",
+            color: "blue"
+        },
+        {
+            title: "Confirmed Supplies",
+            value: `${totalFuel.toLocaleString()} L`,
+            sub: "Confirmed this month",
+            color: "emerald"
+        },
+        {
+            title: "Visit Reports",
+            value: reportCount?.toString() || "0",
+            sub: "Submitted this month",
+            color: "purple"
+        },
+        {
+            title: "My Clusters",
+            value: clusterIds.length.toString(),
+            sub: "Assigned regions",
+            color: "blue"
+        }
+    ];
+}
+
 async function getDriverStats(userId: string) {
     // 1. Active Trip
     const { data: activeTrip } = await supabase
         .from('trips')
-        .select('truck_plate_number, status')
+        .select('id, truck_plate_number, status')
         .eq('driver_id', userId)
         .eq('status', 'active')
         .maybeSingle();
@@ -151,9 +220,12 @@ export const dashboardService = {
     /**
      * Get high-level stats based on user role
      */
-    getStats: async (companyId: string, role: string, userId: string) => {
+    getStats: async (companyId: string, role: string, userId: string, clusterIds?: string[]) => {
         if (role === 'driver') {
             return getDriverStats(userId);
+        }
+        if (role === 'site_engineer' && clusterIds) {
+            return getEngineerStats(companyId, clusterIds, userId);
         }
         return getAdminStats(companyId);
     },
@@ -161,13 +233,13 @@ export const dashboardService = {
     /**
      * Get recent activities
      */
-    getActivities: async (companyId: string, role: string, userId: string) => {
+    getActivities: async (companyId: string, role: string, userId: string, clusterIds?: string[]) => {
         // Fetch dispensing logs joined with trips and users
         let query = supabase
             .from('dispensing_logs')
             .select(`
                 *,
-                sites (name),
+                sites!inner (name, cluster_id),
                 trip:trips!inner (
                     driver_id,
                     truck_plate_number,
@@ -179,6 +251,8 @@ export const dashboardService = {
 
         if (role === 'driver') {
             query = query.eq('trip.driver_id', userId);
+        } else if (role === 'site_engineer') {
+            query = query.eq('confirmed_by', userId);
         }
 
         const { data: logs, error } = await query;

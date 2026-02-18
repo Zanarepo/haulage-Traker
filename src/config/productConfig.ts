@@ -35,6 +35,7 @@ export const PRODUCTS: Record<ProductId, ProductModule> = {
             'reconciliation',
             'tracking',
             'documents',
+            'supplies',
         ],
     },
     maintain: {

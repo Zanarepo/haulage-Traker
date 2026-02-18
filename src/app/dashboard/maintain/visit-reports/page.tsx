@@ -20,7 +20,11 @@ export default function VisitReportsPage() {
     const loadReports = async () => {
         if (!profile?.company_id) return;
         try {
-            const data = await maintainService.getVisitReports(profile.company_id);
+            const isEngineer = profile?.role === 'site_engineer';
+            const data = await maintainService.getVisitReports(
+                profile.company_id,
+                isEngineer ? profile.id : undefined
+            );
             setReports(data);
         } catch (err) {
             console.error('[VisitReports]', err);

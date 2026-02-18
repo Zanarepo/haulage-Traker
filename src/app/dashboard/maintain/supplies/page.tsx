@@ -1,71 +1,314 @@
 "use client";
 
+import './supplies.css';
 import '../maintain.css';
 import '../../dashboard.css';
-import { useAuth } from '@/hooks/useAuth';
-import { maintainService } from '@/services/maintainService';
-import { useState, useEffect } from 'react';
-import { PackageCheck } from 'lucide-react';
+import {
+    History,
+    ArrowRightLeft,
+    Trash2,
+    Search
+} from 'lucide-react';
+import MyStock from './components/MyStock';
+import IssueStockModal from './components/IssueStockModal';
+import ReceiveStockModal from './components/ReceiveStockModal';
+import CentralInventory from './components/CentralInventory';
+import DataTable from '@/components/DataTable/DataTable';
+import BatchDetailsModal from './components/BatchDetailsModal';
+import ProductDetailsModal from './components/ProductDetailsModal';
+import SuppliesHeader from './components/SuppliesHeader';
+import SuppliesStats from './components/SuppliesStats';
+import SuppliesFilters from './components/SuppliesFilters';
+import { useSupplies } from './hooks/useSupplies';
+import { DataTableColumn } from '@/components/DataTable/DataTable';
 
 export default function SupplyTrackingPage() {
-    const { profile } = useAuth();
-    const [allocations, setAllocations] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const {
+        profile,
+        allocations,
+        restockHistory,
+        receivingHistory,
+        loading,
+        activeTab,
+        setActiveTab,
+        isIssueModalOpen,
+        setIsIssueModalOpen,
+        isReceiveModalOpen,
+        setIsReceiveModalOpen,
+        restockProduct,
+        setRestockProduct,
+        refreshKey,
+        setRefreshKey,
+        selectedEngineerId,
+        setSelectedEngineerId,
+        allEngineers,
+        startDate,
+        setStartDate,
+        endDate,
+        setEndDate,
+        selectedBatch,
+        setSelectedBatch,
+        isProductModalOpen,
+        setIsProductModalOpen,
+        selectedProduct,
+        setSelectedProduct,
+        isEngineer,
+        isAdmin,
+        canManageReceive,
+        handleDeleteBatch
+    } = useSupplies();
 
-    useEffect(() => {
-        if (!profile?.company_id) return;
-        loadAllocations();
-    }, [profile?.company_id]);
-
-    const loadAllocations = async () => {
-        if (!profile?.company_id) return;
-        try {
-            const data = await maintainService.getSupplyAllocations(profile.company_id);
-            setAllocations(data);
-        } catch (err) {
-            console.error('[Supplies]', err);
-        } finally {
-            setLoading(false);
+    const historyColumns: DataTableColumn<any>[] = [
+        {
+            key: 'batch_name',
+            label: 'Batch / Reference',
+            fullWidth: true,
+            render: (batch) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span className="item-pill" style={{ cursor: 'pointer' }}>
+                        {batch.batch_name || 'Individual Restock'}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        {new Date(batch.created_at).toLocaleDateString()}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: 'engineer',
+            label: 'Assigned To',
+            render: (batch) => batch.engineer?.full_name || '—'
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (batch) => (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        className="btn-icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBatch({ id: batch.batch_id || batch.id, name: batch.batch_name || 'Individual Restock', type: 'issuance' });
+                        }}
+                        title="View Batch Details"
+                    >
+                        <ArrowRightLeft size={14} />
+                    </button>
+                    {isAdmin && (
+                        <button
+                            className="btn-icon-danger"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBatch(batch);
+                            }}
+                            title="Delete Entire Batch"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
+                </div>
+            )
         }
-    };
+    ];
+
+    const receivingHistoryColumns: DataTableColumn<any>[] = [
+        {
+            key: 'reference_no',
+            label: 'Batch ID / Supplier',
+            fullWidth: true,
+            render: (batch) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span className="item-pill" style={{ cursor: 'pointer' }}>
+                        {batch.reference_no || `REC-${batch.id.slice(0, 8)}`}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 600 }}>
+                        {batch.product_names || 'No items listed'}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        {batch.supplier_name || 'Generic Supplier'} · {new Date(batch.created_at).toLocaleDateString()}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: 'total_items',
+            label: 'Qty',
+            render: (batch) => <div className="qty-tag"><strong>{batch.total_items}</strong> pcs</div>
+        },
+        {
+            key: 'total_value',
+            label: 'Value',
+            render: (batch) => <strong>{new Intl.NumberFormat('en-NG').format(batch.total_value)}</strong>
+        },
+        {
+            key: 'receiver',
+            label: 'Received By',
+            render: (batch) => batch.receiver?.full_name || '—'
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (batch) => (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        className="btn-icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBatch({ id: batch.id, name: batch.reference_no || `REC-${batch.id.slice(0, 8)}`, type: 'inflow' });
+                        }}
+                        title="View Inflow Details"
+                    >
+                        <ArrowRightLeft size={14} />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
+    const historyPage = 1; // Simplified for now
+    const paginatedHistory = restockHistory.slice(0, 8);
 
     return (
-        <div className="maintain-page">
-            <header className="page-header">
-                <div className="header-info">
-                    <h1>Supply Tracking</h1>
-                    <p>Track allocated vs. used vs. returned supplies per work order.</p>
-                </div>
-            </header>
+        <div className="supplies-page">
+            <SuppliesHeader
+                isEngineer={isEngineer}
+                isAdmin={isAdmin}
+                canManageReceive={canManageReceive}
+                onAddInflow={() => setIsReceiveModalOpen(true)}
+                onIssueToEngineer={() => setIsIssueModalOpen(true)}
+            />
 
-            <div className="activity-list">
-                {loading && <div className="maintain-empty">Loading supply allocations…</div>}
-                {!loading && allocations.length === 0 && (
-                    <div className="maintain-empty">
-                        <PackageCheck size={32} />
-                        <p>No supply allocations yet. Supplies are tracked per work order.</p>
+            <SuppliesStats
+                inflowBatches={receivingHistory.length}
+                unitsReceived={receivingHistory.reduce((acc, b) => acc + (b.total_items || 0), 0)}
+                allocations={allocations.length}
+            />
+
+            <SuppliesFilters
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                isAdmin={isAdmin}
+                isEngineer={isEngineer}
+                startDate={startDate}
+                setStartDate={setStartDate}
+                endDate={endDate}
+                setEndDate={setEndDate}
+            />
+
+            <div className="tab-content">
+                {activeTab === 'inventory' && isAdmin && (
+                    <CentralInventory
+                        companyId={profile?.company_id || ''}
+                        refreshKey={refreshKey}
+                        canManage={canManageReceive}
+                        onRestock={(product) => {
+                            setRestockProduct(product);
+                            setIsReceiveModalOpen(true);
+                        }}
+                        onViewDetails={(product) => {
+                            setSelectedProduct(product);
+                            setIsProductModalOpen(true);
+                        }}
+                    />
+                )}
+
+                {activeTab === 'stock' && (
+                    <div className="stock-view-wrapper">
+                        {!isEngineer && (
+                            <div className="engineer-picker-bar" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-card)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                                <Search size={16} />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>FILTER WALLET BY CLUSTER:</span>
+                                <select
+                                    className="engineer-select"
+                                    value={selectedEngineerId || ''}
+                                    onChange={(e) => setSelectedEngineerId(e.target.value)}
+                                    style={{ padding: '0.5rem', borderRadius: '0.4rem', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', minWidth: '200px' }}
+                                >
+                                    <option value="">Select Cluster (Engineer)...</option>
+                                    {allEngineers.map(eng => (
+                                        <option key={eng.id} value={eng.id}>{eng.full_name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <MyStock
+                            key={`${refreshKey}-${selectedEngineerId || profile?.id}`}
+                            engineerId={isEngineer ? (profile?.id || '') : (selectedEngineerId || '')}
+                            companyId={profile?.company_id || ''}
+                            adminView={!isEngineer}
+                            onRowClick={(batch) => setSelectedBatch({
+                                id: batch.batch_id || batch.id,
+                                name: batch.batch_name || 'Individual Restock',
+                                type: 'issuance'
+                            })}
+                            onSuccess={() => setRefreshKey(prev => prev + 1)}
+                        />
                     </div>
                 )}
-                {allocations.map((a) => {
-                    const waste = a.qty_allocated - a.qty_used - a.qty_returned;
-                    return (
-                        <div key={a.id} className="activity-item">
-                            <div className="item-left">
-                                <div className="avatar" style={{ background: waste > 0 ? '#ef4444' : '#10b981' }}>
-                                    {a.item_category?.slice(0, 2).toUpperCase() || '📦'}
-                                </div>
-                                <div className="item-info">
-                                    <p><span>{a.item_name}</span> — {(a.work_order as any)?.title || 'Work Order'}</p>
-                                    <div className="time">
-                                        Allocated: {a.qty_allocated} {a.unit} · Used: {a.qty_used} · Returned: {a.qty_returned}
-                                        {waste > 0 && ` · ⚠️ Waste: ${waste} ${a.unit}`}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+
+                {activeTab === 'history' && (
+                    <div className="history-view">
+                        <DataTable
+                            columns={historyColumns}
+                            data={paginatedHistory}
+                            keyExtractor={(item) => item.batch_id || item.id}
+                            loading={loading}
+                            onRowClick={(batch) => setSelectedBatch({ id: batch.batch_id || batch.id, name: batch.batch_name || 'Individual Restock', type: 'issuance' })}
+                            emptyMessage="No restock logs found."
+                            emptyIcon={<History size={48} />}
+                        />
+                    </div>
+                )}
+
+                {activeTab === 'receiving_history' && isAdmin && (
+                    <div className="history-view">
+                        <DataTable
+                            columns={receivingHistoryColumns}
+                            data={receivingHistory}
+                            keyExtractor={(item) => item.id}
+                            loading={loading}
+                            onRowClick={(batch) => setSelectedBatch({ id: batch.id, name: batch.reference_no || `REC-${batch.id.slice(0, 8)}`, type: 'inflow' })}
+                            emptyMessage="No stock inflow history found."
+                            emptyIcon={<ArrowRightLeft size={48} />}
+                        />
+                    </div>
+                )}
             </div>
+
+            <IssueStockModal
+                isOpen={isIssueModalOpen}
+                onClose={() => setIsIssueModalOpen(false)}
+                companyId={profile?.company_id || ''}
+                onSuccess={() => setRefreshKey(prev => prev + 1)}
+            />
+
+            <ReceiveStockModal
+                isOpen={isReceiveModalOpen}
+                onClose={() => {
+                    setIsReceiveModalOpen(false);
+                    setRestockProduct(null);
+                }}
+                companyId={profile?.company_id || ''}
+                userId={profile?.id || ''}
+                prefillProduct={restockProduct}
+                onSuccess={() => setRefreshKey(prev => prev + 1)}
+            />
+
+            <BatchDetailsModal
+                isOpen={!!selectedBatch}
+                onClose={() => setSelectedBatch(null)}
+                batchId={selectedBatch?.id || null}
+                batchName={selectedBatch?.name || ''}
+                batchType={selectedBatch?.type}
+                mode="batch"
+                onSuccess={() => setRefreshKey(prev => prev + 1)}
+            />
+
+            <ProductDetailsModal
+                isOpen={isProductModalOpen}
+                onClose={() => setIsProductModalOpen(false)}
+                product={selectedProduct}
+            />
         </div>
     );
 }

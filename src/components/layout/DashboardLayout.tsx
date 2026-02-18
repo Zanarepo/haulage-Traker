@@ -41,7 +41,8 @@ import {
   CalendarClock,
   ShieldAlert,
   FileBarChart,
-  BookOpen
+  BookOpen,
+  Barcode
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -77,7 +78,8 @@ const allSidebarItems: SidebarItem[] = [
   { key: 'work-orders', title: 'Work Orders', icon: <ClipboardList size={20} />, path: '/dashboard/maintain/work-orders', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
   { key: 'assets', title: 'Asset Registry', icon: <Cpu size={20} />, path: '/dashboard/maintain/assets', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
   { key: 'visit-reports', title: 'Visit Reports', icon: <Camera size={20} />, path: '/dashboard/maintain/visit-reports', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
-  { key: 'supplies', title: 'Supply Tracking', icon: <PackageCheck size={20} />, path: '/dashboard/maintain/supplies', roles: ['superadmin', 'admin', 'md', 'accountant'] },
+  { key: 'supplies', title: 'Supply Tracking', icon: <PackageCheck size={20} />, path: '/dashboard/maintain/supplies', roles: ['superadmin', 'admin', 'md', 'accountant', 'site_engineer'] },
+  { key: 'receiving', title: 'Stock Receiving', icon: <Barcode size={20} />, path: '/dashboard/maintain/receiving', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { key: 'schedule', title: 'PM Schedule', icon: <CalendarClock size={20} />, path: '/dashboard/maintain/schedule', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
   { key: 'safety', title: 'Safety Compliance', icon: <ShieldAlert size={20} />, path: '/dashboard/maintain/safety', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
   { key: 'reports', title: 'Reports Centre', icon: <FileBarChart size={20} />, path: '/dashboard/maintain/reports', roles: ['superadmin', 'admin', 'md', 'accountant'] },

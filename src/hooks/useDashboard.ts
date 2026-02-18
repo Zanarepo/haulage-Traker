@@ -47,8 +47,18 @@ export function useDashboard() {
         (async () => {
             try {
                 const [realStats, realActivities] = await Promise.all([
-                    dashboardService.getStats(profile.company_id, profile.role, profile.id),
-                    dashboardService.getActivities(profile.company_id, profile.role, profile.id)
+                    dashboardService.getStats(
+                        profile.company_id,
+                        profile.role,
+                        profile.id,
+                        (profile as any).cluster_ids
+                    ),
+                    dashboardService.getActivities(
+                        profile.company_id,
+                        profile.role,
+                        profile.id,
+                        (profile as any).cluster_ids
+                    )
                 ]);
 
                 const now = new Date().toISOString();
@@ -66,7 +76,7 @@ export function useDashboard() {
                 console.error('[Dashboard] Fetch failed:', err);
             }
         })();
-    }, [isOnline, profile?.role, profile?.company_id, profile?.id]);
+    }, [isOnline, profile?.role, profile?.company_id, profile?.id, (profile as any)?.cluster_ids]);
 
     return useMemo(() => ({
         profile,

@@ -27,7 +27,16 @@ export function useAssets() {
         if (!profile?.company_id) return;
         try {
             setLoading(true);
-            const data = await maintainService.getAssets(profile.company_id);
+            const isEngineer = profile?.role === 'site_engineer';
+
+            let data;
+            if (isEngineer) {
+                // Engineers only see assets in their assigned clusters
+                data = await maintainService.getAssetsForEngineer(profile.company_id, profile.id);
+            } else {
+                data = await maintainService.getAssets(profile.company_id);
+            }
+
             setAssets(data || []);
         } catch (error: any) {
             console.error('[Assets] Load failed:', error);
@@ -35,7 +44,7 @@ export function useAssets() {
         } finally {
             setLoading(false);
         }
-    }, [profile?.company_id, showToast]);
+    }, [profile?.company_id, profile?.id, profile?.role, showToast]);
 
     useEffect(() => {
         loadAssets();

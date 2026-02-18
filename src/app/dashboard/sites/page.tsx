@@ -55,7 +55,7 @@ export default function SitesManagementPage() {
     const [deletingEntity, setDeletingEntity] = useState<any>(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-    const { plan, isFreePlan, effectivePlanId, canAddClient, canAddSite } = useSubscription(profile?.company_id || null);
+    const { plan, effectivePlanId, canAddClient, canAddSite } = useSubscription(profile?.company_id || null);
 
     const handleAddEntity = async () => {
         try {

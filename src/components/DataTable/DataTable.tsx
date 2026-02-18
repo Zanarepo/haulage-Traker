@@ -20,6 +20,8 @@ export interface DataTableColumn<T> {
     fullWidth?: boolean;
     /** Hide this column on mobile card view */
     hideOnMobile?: boolean;
+    /** Text alignment */
+    align?: 'left' | 'center' | 'right';
 }
 
 export interface DataTableFilter {
@@ -153,7 +155,7 @@ export default function DataTable<T>({
                             <thead>
                                 <tr>
                                     {columns.map((col) => (
-                                        <th key={col.key}>{col.label}</th>
+                                        <th key={col.key} style={{ textAlign: col.align || 'left' }}>{col.label}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -168,6 +170,7 @@ export default function DataTable<T>({
                                             <td
                                                 key={col.key}
                                                 data-label={col.mobileLabel || col.label}
+                                                style={{ textAlign: col.align || 'left' }}
                                                 {...(col.fullWidth ? { 'data-full': '' } : {})}
                                                 {...(col.hideOnMobile ? { 'data-hide-mobile': '' } : {})}
                                             >

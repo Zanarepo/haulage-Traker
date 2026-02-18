@@ -414,6 +414,9 @@ export default function WorkOrderDetailsModal({
                         <div className="detail-section" style={{ marginTop: '1rem' }}>
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
                                 <ClipboardList size={14} /> INVENTORY USED
+                                <span style={{ fontSize: '0.65rem', fontWeight: 400, marginLeft: 'auto', opacity: 0.7 }}>
+                                    (Deducted from your Stock Wallet)
+                                </span>
                             </label>
 
                             {/* Inventory List */}

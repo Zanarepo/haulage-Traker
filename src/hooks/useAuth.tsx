@@ -77,19 +77,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('*')
+                .select('*, user_cluster_assignments(cluster_id)')
                 .eq('id', userId)
                 .single();
 
             if (error) throw error;
-            setProfile(data);
+
+            // Flatten cluster assignments into cluster_ids array
+            const cluster_ids = (data as any).user_cluster_assignments?.map((uca: any) => uca.cluster_id) || [];
+            const enrichedProfile = { ...data, cluster_ids };
+
+            setProfile(enrichedProfile);
 
             // Cache to IndexedDB for offline use
             const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user && data) {
+            if (session?.user && enrichedProfile) {
                 await setItem<CachedAuth>(STORES.AUTH, AUTH_CACHE_KEY, {
                     user: session.user,
-                    profile: data,
+                    profile: enrichedProfile,
                 });
             }
         } catch (error) {
