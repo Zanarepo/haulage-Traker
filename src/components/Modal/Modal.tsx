@@ -7,7 +7,7 @@ import '@/styles/modals.css';
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
+    title: React.ReactNode;
     children: React.ReactNode;
     footer?: React.ReactNode;
     maxWidth?: string;

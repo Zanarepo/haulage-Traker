@@ -143,3 +143,151 @@
     color: var(--text-muted);
     font-weight: 500;
 }
+
+/* ─── Responsive Adjustments (Premium Card Pattern) ───── */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-header p {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin-top: 0.25rem;
+    }
+
+    .btn-add-entity {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .tab-switcher {
+        width: 100%;
+        display: flex;
+    }
+
+    .tab-btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .entity-stats {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .stat-chip {
+        width: 100%;
+    }
+
+    /* Premium DataTable Mobile Cards */
+    .sites-page .dt-table tbody tr {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 1.25rem;
+        margin-bottom: 1.25rem;
+        display: block;
+        overflow: hidden;
+        padding: 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Card Header (First Cell) */
+    .sites-page .dt-table td:first-child {
+        display: block;
+        background: var(--bg-hover);
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .sites-page .dt-table td:first-child::before {
+        content: 'NAME & DETAILS';
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        letter-spacing: 0.05em;
+    }
+
+    .sites-page .dt-table td:first-child .item-info {
+        flex-direction: row;
+        gap: 12px;
+    }
+
+    .sites-page .dt-table td:first-child .item-name {
+        font-size: 1.1rem;
+    }
+
+    /* Standard Data Rows */
+    .sites-page .dt-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--border-color-low);
+        min-height: 50px;
+    }
+
+    .sites-page .dt-table td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .sites-page .dt-table td>span,
+    .sites-page .dt-table td>div {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    /* Card Action Footer (Last Cell) */
+    .sites-page .dt-table td:last-child {
+        background: var(--bg-hover);
+        justify-content: center;
+        padding: 1rem;
+        border-bottom: none;
+        margin-top: 0.5rem;
+    }
+
+    .sites-page .dt-table td:last-child::before {
+        display: none;
+    }
+
+    /* Ensure actions are horizontal */
+    .sites-page .dt-table td:last-child .row-actions,
+    .sites-page .dt-table td:last-child .actions-cell {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 12px !important;
+        width: 100% !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .sites-page .dt-table td:last-child .row-actions .row-action-btn {
+        width: 42px !important;
+        height: 42px !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+}

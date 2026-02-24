@@ -215,4 +215,135 @@
         flex-direction: column;
         align-items: stretch;
     }
+
+    /* --- Trips DataTable Mobile Overrides --- */
+    .trips-content .dt-table tbody tr {
+        margin-bottom: 1.25rem;
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        background: var(--bg-card);
+    }
+
+    .trips-content .dt-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        min-height: 48px;
+    }
+
+    .trips-content .dt-table td:last-child {
+        border-bottom: none;
+        background: var(--bg-hover);
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    /* First cell acts as card header */
+    .trips-content .dt-table td[data-full]:first-child {
+        background: var(--bg-hover);
+        border-radius: 1rem 1rem 0 0;
+        padding: 1rem;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center;
+    }
+
+    .trips-content .dt-table td[data-full]:first-child::before {
+        content: 'TRIP LOG';
+        margin-bottom: 0;
+        background: #3b82f620;
+        color: #3b82f6;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 8px;
+        letter-spacing: 0.1em;
+    }
+
+    .trips-content .dt-table td[data-full]:last-child::before {
+        margin-bottom: 10px;
+    }
+
+    .trips-content .dt-table td::before {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-weight: 700;
+        min-width: 100px;
+    }
+}
+
+.history-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media (max-width: 480px) {
+    .history-modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .history-modal-footer>button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Trip History Modal Specifics */
+.history-trip-header {
+    padding: 1.25rem;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 0.8fr auto;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.history-trip-expanded-content {
+    padding: 0 1.25rem 1.25rem 1.25rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-main);
+}
+
+.history-trip-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .history-trip-header {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .history-trip-header>div:nth-child(5) {
+        grid-area: 3 / 2 / 4 / 3;
+        justify-self: end;
+    }
+
+    .history-trip-details-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .history-trip-header {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .history-trip-header>div:nth-child(5) {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+    }
+
+    .history-container {
+        padding-right: 0 !important;
+    }
 }

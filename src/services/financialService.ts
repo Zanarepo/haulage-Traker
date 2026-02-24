@@ -16,7 +16,7 @@ export const financialService = {
                         clients!client_id (name, haulage_rate_per_liter),
                         driver:users!driver_id (full_name)
                     ),
-                    sites!site_id (name)
+                    sites!site_id (name, cluster_id)
                 )
             `)
             .order('created_at', { ascending: false });

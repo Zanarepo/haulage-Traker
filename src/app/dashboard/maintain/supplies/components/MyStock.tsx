@@ -33,9 +33,9 @@ export default function MyStock({ engineerId, companyId, adminView, onRowClick, 
     return (
         <div className="my-stock-container">
             <section className="batch-wallet-section">
-                <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="section-header">
                     <LayoutGrid size={18} />
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Cluster Batch Wallet</h2>
+                    <h2>Cluster Batch Wallet</h2>
                 </div>
 
                 {loading ? (
@@ -47,6 +47,7 @@ export default function MyStock({ engineerId, companyId, adminView, onRowClick, 
                                 {
                                     key: 'batch_name',
                                     label: 'Batch / Reference',
+                                    mobileLabel: 'Batch ID',
                                     fullWidth: true,
                                     render: (batch: any) => (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -62,6 +63,7 @@ export default function MyStock({ engineerId, companyId, adminView, onRowClick, 
                                 {
                                     key: 'items',
                                     label: 'Items & Quantities',
+                                    mobileLabel: 'Inventory Summary',
                                     render: (batch: any) => {
                                         const items = batch.items || [];
                                         if (items.length === 1) {
@@ -106,6 +108,7 @@ export default function MyStock({ engineerId, companyId, adminView, onRowClick, 
                                 {
                                     key: 'actions',
                                     label: 'Actions',
+                                    mobileLabel: 'Review',
                                     align: 'right',
                                     render: (batch: any) => (
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
@@ -146,10 +149,10 @@ export default function MyStock({ engineerId, companyId, adminView, onRowClick, 
                 )}
             </section>
 
-            <section className="ledger-section" style={{ marginTop: '3rem' }}>
-                <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <section className="ledger-section">
+                <div className="section-header">
                     <HistoryIcon size={18} />
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Recent Movement</h2>
+                    <h2>Recent Movement</h2>
                 </div>
                 <div className="activity-list">
                     {ledger.length === 0 ? (

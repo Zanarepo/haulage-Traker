@@ -96,11 +96,7 @@ export default function WorkOrdersPage() {
 
             {/* Search + Filters */}
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div className="search-field" style={{
-                    flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center',
-                    gap: '0.5rem', background: 'var(--bg-hover)', padding: '0 0.75rem',
-                    height: '40px', borderRadius: '0.6rem', border: '1px solid var(--border-color)'
-                }}>
+                <div className="search-field">
                     <Search size={16} style={{ color: 'var(--text-muted)' }} />
                     <input
                         type="text"

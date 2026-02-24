@@ -69,9 +69,9 @@ export function useClusters(): UseClustersReturn {
 
     // Filtered clusters
     const filteredClusters = clusters.filter((c) => {
-        // First, check roles
-        const isEngineer = profile?.role === 'site_engineer';
-        if (isEngineer && profile?.cluster_ids) {
+        // First, check roles for regional restriction
+        const isRegionalRole = profile?.role === 'admin' || profile?.role === 'site_engineer';
+        if (isRegionalRole && profile?.cluster_ids) {
             if (!profile.cluster_ids.includes(c.id)) return false;
         }
 
@@ -86,8 +86,9 @@ export function useClusters(): UseClustersReturn {
         return true;
     });
 
-    // We also want the base 'clusters' list to be filtered for engineers in some contexts (like dropdowns)
-    const visibleClusters = profile?.role === 'site_engineer' && profile?.cluster_ids
+    // We also want the base 'clusters' list to be filtered for regional roles in some contexts (like dropdowns)
+    const isRegionalRole = profile?.role === 'admin' || profile?.role === 'site_engineer';
+    const visibleClusters = isRegionalRole && profile?.cluster_ids
         ? clusters.filter(c => profile.cluster_ids?.includes(c.id))
         : clusters;
 

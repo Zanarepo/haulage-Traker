@@ -17,9 +17,9 @@ export function useSites() {
             setLoading(true);
             const data = await siteService.getSites();
 
-            // Filter by cluster assignment if site_engineer
+            // Filter by cluster assignment if site_engineer or admin
             let visibleSites = data || [];
-            if (profile?.role === 'site_engineer' && profile?.cluster_ids) {
+            if ((profile?.role === 'site_engineer' || profile?.role === 'admin') && profile?.cluster_ids) {
                 visibleSites = visibleSites.filter(s => profile.cluster_ids?.includes(s.cluster_id));
             }
 

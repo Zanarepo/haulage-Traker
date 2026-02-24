@@ -53,6 +53,8 @@ export interface DataTableProps<T> {
     emptyMessage?: string;
     /** On row click handler */
     onRowClick?: (item: T) => void;
+    /** Dynamic row class */
+    getRowClassName?: (item: T) => string;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -73,6 +75,7 @@ export default function DataTable<T>({
     emptyIcon,
     emptyMessage = 'No results found.',
     onRowClick,
+    getRowClassName
 }: DataTableProps<T>) {
     const {
         paginatedItems,
@@ -164,7 +167,7 @@ export default function DataTable<T>({
                                     <tr
                                         key={keyExtractor(item)}
                                         onClick={() => onRowClick?.(item)}
-                                        className={onRowClick ? 'dt-clickable-row' : ''}
+                                        className={`${onRowClick ? 'dt-clickable-row' : ''} ${getRowClassName?.(item) || ''}`}
                                     >
                                         {columns.map((col) => (
                                             <td

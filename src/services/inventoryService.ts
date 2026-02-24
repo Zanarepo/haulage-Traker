@@ -8,12 +8,12 @@ export const inventoryService = {
     async getClients(companyId: string) {
         const { data, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sites(cluster_id)')
             .eq('company_id', companyId)
             .order('name');
 
         if (error) throw error;
-        return data as Client[];
+        return data as (Client & { sites: { cluster_id: string }[] })[];
     },
 
     /**

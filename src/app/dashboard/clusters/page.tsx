@@ -103,16 +103,20 @@ export default function ClustersPage() {
             key: 'actions',
             label: 'Actions',
             render: (cluster) => {
-                const actions: RowActionItem[] = [
-                    {
+                const actions: RowActionItem[] = [];
+                const role = profile?.role;
+                const isAdmin = role === 'admin';
+                const isSuperAdmin = role === 'superadmin' || role === 'md';
+                const isAssigned = profile?.cluster_ids?.includes(cluster.id);
+
+                if (isSuperAdmin || (isAdmin && isAssigned)) {
+                    actions.push({
                         label: 'Edit',
                         icon: <Edit3 size={14} />,
                         onClick: () => openEditModal(cluster),
                         tooltip: 'Edit Cluster'
-                    }
-                ];
+                    });
 
-                if (isSuperAdmin) {
                     actions.push({
                         label: 'Delete',
                         icon: <Trash2 size={14} />,

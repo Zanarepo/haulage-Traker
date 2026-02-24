@@ -26,6 +26,7 @@ import {
     TrendingUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AssetDetailsModalProps {
     isOpen: boolean;
@@ -66,6 +67,9 @@ export default function AssetDetailsModal({
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 
+    const { profile } = useAuth();
+    const isEngineer = profile?.role === 'site_engineer';
+
     useEffect(() => {
         if (asset) {
             setFormData({
@@ -80,6 +84,9 @@ export default function AssetDetailsModal({
                 installation_date: asset.installation_date || '',
                 purchase_date: asset.purchase_date || '',
                 warranty_expiry_date: asset.warranty_expiry_date || '',
+                pm_interval_hours: asset.pm_interval_hours || 250,
+                last_pm_hours: asset.last_pm_hours || 0,
+                last_pm_date: asset.last_pm_date ? asset.last_pm_date.split('T')[0] : '',
                 notes: asset.notes || ''
             });
             setIsEditing(false);
@@ -250,11 +257,11 @@ export default function AssetDetailsModal({
             )}
 
             {activeTab === 'details' || isEditing ? (
-                <div className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="modal-form">
 
                     {/* Identity & Location */}
                     <span style={sectionLabelStyle}>Identity & Site</span>
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-row">
                         <div className="form-group">
                             <label style={labelStyle}>Machine Type</label>
                             {isEditing ? (
@@ -278,7 +285,7 @@ export default function AssetDetailsModal({
                         </div>
                     </div>
 
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-row">
                         <div className="form-group">
                             <label style={labelStyle}>Serial Number</label>
                             {isEditing ? (
@@ -303,9 +310,83 @@ export default function AssetDetailsModal({
                         </div>
                     </div>
 
-                    {/* Operational */}
+                    {/* Maintenance Intelligence */}
+                    {!isEditing && asset.projections && (
+                        <>
+                            <span style={sectionLabelStyle}>Maintenance Projections</span>
+                            <div style={{
+                                background: asset.projections.healthStatus === 'overdue' ? 'rgba(239, 68, 68, 0.05)' :
+                                    asset.projections.healthStatus === 'due_soon' ? 'rgba(245, 158, 11, 0.05)' :
+                                        'rgba(16, 185, 129, 0.05)',
+                                padding: '1rem',
+                                borderRadius: '0.75rem',
+                                border: '1px solid ' + (
+                                    asset.projections.healthStatus === 'overdue' ? 'rgba(239, 68, 68, 0.2)' :
+                                        asset.projections.healthStatus === 'due_soon' ? 'rgba(245, 158, 11, 0.2)' :
+                                            'rgba(16, 185, 129, 0.2)'
+                                ),
+                                marginBottom: '0.5rem'
+                            }}>
+                                <div className="projection-card-grid">
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Next Service Estimated</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>
+                                            {asset.projections.estimatedDueDate ? new Date(asset.projections.estimatedDueDate).toLocaleDateString() : 'Unknown'}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                            {asset.projections.hoursRemaining.toFixed(0)} hours remaining
+                                        </div>
+                                    </div>
+                                    <div className="projection-stats-right" style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Usage Velocity</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>
+                                            {asset.projections.avgDailyRuntime.toFixed(1)} hrs/day
+                                        </div>
+                                        {asset.site?.is_hybrid && (
+                                            <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600, marginTop: '2px' }}>
+                                                ☀️ Hybrid offset active
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="projection-stats-inner" style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Odometer</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+                                            {asset.hour_meter.toFixed(1)}h
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Interval</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', opacity: 0.7, marginTop: '2px' }}>
+                                            {asset.pm_interval_hours || 250}h
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Run Time</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 800, color: '#10b981', marginTop: '2px' }}>
+                                            {(asset.hour_meter - asset.last_pm_hours).toFixed(1)}h
+                                        </div>
+                                        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+                                            {(((asset.hour_meter - asset.last_pm_hours) / (asset.pm_interval_hours || 250)) * 100).toFixed(0)}% used
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Service Goal</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 800, color: asset.projections.healthStatus === 'overdue' ? '#ef4444' : '#3b82f6', marginTop: '2px' }}>
+                                            {((asset.last_pm_hours || 0) + (asset.pm_interval_hours || 250)).toFixed(0)}h
+                                        </div>
+                                        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+                                            {asset.projections.estimatedDueDate ? new Date(asset.projections.estimatedDueDate).toLocaleDateString() : 'No date'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
                     <span style={sectionLabelStyle}>Operational Stats</span>
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-row three-col">
                         <div className="form-group">
                             <label style={labelStyle}>Status</label>
                             {isEditing ? (
@@ -321,14 +402,14 @@ export default function AssetDetailsModal({
                             )}
                         </div>
                         <div className="form-group">
-                            <label style={labelStyle}>Runtime</label>
+                            <label style={labelStyle}>Total Lifetime Meter</label>
                             {isEditing ? (
                                 <input type="number" name="hour_meter" value={formData.hour_meter} onChange={handleChange} style={{ ...inputStyle, paddingLeft: '0.75rem' }} />
                             ) : (
                                 <div style={detailValueStyle}>{asset.hour_meter || 0}h</div>
                             )}
                         </div>
-                        <div className="form-group">
+                        <div className="form-group fuel-tank-group">
                             <label style={labelStyle}>Fuel Tank</label>
                             {isEditing ? (
                                 <input type="number" name="fuel_tank_capacity" value={formData.fuel_tank_capacity} onChange={handleChange} style={{ ...inputStyle, paddingLeft: '0.75rem' }} />
@@ -338,9 +419,61 @@ export default function AssetDetailsModal({
                         </div>
                     </div>
 
+                    {/* PM Tracking */}
+                    <span style={sectionLabelStyle}>Maintenance Schedule</span>
+                    <div className="form-row three-col">
+                        <div className="form-group">
+                            <label style={labelStyle}>Last Service (Meter)</label>
+                            {isEditing || (isEngineer && activeTab === 'details') ? (
+                                <div style={{ position: 'relative' }}>
+                                    {isEngineer && !isEditing && <Wrench size={12} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', opacity: 0.7 }} />}
+                                    <input
+                                        type="number"
+                                        name="last_pm_hours"
+                                        value={formData.last_pm_hours}
+                                        onChange={handleChange}
+                                        style={{
+                                            ...inputStyle,
+                                            paddingLeft: '0.75rem',
+                                            border: isEngineer && !isEditing ? '1px dashed #3b82f6' : inputStyle.border
+                                        }}
+                                        placeholder="Enter reading..."
+                                        onBlur={() => {
+                                            if (isEngineer && !isEditing) handleSave();
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div style={detailValueStyle}>{asset.last_pm_hours || 0}h</div>
+                            )}
+                        </div>
+                        <div className="form-group">
+                            <label style={labelStyle}>Last Service Date</label>
+                            {isEditing ? (
+                                <input type="date" name="last_pm_date" value={formData.last_pm_date} onChange={handleChange} style={{ ...inputStyle, paddingLeft: '0.75rem' }} />
+                            ) : (
+                                <div style={detailValueStyle}>{asset.last_pm_date ? new Date(asset.last_pm_date).toLocaleDateString() : '—'}</div>
+                            )}
+                        </div>
+                        <div className="form-group">
+                            {isEditing && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div>
+                                        <label style={labelStyle}>Interval (hrs)</label>
+                                        <input type="number" name="pm_interval_hours" value={formData.pm_interval_hours} onChange={handleChange} style={{ ...inputStyle, paddingLeft: '0.75rem' }} />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Interval (days)</label>
+                                        <input type="number" name="service_interval_days" value={formData.service_interval_days} onChange={handleChange} style={{ ...inputStyle, paddingLeft: '0.75rem' }} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Lifecycle */}
                     <span style={sectionLabelStyle}>Lifecycle (Optional)</span>
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-row">
                         <div className="form-group">
                             <label style={labelStyle}>Manufacturing</label>
                             {isEditing ? (
@@ -358,7 +491,7 @@ export default function AssetDetailsModal({
                             )}
                         </div>
                     </div>
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-row">
                         <div className="form-group">
                             <label style={labelStyle}>Purchase Date</label>
                             {isEditing ? (
@@ -392,91 +525,65 @@ export default function AssetDetailsModal({
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
-                        {loadingHistory && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading activity logs...</div>}
-                        {!loadingHistory && history.length === 0 && (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                <Clock size={24} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-                                <p>No logged activities found for this asset.</p>
-                            </div>
-                        )}
-                        {history.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((log, idx) => (
-                            <div key={idx} style={{
-                                padding: '0.85rem', borderRadius: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                display: 'flex', gap: '0.85rem', alignItems: 'flex-start',
-                                transition: 'all 0.2s ease',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                            }}>
-                                <div style={{
-                                    padding: '8px', borderRadius: '8px',
-                                    background: log.type === 'maintenance' ? 'rgba(5b, 130, 246, 0.1)' :
-                                        log.details.includes('REFILL') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                    color: log.type === 'maintenance' ? '#3b82f6' :
-                                        log.details.includes('REFILL') ? '#10b981' : '#10b981',
-                                    flexShrink: 0
-                                }}>
-                                    {log.type === 'maintenance' ? <Wrench size={16} /> : <Fuel size={16} />}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                                            {log.title || log.details}
-                                        </span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                                            {new Date(log.time).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Info size={12} style={{ opacity: 0.6 }} /> By {log.user}
-                                        </span>
-
-                                        {log.type === 'maintenance' && (
-                                            <>
-                                                <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'currentColor', opacity: 0.3 }} />
-                                                <span style={{
-                                                    fontSize: '9px', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px',
-                                                    background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontWeight: 800
-                                                }}>{log.status}</span>
-                                            </>
-                                        )}
-
-                                        {log.details.includes('run') && (
-                                            <>
-                                                <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'currentColor', opacity: 0.3 }} />
-                                                <span style={{
-                                                    display: 'flex', alignItems: 'center', gap: '4px',
-                                                    color: '#10b981', fontWeight: 700, fontSize: '0.8rem'
-                                                }}>
-                                                    <TrendingUp size={12} />
-                                                    {log.details.match(/\(\+(\d+)h run\)/)?.[0] || 'Run log'}
-                                                </span>
-                                            </>
-                                        )}
-
-                                        {log.details.includes('REFILL') && (
-                                            <>
-                                                <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'currentColor', opacity: 0.3 }} />
-                                                <span style={{
-                                                    display: 'flex', alignItems: 'center', gap: '4px',
-                                                    color: '#10b981', fontWeight: 700, fontSize: '0.8rem'
-                                                }}>
-                                                    <Fuel size={12} />
-                                                    Supply Confirmation
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <div style={{ overflowX: 'auto', maxHeight: '450px', border: '1px solid var(--border-color)', borderRadius: '0.75rem' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                            <thead style={{ background: 'var(--bg-hover)', position: 'sticky', top: 0, zIndex: 1 }}>
+                                <tr>
+                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>Date</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>Event / Source</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>Prev</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>New</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>Run Hrs</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>Fuel</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loadingHistory ? (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Loading activity logs...</td></tr>
+                                ) : history.length === 0 ? (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>No logged activities found for this asset.</td></tr>
+                                ) : history.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((log, idx) => (
+                                    <tr key={idx} style={{
+                                        borderBottom: '1px solid var(--border-color)',
+                                        background: log.is_pm ? 'rgba(16, 185, 129, 0.03)' : 'transparent'
+                                    }}>
+                                        <td style={{ padding: '0.75rem', verticalAlign: 'top' }}>
+                                            <div style={{ color: 'var(--text-main)', fontWeight: 600 }}>{new Date(log.date).toLocaleDateString()}</div>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                        </td>
+                                        <td style={{ padding: '0.75rem', verticalAlign: 'top' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                {log.type === 'work_order' ? <Wrench size={12} style={{ color: '#3b82f6' }} /> : <Fuel size={12} style={{ color: '#10b981' }} />}
+                                                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{log.source}</span>
+                                            </div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>By {log.user}</div>
+                                            {log.is_pm && <span style={{ fontSize: '9px', background: '#10b981', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: 800, textTransform: 'uppercase', marginTop: '4px', display: 'inline-block' }}>SERVICE COMPLETED</span>}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 500, color: 'var(--text-muted)' }}>
+                                            {log.prev_meter !== null ? `${log.prev_meter}h` : '—'}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 700, color: 'var(--text-main)' }}>
+                                            {log.new_meter !== null ? `${log.new_meter}h` : '—'}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                            {log.delta !== null ? (
+                                                <span style={{ color: '#10b981', fontWeight: 700 }}>+{log.delta}h</span>
+                                            ) : '—'}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 600, color: '#10b981' }}>
+                                            {log.fuel !== null ? `${log.fuel}L` : '—'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
                     {/* Pagination Controls */}
                     {history.length > ITEMS_PER_PAGE && (
                         <div style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem',
-                            marginTop: '0.5rem', padding: '0.75rem', borderTop: '1px solid var(--border-color)'
+                            marginTop: '0.5rem', padding: '0.75rem'
                         }}>
                             <button
                                 disabled={currentPage === 1}

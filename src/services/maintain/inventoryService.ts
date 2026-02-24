@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 export interface StockItem {
     id: string;
     engineer_id: string;
+    master_id?: string;
     item_name: string;
     item_category?: string;
     balance: number;
@@ -27,33 +28,47 @@ export interface LedgerEntry {
 }
 
 export const inventoryService = {
-    async saveInventoryLog(companyId: string, workOrderId: string, userId: string, items: Array<{ item_name: string; quantity: number; notes?: string }>) {
+    async saveInventoryLog(companyId: string, workOrderId: string, userId: string, items: Array<{ item_name: string; quantity: number; notes?: string; master_id?: string | null }>) {
+        // 1. Prepare and Insert Logs (Display Table)
         const logs = items.map(item => ({
             work_order_id: workOrderId,
             company_id: companyId,
             recorded_by: userId,
-            ...item
+            item_name: item.item_name,
+            quantity: item.quantity,
+            notes: item.notes,
+            master_id: item.master_id
         }));
 
-        await supabase.from('maintain_inventory_logs').insert(logs);
+        const { error: logError } = await supabase.from('maintain_inventory_logs').insert(logs);
+        if (logError) {
+            console.error('[saveInventoryLog] Log Error:', logError);
+            throw new Error(`Failed to save inventory log: ${logError.message}`);
+        }
 
+        // 2. Prepare and Insert Ledger Entries (Stock Deduction)
         const ledgerEntries: LedgerEntry[] = items.map(item => ({
             engineer_id: userId,
             company_id: companyId,
             work_order_id: workOrderId,
             item_name: item.item_name,
-            quantity: -item.quantity,
+            quantity: -Math.abs(item.quantity), // Ensure negative for usage
             transaction_type: 'usage',
+            master_id: item.master_id || undefined,
             notes: item.notes,
             recorded_by: userId
         }));
 
-        const { data, error } = await supabase
+        const { data, error: ledgerError } = await supabase
             .from('maintain_inventory_ledger')
             .insert(ledgerEntries)
             .select();
 
-        if (error) throw error;
+        if (ledgerError) {
+            console.error('[saveInventoryLog] Ledger Error:', ledgerError);
+            throw new Error(`Failed to deduct stock: ${ledgerError.message}`);
+        }
+
         return data;
     },
 
@@ -68,36 +83,52 @@ export const inventoryService = {
     },
 
     async deleteInventoryLog(logId: string) {
-        const { data: log } = await supabase
+        // 1. Fetch the log to know what to reverse
+        const { data: log, error: fetchError } = await supabase
             .from('maintain_inventory_logs')
             .select('*')
             .eq('id', logId)
             .single();
 
+        if (fetchError) throw fetchError;
+
         if (log) {
-            await supabase
+            // 2. Reverse the ledger entry (add back the quantity)
+            // We search for the corresponding usage entry
+            let query = supabase
                 .from('maintain_inventory_ledger')
                 .delete()
                 .eq('work_order_id', log.work_order_id)
                 .eq('item_name', log.item_name)
                 .eq('transaction_type', 'usage');
+
+            if (log.master_id) {
+                query = query.eq('master_id', log.master_id);
+            }
+
+            const { error: ledgerError } = await query;
+            if (ledgerError) console.error('[deleteInventoryLog] Ledger Reversal Error:', ledgerError);
         }
 
-        const { error } = await supabase
+        // 3. Delete the log itself
+        const { error: deleteError } = await supabase
             .from('maintain_inventory_logs')
             .delete()
             .eq('id', logId);
 
-        if (error) throw error;
+        if (deleteError) throw deleteError;
         return true;
     },
 
-    async getSupplyAllocations(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string }) {
+    async getSupplyAllocations(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string; clusterIds?: string[] }) {
         let woQuery = supabase
             .from('maintain_work_orders')
-            .select('id')
+            .select('id, cluster_id')
             .eq('company_id', companyId);
 
+        if (filters?.clusterIds && filters.clusterIds.length > 0) {
+            woQuery = woQuery.in('cluster_id', filters.clusterIds);
+        }
         if (filters?.engineerId) {
             woQuery = woQuery.eq('engineer_id', filters.engineerId);
         }
@@ -197,7 +228,7 @@ export const inventoryService = {
         return data || [];
     },
 
-    async getRestockHistory(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string }) {
+    async getRestockHistory(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string; clusterIds?: string[] }) {
         let query = supabase
             .from('maintain_inventory_ledger')
             .select(`
@@ -206,7 +237,7 @@ export const inventoryService = {
                 batch_name,
                 created_at,
                 engineer_id,
-                engineer:users!engineer_id (full_name),
+                engineer:users!engineer_id (full_name, user_cluster_assignments(cluster_id)),
                 transaction_type,
                 item_name,
                 item_category,
@@ -220,8 +251,16 @@ export const inventoryService = {
         if (filters?.startDate) query = query.gte('created_at', filters.startDate);
         if (filters?.endDate) query = query.lte('created_at', filters.endDate);
 
-        const { data, error } = await query.order('created_at', { ascending: false });
+        let { data, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
+
+        // Post-filter by cluster if requested
+        if (filters?.clusterIds && filters.clusterIds.length > 0) {
+            data = (data || []).filter((item: any) => {
+                const engClusters = item.engineer?.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                return engClusters.some((cid: string) => filters.clusterIds?.includes(cid));
+            });
+        }
 
         const batchesMap = new Map<string, any>();
         const singleEntries: any[] = [];
@@ -369,6 +408,28 @@ export const inventoryService = {
         return data;
     },
 
+    async updateMasterProduct(productId: string, updates: any) {
+        const { data, error } = await supabase
+            .from('maintain_inventory_master')
+            .update(updates)
+            .eq('id', productId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteMasterProduct(productId: string) {
+        const { error } = await supabase
+            .from('maintain_inventory_master')
+            .delete()
+            .eq('id', productId);
+
+        if (error) throw error;
+        return true;
+    },
+
     async checkBarcodeExists(barcode: string) {
         const { data, error } = await supabase
             .from('maintain_inventory_units')
@@ -414,7 +475,7 @@ export const inventoryService = {
             quantity: number;
             sku?: string;
         }>
-    }) {
+    }, clusterId?: string) {
         const totalItems = batchData.items.reduce((acc, item) => {
             const uniqueCount = item.unitObjects ? item.unitObjects.length : (item.barcodes?.length || 0);
             return acc + (uniqueCount > 0 ? uniqueCount : item.quantity);
@@ -433,6 +494,7 @@ export const inventoryService = {
                 supplier_name: batchData.supplierName,
                 reference_no: batchData.referenceNo,
                 received_by: userId,
+                cluster_id: clusterId,
                 total_items: totalItems,
                 total_value: totalValue
             })
@@ -561,7 +623,7 @@ export const inventoryService = {
         return batch;
     },
 
-    async getReceivingHistory(companyId: string, filters?: { startDate?: string; endDate?: string }) {
+    async getReceivingHistory(companyId: string, filters?: { startDate?: string; endDate?: string; clusterIds?: string[] }) {
         let query = supabase
             .from('maintain_receiving_batches')
             .select(`
@@ -572,6 +634,10 @@ export const inventoryService = {
                 )
             `)
             .eq('company_id', companyId);
+
+        if (filters?.clusterIds && filters.clusterIds.length > 0) {
+            query = query.in('cluster_id', filters.clusterIds);
+        }
 
         if (filters?.startDate) query = query.gte('created_at', filters.startDate);
         if (filters?.endDate) query = query.lte('created_at', filters.endDate);
@@ -591,13 +657,13 @@ export const inventoryService = {
         });
     },
 
-    async getUnifiedSuppliesStats(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string }) {
+    async getUnifiedSuppliesStats(companyId: string, filters?: { engineerId?: string; startDate?: string; endDate?: string; clusterIds?: string[] }) {
         const isPersonal = !!filters?.engineerId;
 
         // 1. Inflow / Restock Stats
         let inflowQuery = supabase
             .from(isPersonal ? 'maintain_inventory_ledger' : 'maintain_receiving_batches')
-            .select(isPersonal ? 'quantity' : 'total_items')
+            .select(isPersonal ? 'quantity, engineer:users!engineer_id(user_cluster_assignments(cluster_id))' : 'total_items')
             .eq('company_id', companyId);
 
         if (isPersonal) {
@@ -607,7 +673,15 @@ export const inventoryService = {
         if (filters?.startDate) inflowQuery = inflowQuery.gte('created_at', filters.startDate);
         if (filters?.endDate) inflowQuery = inflowQuery.lte('created_at', filters.endDate);
 
-        const { data: inflowData } = await inflowQuery as { data: any[] | null };
+        let { data: inflowData, error: inflowError } = await inflowQuery as { data: any[] | null, error: any };
+        if (inflowError) throw inflowError;
+
+        if (isPersonal && filters?.clusterIds && filters.clusterIds.length > 0) {
+            inflowData = (inflowData || []).filter((item: any) => {
+                const engClusters = item.engineer?.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                return engClusters.some((cid: string) => filters.clusterIds?.includes(cid));
+            });
+        }
 
         const unitsReceived = isPersonal
             ? (inflowData || []).reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)
@@ -616,7 +690,7 @@ export const inventoryService = {
         // 2. Outflow / Usage Stats
         let outflowQuery = supabase
             .from('maintain_inventory_ledger')
-            .select('quantity')
+            .select('quantity, engineer:users!engineer_id(user_cluster_assignments(cluster_id))')
             .eq('company_id', companyId);
 
         if (isPersonal) {
@@ -630,22 +704,41 @@ export const inventoryService = {
         if (filters?.startDate) outflowQuery = outflowQuery.gte('created_at', filters.startDate);
         if (filters?.endDate) outflowQuery = outflowQuery.lte('created_at', filters.endDate);
 
-        const { data: outflowData } = await outflowQuery;
+        let { data: outflowData, error: outflowError } = await outflowQuery;
+        if (outflowError) throw outflowError;
+
+        if (filters?.clusterIds && filters.clusterIds.length > 0) {
+            outflowData = (outflowData || []).filter((item: any) => {
+                const engClusters = item.engineer?.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                return engClusters.some((cid: string) => filters.clusterIds?.includes(cid));
+            });
+        }
+
         const netOutflow = outflowData?.reduce((acc, i) => acc + Math.abs(i.quantity), 0) || 0;
 
         // 3. Stock Balance (Warehouse Total vs Engineer Wallet)
         let balance = 0;
         if (isPersonal) {
-            const { data: walletData } = await supabase
+            const { data: walletData, error: walletError } = await supabase
                 .from('maintain_engineer_stock')
-                .select('balance')
+                .select('balance, engineer:users!engineer_id(user_cluster_assignments(cluster_id))')
                 .eq('engineer_id', filters.engineerId);
-            balance = walletData?.reduce((acc, i) => acc + (Number(i.balance) || 0), 0) || 0;
+            if (walletError) throw walletError;
+
+            let filteredWalletData = walletData;
+            if (filters?.clusterIds && filters.clusterIds.length > 0) {
+                filteredWalletData = (walletData || []).filter((item: any) => {
+                    const engClusters = item.engineer?.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                    return engClusters.some((cid: string) => filters.clusterIds?.includes(cid));
+                });
+            }
+            balance = filteredWalletData?.reduce((acc, i) => acc + (Number(i.balance) || 0), 0) || 0;
         } else {
-            const { data: stockData } = await supabase
+            const { data: stockData, error: stockError } = await supabase
                 .from('maintain_inventory_master')
                 .select('total_in_stock')
                 .eq('company_id', companyId);
+            if (stockError) throw stockError;
             balance = stockData?.reduce((acc, i) => acc + (i.total_in_stock || 0), 0) || 0;
         }
 
@@ -692,6 +785,44 @@ export const inventoryService = {
 
         if (error) throw error;
         return data || [];
+    },
+
+    async deleteReceivingBatch(batchId: string) {
+        // 1. Get the items in this batch to reverse them
+        const { data: items, error: fetchErr } = await supabase
+            .from('maintain_receiving_batch_items')
+            .select('master_id, quantity')
+            .eq('batch_id', batchId);
+
+        if (fetchErr) throw fetchErr;
+
+        // 2. Reverse warehouse stock increments
+        for (const item of (items || [])) {
+            const { data: master } = await supabase
+                .from('maintain_inventory_master')
+                .select('total_in_stock')
+                .eq('id', item.master_id)
+                .single();
+
+            if (master) {
+                await supabase
+                    .from('maintain_inventory_master')
+                    .update({ total_in_stock: Math.max(0, (master.total_in_stock || 0) - item.quantity) })
+                    .eq('id', item.master_id);
+            }
+        }
+
+        // 3. Delete the transaction logs from ledger to keep movements accurate
+        await supabase.from('maintain_inventory_ledger').delete().eq('batch_id', batchId);
+
+        // 4. Delete the receiving batch (cascade handles maintain_receiving_batch_items)
+        const { error: delErr } = await supabase
+            .from('maintain_receiving_batches')
+            .delete()
+            .eq('id', batchId);
+
+        if (delErr) throw delErr;
+        return true;
     },
 
     async getMasterInventoryUnits(masterId: string) {
@@ -794,20 +925,34 @@ export const inventoryService = {
         return data;
     },
 
-    async getStockRequests(companyId: string, filters?: { engineerId?: string; status?: string }) {
+    async getStockRequests(companyId: string, filters?: { engineerId?: string; status?: string; clusterIds?: string[] }) {
         let query = supabase
             .from('maintain_stock_requests')
             .select(`
                 *,
-                engineer:engineer_id(full_name)
+                engineer:users!engineer_id (
+                    full_name,
+                    user_cluster_assignments(cluster_id)
+                )
             `)
             .eq('company_id', companyId);
 
-        if (filters?.engineerId) query = query.eq('engineer_id', filters.engineerId);
+        if (filters?.engineerId) {
+            query = query.eq('engineer_id', filters.engineerId);
+        }
         if (filters?.status) query = query.eq('status', filters.status);
 
-        const { data, error } = await query.order('created_at', { ascending: false });
+        let { data, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
+
+        // Post-filter by cluster if requested
+        if (filters?.clusterIds && filters.clusterIds.length > 0) {
+            data = (data || []).filter((req: any) => {
+                const engClusters = req.engineer?.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                return engClusters.some((cid: string) => filters.clusterIds?.includes(cid));
+            });
+        }
+
         return data || [];
     },
 

@@ -90,7 +90,7 @@ export default function TripHistoryModal({
             title="Comprehensive Trip Archive"
             maxWidth="900px"
             footer={
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                <div className="history-modal-footer">
                     {isManager && (
                         <button
                             className={`btn-${showConfirmClear ? 'danger' : 'outline-danger'}`}
@@ -140,14 +140,7 @@ export default function TripHistoryModal({
                                 }}
                             >
                                 <div
-                                    style={{
-                                        padding: '1.25rem',
-                                        cursor: 'pointer',
-                                        display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr 1fr 1fr auto',
-                                        gap: '1.5rem',
-                                        alignItems: 'center'
-                                    }}
+                                    className="history-trip-header"
                                     onClick={() => toggleTrip(trip.id)}
                                 >
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -194,12 +187,8 @@ export default function TripHistoryModal({
                                 </div>
 
                                 {expandedTripId === trip.id && (
-                                    <div style={{
-                                        padding: '0 1.25rem 1.25rem 1.25rem',
-                                        borderTop: '1px solid var(--border-color)',
-                                        background: 'var(--bg-main)'
-                                    }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1.25rem' }}>
+                                    <div className="history-trip-expanded-content">
+                                        <div className="history-trip-details-grid">
                                             {/* Column 1: Planned Itinerary */}
                                             <div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>

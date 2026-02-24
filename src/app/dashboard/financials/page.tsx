@@ -44,6 +44,7 @@ export default function FinancialsDashboard() {
         {
             label: 'Date',
             key: 'created_at',
+            fullWidth: true,
             render: (it) => (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 600 }}>{new Date(it.created_at).toLocaleDateString()}</span>
@@ -86,6 +87,7 @@ export default function FinancialsDashboard() {
         {
             label: 'Actions',
             key: 'actions',
+            fullWidth: true,
             render: (it) => (
                 <RowActions
                     actions={[

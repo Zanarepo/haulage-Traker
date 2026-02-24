@@ -1,0 +1,224 @@
+/* ========== PM Schedule Premium Patterns ========== */
+
+.schedule-page-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Row Styling (Desktop) */
+.schedule-page-container .model-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.schedule-page-container .type-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.schedule-page-container .detail-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Service Status Styling */
+.schedule-page-container .service-status {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.schedule-page-container .service-status.overdue {
+    color: #ef4444;
+}
+
+.schedule-page-container .service-status.due_soon {
+    color: #f59e0b;
+}
+
+.schedule-page-container .service-status.healthy {
+    color: #10b981;
+}
+
+/* Action Buttons (Unified with Assets Design) */
+.schedule-page-container .actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.schedule-page-container .btn-action {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-page-container .btn-action:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f640;
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.schedule-page-container .btn-action.delete:hover {
+    border-color: #ef444440;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+/* Mobile Card Overrides (Alignment with Asset Registry Design) */
+@media (max-width: 768px) {
+    .schedule-page-container .dt-table tbody tr {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 1.25rem;
+        margin-bottom: 1.25rem;
+        display: block;
+        overflow: hidden;
+        padding: 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        position: relative;
+    }
+
+    /* Side Indicator Border (Matches Overdue State) */
+    .schedule-page-container .dt-table tbody tr.overdue-row {
+        border-left: 5px solid #ef4444;
+    }
+
+    .schedule-page-container .dt-table tbody tr.due-soon-row {
+        border-left: 5px solid #f59e0b;
+    }
+
+    /* Card Header (First Cell) */
+    .schedule-page-container .dt-table td:first-child {
+        display: block;
+        background: var(--bg-hover);
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .schedule-page-container .dt-table td:first-child::before {
+        content: 'SERVICE TIMELINE';
+        display: inline-block;
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        letter-spacing: 0.05em;
+    }
+
+    .schedule-page-container .dt-table td:first-child>div {
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: flex-start !important;
+        width: 100%;
+        gap: 0;
+    }
+
+    .schedule-page-container .dt-table td:first-child .type-icon-wrapper {
+        display: none;
+    }
+
+    .schedule-page-container .dt-table td:first-child .model-name {
+        font-size: 1.25rem;
+        margin-bottom: 4px;
+    }
+
+    .schedule-page-container .dt-table td:first-child .detail-line {
+        justify-content: flex-end;
+    }
+
+    /* Standard Data Rows */
+    .schedule-page-container .dt-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--border-color-low);
+        min-height: 50px;
+    }
+
+    .schedule-page-container .dt-table td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .schedule-page-container .dt-table td>div {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    /* Card Action Footer (Last Cell) */
+    .schedule-page-container .dt-table td:last-child {
+        background: var(--bg-hover);
+        justify-content: center;
+        padding: 1rem;
+        border-bottom: none;
+        margin-top: 0.5rem;
+    }
+
+    .schedule-page-container .dt-table td:last-child::before {
+        display: none;
+    }
+
+    .schedule-page-container .actions-group {
+        width: 100%;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        gap: 12px;
+        position: relative;
+    }
+
+    .schedule-page-container .btn-action {
+        flex: 1;
+        max-width: 140px;
+        height: 48px !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        color: var(--text-muted);
+        box-shadow: none;
+        transform: none;
+    }
+}

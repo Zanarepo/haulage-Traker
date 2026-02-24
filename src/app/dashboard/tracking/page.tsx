@@ -36,22 +36,27 @@ export default function TrackingDashboard() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
     useEffect(() => {
-        loadInitialData();
+        if (profile?.company_id) {
+            loadInitialData();
 
-        // Subscribe to real-time updates
-        const subscription = trackingService.subscribeToAllLocations((payload) => {
-            handleRealtimeUpdate(payload);
-        });
+            // Subscribe to real-time updates
+            const subscription = trackingService.subscribeToAllLocations((payload) => {
+                handleRealtimeUpdate(payload);
+            });
 
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, []);
+            return () => {
+                subscription.unsubscribe();
+            };
+        }
+    }, [profile?.company_id]);
 
     const loadInitialData = async () => {
         try {
             setLoading(true);
-            const data = await trackingService.getActiveLocations();
+            const clusterIds = (profile?.role === 'admin' || profile?.role === 'site_engineer')
+                ? profile?.cluster_ids
+                : undefined;
+            const data = await trackingService.getActiveLocations(clusterIds);
             setLocations(data);
         } catch (error) {
             console.error('Failed to load tracking data:', error);
@@ -102,7 +107,7 @@ export default function TrackingDashboard() {
                 </div>
 
                 <div className="header-actions">
-                    <button className="btn-save" onClick={loadInitialData} disabled={loading}>
+                    <button className="btn-sync" onClick={loadInitialData} disabled={loading}>
                         <RefreshCcw size={16} className={loading ? 'spinning' : ''} />
                         Sync Now
                     </button>
@@ -118,8 +123,8 @@ export default function TrackingDashboard() {
                             Active Drivers
                             <span className="active-count">{locations.length}</span>
                         </h3>
-                        <div className="search-bar" style={{ marginTop: '1rem', width: '100%' }}>
-                            <Search size={14} />
+                        <div className="search-bar" style={{ marginTop: '1rem' }}>
+                            <Search size={16} />
                             <input
                                 type="text"
                                 placeholder="Search fleet..."

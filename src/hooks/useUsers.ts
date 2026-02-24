@@ -70,8 +70,17 @@ export function useUsers(): UseUsersReturn {
         }
     }, [profile?.company_id, showToast]);
 
+    // List of users that this login is allowed to see
+    const visibleUsers = users.filter(u => {
+        if (profile?.role === 'admin' && profile?.cluster_ids) {
+            const hasSharedCluster = u.cluster_ids?.some(id => profile.cluster_ids?.includes(id));
+            return hasSharedCluster;
+        }
+        return true;
+    });
+
     // Filtered users based on search + role + status
-    const filteredUsers = users.filter((u) => {
+    const filteredUsers = visibleUsers.filter((u) => {
         // Search filter
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -166,7 +175,7 @@ export function useUsers(): UseUsersReturn {
     };
 
     return {
-        users,
+        users: visibleUsers,
         filteredUsers,
         loading,
         searchQuery,

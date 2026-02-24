@@ -8,6 +8,8 @@ export interface Site {
     site_id_code: string;
     tank_capacity: number;
     host_community?: string;
+    is_hybrid?: boolean;
+    solar_offset_hours?: number;
     created_at: string;
 }
 

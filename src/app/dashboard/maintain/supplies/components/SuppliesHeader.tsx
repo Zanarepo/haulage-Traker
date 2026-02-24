@@ -12,7 +12,7 @@ interface SuppliesHeaderProps {
 
 export default function SuppliesHeader({ isEngineer, isAdmin, canManageReceive, onAddInflow, onIssueToEngineer, onRequestStock }: SuppliesHeaderProps) {
     return (
-        <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <header className="page-header">
             <div className="header-info">
                 <h1>Supply & Inventory Tracking</h1>
                 <p>
@@ -21,7 +21,7 @@ export default function SuppliesHeader({ isEngineer, isAdmin, canManageReceive, 
                         : "Monitor central warehouse inflow and fleet allocation across all clusters."}
                 </p>
             </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="header-actions">
                 {canManageReceive && (
                     <button className="btn-maintain-action" onClick={onAddInflow} style={{ background: '#10b981' }}>
                         <ArrowRightLeft size={18} /> Add Stock Inflow

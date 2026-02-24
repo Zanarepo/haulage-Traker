@@ -55,16 +55,23 @@ export const trackingService = {
 
     /**
      * Fetches all active driver locations with user and trip details.
+     * Supports regional filtering via clusterIds.
      */
-    async getActiveLocations(): Promise<DriverLocation[]> {
-        const { data, error } = await supabase
+    async getActiveLocations(clusterIds?: string[]): Promise<DriverLocation[]> {
+        let query = supabase
             .from('driver_locations')
             .select(`
                 *,
                 user:users!driver_id (full_name),
-                trips!trip_id (truck_plate_number, status)
+                trips!trip_id!inner (truck_plate_number, status, cluster_id)
             `)
             .eq('is_active', true);
+
+        if (clusterIds && clusterIds.length > 0) {
+            query = query.in('trips.cluster_id', clusterIds);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching active locations:', error);

@@ -139,7 +139,7 @@ export default function NewWorkOrderModal({
                 </div>
 
                 {/* Type + Priority */}
-                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-row">
                     <div className="form-group">
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                             Type
@@ -177,7 +177,7 @@ export default function NewWorkOrderModal({
                 </div>
 
                 {/* Site + Asset */}
-                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-row">
                     <div className="form-group">
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                             Site
@@ -202,23 +202,26 @@ export default function NewWorkOrderModal({
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                             Asset {siteId ? `(${filteredAssets.length} at site)` : ''}
                         </label>
-                        <select
-                            value={assetId}
-                            onChange={e => setAssetId(e.target.value)}
-                            style={{ width: '100%', height: '44px', borderRadius: '0.5rem', padding: '0 1rem', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', color: 'var(--text-main)', appearance: 'none' }}
-                        >
-                            <option value="">Select Asset (optional)</option>
-                            {filteredAssets.map((a: any) => (
-                                <option key={a.id} value={a.id}>
-                                    {a.type?.replace('_', ' ')} — {a.make_model || a.serial_number || 'Unknown'}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="input-with-icon" style={{ position: 'relative' }}>
+                            <Wrench size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <select
+                                value={assetId}
+                                onChange={e => setAssetId(e.target.value)}
+                                style={{ width: '100%', height: '44px', borderRadius: '0.5rem', padding: '0 1rem 0 2.5rem', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', color: 'var(--text-main)', appearance: 'none' }}
+                            >
+                                <option value="">Select Asset (optional)</option>
+                                {filteredAssets.map((a: any) => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.type?.replace('_', ' ')} — {a.make_model || a.serial_number || 'Unknown'}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
                 {/* Assign Engineer + Scheduled Date */}
-                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-row">
                     <div className="form-group">
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                             Assign Engineer

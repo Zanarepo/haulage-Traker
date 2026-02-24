@@ -30,11 +30,25 @@ export function useInventory() {
 
         try {
             setLoading(true);
-            const [suppliesData, clientsData, logsData] = await Promise.all([
+            let [suppliesData, clientsData, logsData] = await Promise.all([
                 inventoryService.getClientDepotSupplies(profile.company_id),
                 inventoryService.getClients(profile.company_id),
                 inventoryService.getAllInventoryLogs(profile.company_id)
             ]);
+
+            // Filter for regional admins
+            if (profile?.role === 'admin' && profile?.cluster_ids) {
+                // 1. Filter clients by site presence in clusters
+                clientsData = (clientsData as any[]).filter(client =>
+                    client.sites?.some((site: any) => profile.cluster_ids?.includes(site.cluster_id))
+                );
+
+                const visibleClientIds = new Set(clientsData.map(c => c.id));
+
+                // 2. Filter supplies and logs by these clients
+                suppliesData = suppliesData.filter(s => visibleClientIds.has(s.client_id));
+                logsData = logsData.filter(l => visibleClientIds.has(l.client_id));
+            }
 
             setSupplies(suppliesData || []);
             setClients(clientsData || []);

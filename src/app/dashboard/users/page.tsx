@@ -326,6 +326,8 @@ function UserModal({
     onUpdate: (id: string, fields: any) => Promise<void>;
     submitting: boolean;
 }) {
+    const { profile } = useAuth();
+    const isSuperAdmin = profile?.role === 'superadmin';
     const isEdit = !!editingUser;
     const [fullName, setFullName] = useState(editingUser?.full_name || '');
     const [email, setEmail] = useState(editingUser?.email || '');
@@ -427,7 +429,10 @@ function UserModal({
                     <div className="form-group">
                         <label>Role</label>
                         <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-                            {ROLES.map((r) => (
+                            {ROLES.filter(r => {
+                                if (r.value === 'superadmin') return isSuperAdmin;
+                                return true;
+                            }).map((r) => (
                                 <option key={r.value} value={r.value}>{r.label}</option>
                             ))}
                         </select>

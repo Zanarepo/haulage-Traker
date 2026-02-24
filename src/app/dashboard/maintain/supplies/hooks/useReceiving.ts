@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { maintainService } from '@/services/maintainService';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface StagedUnit {
     barcode: string;
@@ -30,6 +31,7 @@ interface UseReceivingProps {
 
 export function useReceiving({ companyId, userId, onSuccess, prefillProduct }: UseReceivingProps) {
     const { showToast } = useToast();
+    const { profile } = useAuth();
     const [stagedItems, setStagedItems] = useState<StagedItem[]>([]);
     const [scanBuffer, setScanBuffer] = useState('');
     const [supplierName, setSupplierName] = useState('');
@@ -281,6 +283,12 @@ export function useReceiving({ companyId, userId, onSuccess, prefillProduct }: U
 
         try {
             setLoading(true);
+
+            // Determine cluster ID for tagging
+            const isSuperadmin = (profile as any)?.role === 'superadmin';
+            const assignedClusterIds = (profile as any)?.cluster_ids || [];
+            const clusterId = (!isSuperadmin && assignedClusterIds.length > 0) ? assignedClusterIds[0] : undefined;
+
             await maintainService.receiveStock(companyId, userId, {
                 supplierName,
                 referenceNo,
@@ -295,7 +303,7 @@ export function useReceiving({ companyId, userId, onSuccess, prefillProduct }: U
                     quantity: item.quantity,
                     sku: item.sku
                 }))
-            });
+            }, clusterId);
 
             showToast(`Successfully received delivery batch.`, 'success');
             setStagedItems([]);

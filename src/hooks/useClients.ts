@@ -15,7 +15,16 @@ export function useClients() {
         try {
             setLoading(true);
             const data = await clientService.getClients();
-            setClients(data);
+
+            // Filter by cluster assignment if admin or site_engineer
+            let visibleClients = data || [];
+            if ((profile?.role === 'admin' || profile?.role === 'site_engineer') && profile?.cluster_ids) {
+                visibleClients = data.filter(client =>
+                    client.sites?.some(site => profile.cluster_ids?.includes(site.cluster_id))
+                );
+            }
+
+            setClients(visibleClients);
         } catch (err: any) {
             showToast('Failed to load clients: ' + err.message, 'error');
         } finally {

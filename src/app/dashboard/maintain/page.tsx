@@ -36,7 +36,16 @@ function getStatColor(color: string) {
 }
 
 export default function MaintainDashboardPage() {
-    const { stats, activities, loading, isManager, isEngineer, profile } = useMaintainDashboard();
+    const {
+        stats,
+        activities,
+        failureAnalysis,
+        proactiveAlerts,
+        loading,
+        isManager,
+        isEngineer,
+        profile
+    } = useMaintainDashboard();
 
     return (
         <div className="maintain-page">
@@ -63,15 +72,17 @@ export default function MaintainDashboardPage() {
                     const Icon = getStatIcon(stat.title);
                     const c = getStatColor(stat.color);
                     return (
-                        <div key={stat.title} className="stat-card">
+                        <div key={stat.title} className="stat-card clickable-stat">
                             <div className="card-top">
                                 <div className="icon-box" style={{ background: c.bg, color: c.fg }}>
                                     <Icon size={20} />
                                 </div>
                             </div>
-                            <h3>{stat.title}</h3>
-                            <p className="value">{stat.value}</p>
-                            <p className="sub">{stat.sub}</p>
+                            <div className="card-content">
+                                <h3>{stat.title}</h3>
+                                <p className="value">{stat.value}</p>
+                                <p className="sub">{stat.sub}</p>
+                            </div>
                         </div>
                     );
                 })}
@@ -86,6 +97,74 @@ export default function MaintainDashboardPage() {
                         <p className="sub">&nbsp;</p>
                     </div>
                 ))}
+            </div>
+
+            {/* Intelligence Section: Alerts + Breakdown */}
+            <div className="main-grid intelligence-grid" style={{ marginBottom: '1.5rem' }}>
+                {/* Proactive Alerts */}
+                <div className="section-container">
+                    <div className="section-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <CalendarClock size={18} style={{ color: '#f59e0b' }} />
+                        <h2 style={{ fontSize: '1.1rem' }}>Proactive Alerts</h2>
+                    </div>
+                    <div className="activity-list" style={{ minHeight: '200px' }}>
+                        {proactiveAlerts.length === 0 && !loading && (
+                            <div className="maintain-empty">All assets are currently healthy.</div>
+                        )}
+                        {proactiveAlerts.map((asset, idx) => (
+                            <div key={idx} className="activity-item" style={{ borderLeft: `3px solid ${asset.projections?.healthStatus === 'overdue' ? '#ef4444' : '#f59e0b'}` }}>
+                                <div className="item-left">
+                                    <div className="item-info">
+                                        <p style={{ fontWeight: 600 }}>{asset.make_model}</p>
+                                        <div className="time">
+                                            {asset.site?.name} · {asset.projections?.hoursRemaining}h remaining
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <span className={`status-tag ${asset.projections?.healthStatus}`} style={{ fontSize: '10px' }}>
+                                        {asset.projections?.healthStatus.replace('_', ' ')}
+                                    </span>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                        Due {new Date(asset.projections?.estimatedDueDate).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Failure breakdown */}
+                <div className="section-container">
+                    <div className="section-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <AlertTriangle size={18} style={{ color: '#ef4444' }} />
+                        <h2 style={{ fontSize: '1.1rem' }}>Failure Breakdown</h2>
+                    </div>
+                    <div className="stat-card" style={{ padding: '1.25rem', height: '100%', minHeight: '200px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {Object.keys(failureAnalysis).length === 0 ? (
+                            <div className="maintain-empty">No failure data yet to analyze.</div>
+                        ) : (
+                            Object.entries(failureAnalysis).sort((a, b) => b[1] - a[1]).map(([cat, count]) => {
+                                const total = Object.values(failureAnalysis).reduce((a, b) => a + b, 0);
+                                const pct = Math.round((count / total) * 100);
+                                return (
+                                    <div key={cat} style={{ width: '100%' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                                            <span>{cat}</span>
+                                            <span style={{ fontWeight: 700 }}>{count} ({pct}%)</span>
+                                        </div>
+                                        <div style={{ width: '100%', height: '6px', background: 'var(--bg-hover)', borderRadius: '3px', overflow: 'hidden' }}>
+                                            <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-color)', borderRadius: '3px' }} />
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                            Based on completed work orders with fault categorization.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Main grid: Activity + Quick Actions */}

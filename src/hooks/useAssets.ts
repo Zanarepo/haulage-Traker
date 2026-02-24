@@ -27,16 +27,11 @@ export function useAssets() {
         if (!profile?.company_id) return;
         try {
             setLoading(true);
-            const isEngineer = profile?.role === 'site_engineer';
+            const clusterIds = (profile?.role === 'admin' || profile?.role === 'site_engineer')
+                ? profile?.cluster_ids
+                : undefined;
 
-            let data;
-            if (isEngineer) {
-                // Engineers only see assets in their assigned clusters
-                data = await maintainService.getAssetsForEngineer(profile.company_id, profile.id);
-            } else {
-                data = await maintainService.getAssets(profile.company_id);
-            }
-
+            const data = await maintainService.getAssets(profile.company_id, { clusterIds });
             setAssets(data || []);
         } catch (error: any) {
             console.error('[Assets] Load failed:', error);
@@ -44,7 +39,7 @@ export function useAssets() {
         } finally {
             setLoading(false);
         }
-    }, [profile?.company_id, profile?.id, profile?.role, showToast]);
+    }, [profile?.company_id, profile?.id, profile?.role, profile?.cluster_ids, showToast]);
 
     useEffect(() => {
         loadAssets();
@@ -118,9 +113,11 @@ export function useAssets() {
     const stats = useMemo(() => ({
         total: assets.length,
         active: assets.filter(a => a.status === 'active').length,
+        healthy: assets.filter(a => a.projections?.healthStatus === 'healthy').length,
+        dueSoon: assets.filter(a => a.projections?.healthStatus === 'due_soon').length,
+        overdue: assets.filter(a => a.projections?.healthStatus === 'overdue').length,
         inactive: assets.filter(a => a.status === 'inactive').length,
         decommissioned: assets.filter(a => a.status === 'decommissioned').length,
-        overdue: assets.filter(a => a.warranty_expiry_date && new Date(a.warranty_expiry_date) < new Date()).length,
     }), [assets]);
 
     return {

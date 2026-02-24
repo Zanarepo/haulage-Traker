@@ -250,4 +250,58 @@
         flex-direction: column;
         align-items: stretch;
     }
+
+    /* --- Inventory DataTable Mobile Overrides --- */
+    .history-section .dt-table tbody tr {
+        margin-bottom: 1.25rem;
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        background: var(--bg-card);
+    }
+
+    .history-section .dt-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        min-height: 48px;
+    }
+
+    .history-section .dt-table td:last-child {
+        border-bottom: none;
+        background: var(--bg-hover);
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    /* First cell acts as card header */
+    .history-section .dt-table td[data-full]:first-child {
+        background: var(--bg-hover);
+        border-radius: 1rem 1rem 0 0;
+        padding: 1rem;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center;
+    }
+
+    .history-section .dt-table td[data-full]:first-child::before {
+        content: 'CLIENT STOCK';
+        margin-bottom: 0;
+        background: #3b82f620;
+        color: #3b82f6;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 8px;
+        letter-spacing: 0.1em;
+    }
+
+    .history-section .dt-table td[data-full]:last-child::before {
+        margin-bottom: 10px;
+    }
+
+    .history-section .dt-table td::before {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-weight: 700;
+        min-width: 100px;
+    }
 }

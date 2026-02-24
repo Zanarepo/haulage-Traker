@@ -64,7 +64,8 @@ export function useReconciliation() {
                 profile.company_id,
                 start,
                 end,
-                isDriver ? profile.id : undefined
+                isDriver ? profile.id : undefined,
+                profile.role === 'admin' ? profile.cluster_ids : undefined
             );
             setData(summaries);
             setCurrentPage(1);

@@ -26,14 +26,14 @@ export default function SuppliesFilters({
     pendingRequestsCount
 }: SuppliesFiltersProps) {
     return (
-        <div className="maintain-filters" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="maintain-filters">
+            <div className="filter-pills-group">
                 {isAdmin && (
                     <button
                         className={`filter-pill ${activeTab === 'inventory' ? 'active' : ''}`}
                         onClick={() => setActiveTab('inventory')}
                     >
-                        <Warehouse size={14} style={{ marginRight: '6px' }} />
+                        <Warehouse size={16} />
                         Central Inventory
                     </button>
                 )}
@@ -41,14 +41,14 @@ export default function SuppliesFilters({
                     className={`filter-pill ${activeTab === 'stock' ? 'active' : ''}`}
                     onClick={() => setActiveTab('stock')}
                 >
-                    <Package size={14} style={{ marginRight: '6px' }} />
+                    <Package size={16} />
                     {isEngineer ? 'My Cluster Stock' : 'Issue to Clusters'}
                 </button>
                 <button
                     className={`filter-pill ${activeTab === 'history' ? 'active' : ''}`}
                     onClick={() => setActiveTab('history')}
                 >
-                    <History size={14} style={{ marginRight: '6px' }} />
+                    <History size={16} />
                     Restock Logs
                 </button>
                 {isAdmin && (
@@ -56,7 +56,7 @@ export default function SuppliesFilters({
                         className={`filter-pill ${activeTab === 'receiving_history' ? 'active' : ''}`}
                         onClick={() => setActiveTab('receiving_history')}
                     >
-                        <ArrowRightLeft size={14} style={{ marginRight: '6px' }} />
+                        <ArrowRightLeft size={16} />
                         Inflow History
                     </button>
                 )}
@@ -65,20 +65,10 @@ export default function SuppliesFilters({
                     onClick={() => setActiveTab('requests')}
                     style={{ position: 'relative' }}
                 >
-                    <ClipboardList size={14} style={{ marginRight: '6px' }} />
+                    <ClipboardList size={16} />
                     Requests
                     {isAdmin && pendingRequestsCount > 0 && (
-                        <span style={{
-                            marginLeft: '6px',
-                            background: activeTab === 'requests' ? 'white' : 'var(--brand-main)',
-                            color: activeTab === 'requests' ? 'var(--brand-main)' : 'white',
-                            fontSize: '0.65rem',
-                            fontWeight: 900,
-                            padding: '1px 6px',
-                            borderRadius: '10px',
-                            minWidth: '18px',
-                            textAlign: 'center'
-                        }}>
+                        <span className="tab-badge">
                             {pendingRequestsCount}
                         </span>
                     )}
@@ -87,26 +77,24 @@ export default function SuppliesFilters({
                     className={`filter-pill ${activeTab === 'reports' ? 'active' : ''}`}
                     onClick={() => setActiveTab('reports')}
                 >
-                    <FileText size={14} style={{ marginRight: '6px' }} />
+                    <FileText size={16} />
                     Reports
                 </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div className="filter-date-group">
                 <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="filter-pill"
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '0.4rem 0.8rem', color: 'var(--text-main)' }}
+                    className="filter-date-input"
                 />
                 <ChevronDown size={14} color="var(--text-muted)" />
                 <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="filter-pill"
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '0.4rem 0.8rem', color: 'var(--text-main)' }}
+                    className="filter-date-input"
                 />
             </div>
         </div>

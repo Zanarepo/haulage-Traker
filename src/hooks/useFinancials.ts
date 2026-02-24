@@ -23,7 +23,16 @@ export function useFinancials() {
         try {
             setLoading(true);
             const data = await financialService.getFinancials(profile.company_id);
-            setFinancials(data || []);
+
+            // Filter by cluster if regional admin
+            let visibleFinancials = data || [];
+            if (profile?.role === 'admin' && profile?.cluster_ids) {
+                visibleFinancials = visibleFinancials.filter(f =>
+                    profile.cluster_ids?.includes(f.dispensing_logs?.sites?.cluster_id)
+                );
+            }
+
+            setFinancials(visibleFinancials);
         } catch (error: any) {
             console.error('Failed to load financials:', error);
             showToast('Failed to load data', 'error');

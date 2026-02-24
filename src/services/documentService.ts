@@ -36,9 +36,9 @@ export const documentService = {
 
     /**
      * Get delivery documents (dispensing logs with documents)
-     * Supports optional filtering by driver
+     * Supports optional filtering by driver or clusters
      */
-    async getDeliveryDocuments(driverId?: string) {
+    async getDeliveryDocuments(driverId?: string, clusterIds?: string[]) {
         let query = supabase
             .from('dispensing_logs')
             .select(`
@@ -49,13 +49,17 @@ export const documentService = {
                     driver:users!driver_id (full_name),
                     clients (name)
                 ),
-                sites (name)
+                sites!inner (name, cluster_id)
             `)
             .or('waybill_photo_url.not.is.null,driver_signature_url.not.is.null,engineer_signature_url.not.is.null')
             .order('created_at', { ascending: false });
 
         if (driverId) {
             query = query.eq('trips.driver_id', driverId);
+        }
+
+        if (clusterIds && clusterIds.length > 0) {
+            query = query.in('sites.cluster_id', clusterIds);
         }
 
         const { data, error } = await query;

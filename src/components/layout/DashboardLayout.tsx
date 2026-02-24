@@ -11,7 +11,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { PRODUCTS, isSharedItem, ProductId } from '@/config/productConfig';
 import PlanBadge from '@/components/subscription/PlanBadge';
 import UpgradeModal from '@/components/subscription/UpgradeModal';
-import NotificationCenter from '@/components/NotificationCenter';
+//import NotificationCenter from '@/components/NotificationCenter';
 import DashboardHeader from './DashboardHeader';
 import { notificationService } from '@/services/notificationService';
 import {
@@ -92,7 +92,10 @@ const allSidebarItems: SidebarItem[] = [
   { key: 'settings', title: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
 ];
 
+import { useRouter } from 'next/navigation';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const {
     profile,
     isCollapsed,
@@ -107,7 +110,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   } = useLayout();
 
   // Product modules
-  const { activeModules, activeProduct, setActiveProduct, isMultiProduct } = useCompanyModules(profile?.company_id || null);
+  const { activeModules, activeProduct, setActiveProduct: setActiveProductHook, isMultiProduct } = useCompanyModules(profile?.company_id || null);
+
+  const setActiveProduct = (modId: ProductId) => {
+    setActiveProductHook(modId);
+    router.push(PRODUCTS[modId].dashboardPath);
+  };
 
   // Subscription state for feature gates
   const { effectivePlanId, isFreePlan } = useSubscription(profile?.company_id || null);
@@ -137,6 +145,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Product-specific: check if the current active product includes this key
     const product = PRODUCTS[activeProduct];
     return product?.sidebarKeys.includes(item.key) || false;
+  }).map(item => {
+    // Dynamically set dashboard path to match active product
+    if (item.key === 'dashboard') {
+      return { ...item, path: PRODUCTS[activeProduct].dashboardPath };
+    }
+    return item;
   });
 
   // Split items: shared top, product-specific, shared bottom (settings)
@@ -185,7 +199,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="sidebar-content">
           {/* Logo Section */}
           <div className="logo-section">
-            <NexHaulLogo size={40} showText={!isCollapsed} className="brand-link" />
+            <NexHaulLogo size={40} showText={!isCollapsed || isMobileOpen} className="brand-link" />
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <button onClick={toggleSidebar} className="toggle-btn desktop-only">
                 {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
@@ -194,7 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* ── Product App Bar (only if multi-product) ── */}
-          {isMultiProduct && !isCollapsed && (
+          {isMultiProduct && (!isCollapsed || isMobileOpen) && (
             <div className="product-app-bar">
               {activeModules.map((modId) => {
                 const product = PRODUCTS[modId];
@@ -214,7 +228,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           {/* Collapsed: show product icon only */}
-          {isMultiProduct && isCollapsed && (
+          {isMultiProduct && isCollapsed && !isMobileOpen && (
             <div className="product-app-bar collapsed">
               {activeModules.map((modId) => {
                 const product = PRODUCTS[modId];
@@ -233,7 +247,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           {/* User Profile Info */}
-          {!isCollapsed && (
+          {(!isCollapsed || isMobileOpen) && (
             <div className="user-capsule">
               <div className="profile-info">
                 <p className="user-name">{profile?.full_name || 'User'}</p>
@@ -248,34 +262,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Navigation */}
           <nav className="nav-list">
             {/* Shared top items */}
-            {topSharedItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
+            {topSharedItems.map((item) => renderNavItem(item, isCollapsed && !isMobileOpen, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
 
             {/* Product section separator */}
-            {productItems.length > 0 && !isCollapsed && (
+            {productItems.length > 0 && (!isCollapsed || isMobileOpen) && (
               <div className="nav-section-label">
                 <span>{PRODUCTS[activeProduct]?.icon} {PRODUCTS[activeProduct]?.name}</span>
               </div>
             )}
-            {productItems.length > 0 && isCollapsed && (
+            {productItems.length > 0 && isCollapsed && !isMobileOpen && (
               <div className="nav-section-divider" />
             )}
 
             {/* Product-specific items */}
-            {productItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
+            {productItems.map((item) => renderNavItem(item, isCollapsed && !isMobileOpen, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
 
             {/* Settings at bottom */}
             {bottomItems.length > 0 && <div className="nav-section-divider" />}
-            {bottomItems.map((item) => renderNavItem(item, isCollapsed, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
+            {bottomItems.map((item) => renderNavItem(item, isCollapsed && !isMobileOpen, isFreePlan, effectivePlanId, closeMobile, setShowSidebarUpgrade, unreadCounts))}
           </nav>
 
           {/* Sidebar Footer */}
           <div className="sidebar-footer">
             <div className={`status-pill ${isOnline ? 'online' : 'offline'}`}>
               {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
-              {!isCollapsed && (isOnline ? 'System Online' : 'Offline Mode')}
+              {(!isCollapsed || isMobileOpen) && (isOnline ? 'System Online' : 'Offline Mode')}
             </div>
 
-            {mounted && !isCollapsed && lastUpdated && (
+            {mounted && (!isCollapsed || isMobileOpen) && lastUpdated && (
               <div className="last-sync">
                 Last cached: {new Date(lastUpdated).toLocaleTimeString()}
               </div>
@@ -283,12 +297,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <button onClick={toggleDarkMode} className="footer-btn">
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-              {!isCollapsed && <span>Appearance</span>}
+              {(!isCollapsed || isMobileOpen) && <span>Appearance</span>}
             </button>
 
             <button onClick={handleLogout} className="footer-btn logout">
               <LogOut size={18} />
-              {!isCollapsed && <span>Log out</span>}
+              {(!isCollapsed || isMobileOpen) && <span>Log out</span>}
             </button>
           </div>
         </div>

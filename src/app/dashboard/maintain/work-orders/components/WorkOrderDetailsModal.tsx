@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/Modal/Modal';
 import { maintainService } from '@/services/maintainService';
 import { useSites } from '@/hooks/useSites';
@@ -29,7 +29,7 @@ interface WorkOrderDetailsModalProps {
     workOrder: any;
     onUpdate: (id: string, data: any) => void;
     onDelete: (id: string) => void;
-    onUpdateStatus: (id: string, status: string) => void;
+    onUpdateStatus: (id: string, status: string, extra?: any) => void;
     submitting: boolean;
 }
 
@@ -79,8 +79,14 @@ export default function WorkOrderDetailsModal({
     const [dieselAfter, setDieselAfter] = useState('');
     const [hourMeter, setHourMeter] = useState(''); // New Hour Meter state
     const [inventoryItems, setInventoryItems] = useState<any[]>([]); // To display logs
-    const [newItem, setNewItem] = useState({ item_name: '', quantity: '1', notes: '' });
+    const [newItem, setNewItem] = useState({ item_name: '', quantity: '1', notes: '', master_id: '' as string | null });
     const [uploadingMedia, setUploadingMedia] = useState(false);
+
+    // Engineer Stock State
+    const [engineerStock, setEngineerStock] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showOptions, setShowOptions] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -120,8 +126,43 @@ export default function WorkOrderDetailsModal({
             setIsEditing(false);
             loadMedia();
             loadInventory();
+            if (workOrder.engineer_id) {
+                loadEngineerStock(workOrder.engineer_id);
+            }
         }
     }, [workOrder, isOpen]);
+
+    useEffect(() => {
+        if (isOpen && engineerId) {
+            loadEngineerStock(engineerId);
+        }
+    }, [engineerId, isOpen]);
+
+    const loadEngineerStock = async (engId: string) => {
+        if (!engId) {
+            setEngineerStock([]);
+            return;
+        }
+        try {
+            const data = await maintainService.getEngineerStock(engId);
+            setEngineerStock(data || []);
+        } catch (err) {
+            console.error('[loadEngineerStock]', err);
+            setEngineerStock([]);
+        }
+    };
+
+    // Handle Click Outside for Dropdown
+    useEffect(() => {
+        if (!showOptions) return;
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowOptions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showOptions]);
 
     const loadInventory = async () => {
         if (!workOrder?.id) return;
@@ -163,6 +204,16 @@ export default function WorkOrderDetailsModal({
             alert('Delete failed: ' + error.message);
         }
     };
+
+    // Filtered Items for dropdown (only with balance > 0)
+    const filteredStockItems = engineerStock.filter(item =>
+        item.balance > 0 && (
+            item.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.item_category?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+    ).slice(0, 10);
+
+    const exactMatch = engineerStock.find(i => i.item_name.toLowerCase() === searchTerm.toLowerCase());
 
     const engineers = (users || []).filter((u: any) =>
         u.role === 'site_engineer' && (u.is_active !== false)
@@ -248,7 +299,7 @@ export default function WorkOrderDetailsModal({
                             </span>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', background: 'var(--bg-hover)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                        <div className="form-row detail-grid" style={{ background: 'var(--bg-hover)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
                             <div className="detail-item">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
                                     <Wrench size={14} /> TYPE
@@ -328,7 +379,13 @@ export default function WorkOrderDetailsModal({
                                     <button
                                         className="btn-submit"
                                         style={{ background: '#10b981', width: '100%' }}
-                                        onClick={() => onUpdateStatus(workOrder.id, 'completed')}
+                                        onClick={() => {
+                                            if (workOrder.type === 'preventive' && !hourMeter) {
+                                                alert('Please enter the current Hour Meter reading before completing PM.');
+                                                return;
+                                            }
+                                            onUpdateStatus(workOrder.id, 'completed', { hour_meter: hourMeter ? parseFloat(hourMeter) : undefined });
+                                        }}
                                     >
                                         <CheckCircle size={18} /> Mark as Completed
                                     </button>
@@ -338,77 +395,7 @@ export default function WorkOrderDetailsModal({
 
                         <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} />
 
-                        {/* Diesel & Hour Meter Reading Section */}
-                        {workOrder.status !== 'completed' && (
-                            <div className="detail-section">
-                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                                    <Fuel size={14} /> DIESEL LEVEL & HOUR METER (LOG ENTRY)
-                                </label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', background: 'var(--bg-hover)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
-                                    <div className="form-group">
-                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Diesel Level (Liters)</label>
-                                        <input
-                                            type="number"
-                                            className="maintenance-input"
-                                            placeholder="Liters..."
-                                            value={workOrder.status === 'in_progress' ? dieselAfter : dieselBefore}
-                                            onChange={(e) => workOrder.status === 'in_progress' ? setDieselAfter(e.target.value) : setDieselBefore(e.target.value)}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Hour Meter</label>
-                                        <input
-                                            type="number"
-                                            className="maintenance-input"
-                                            placeholder="Generator hours..."
-                                            value={hourMeter}
-                                            onChange={(e) => setHourMeter(e.target.value)}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Asset ID (Optional)</label>
-                                        <select
-                                            className="maintenance-input"
-                                            value={assetId}
-                                            onChange={(e) => setAssetId(e.target.value)}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
-                                        >
-                                            <option value="">Select Asset</option>
-                                            {filteredAssets.map((a: any) => (
-                                                <option key={a.id} value={a.id}>{a.site_id_code || a.id.slice(0, 8)} ({a.type})</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                                <button
-                                    className="btn-maintain-action"
-                                    style={{ marginTop: '10px', width: '100%', fontSize: '0.85rem' }}
-                                    onClick={async () => {
-                                        if (!profile) return;
-                                        try {
-                                            await maintainService.saveDieselReading({
-                                                site_id: siteId,
-                                                work_order_id: workOrder.id,
-                                                asset_id: assetId || undefined,
-                                                company_id: profile.company_id!,
-                                                level: parseFloat(workOrder.status === 'in_progress' ? dieselAfter : dieselBefore),
-                                                hour_meter: hourMeter ? parseFloat(hourMeter) : undefined,
-                                                reading_type: workOrder.status === 'in_progress' ? 'after' : 'before',
-                                                recorded_by: profile.id
-                                            });
-                                            alert('Log entry saved to historical record.');
-                                            setHourMeter('');
-                                        } catch (e: any) {
-                                            alert('Failed to save log: ' + e.message);
-                                        }
-                                    }}
-                                >
-                                    <CheckCircle size={14} /> Save Log Entry
-                                </button>
-                            </div>
-                        )}
+
 
                         {/* Inventory Log Section */}
                         <div className="detail-section" style={{ marginTop: '1rem' }}>
@@ -420,32 +407,32 @@ export default function WorkOrderDetailsModal({
                             </label>
 
                             {/* Inventory List */}
-                            {inventoryItems.length > 0 && (
-                                <div style={{ marginBottom: '1rem', border: '1px solid var(--border-color)', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                            {inventoryItems.length > 0 ? (
+                                <div style={{ marginBottom: '1rem', border: '1px solid var(--border-color)', borderRadius: '0.75rem', overflow: 'hidden', background: 'var(--bg-hover)' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                         <thead>
-                                            <tr style={{ background: 'var(--bg-hover)', color: 'var(--text-muted)', textAlign: 'left' }}>
-                                                <th style={{ padding: '8px' }}>Item</th>
-                                                <th style={{ padding: '8px' }}>Qty</th>
-                                                <th style={{ padding: '8px' }}>Notes</th>
-                                                {workOrder.status !== 'completed' && <th style={{ padding: '8px' }}></th>}
+                                            <tr style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)', textAlign: 'left' }}>
+                                                <th style={{ padding: '10px 12px' }}>Item</th>
+                                                <th style={{ padding: '10px 12px', width: '60px' }}>Qty</th>
+                                                <th style={{ padding: '10px 12px' }}>Notes</th>
+                                                {workOrder.status !== 'completed' && <th style={{ padding: '10px 12px', width: '40px' }}></th>}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {inventoryItems.map(item => (
                                                 <tr key={item.id} style={{ borderTop: '1px solid var(--border-color)', color: 'var(--text-main)' }}>
-                                                    <td style={{ padding: '8px' }}>{item.item_name}</td>
-                                                    <td style={{ padding: '8px' }}>{item.quantity}</td>
-                                                    <td style={{ padding: '8px', color: 'var(--text-muted)' }}>{item.notes}</td>
+                                                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>{item.item_name}</td>
+                                                    <td style={{ padding: '10px 12px' }}>{item.quantity}</td>
+                                                    <td style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: '0.75rem' }}>{item.notes}</td>
                                                     {workOrder.status !== 'completed' && (
-                                                        <td style={{ padding: '8px', textAlign: 'right' }}>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                                                             <button onClick={async () => {
                                                                 if (window.confirm('Remove this log?')) {
                                                                     await maintainService.deleteInventoryLog(item.id);
                                                                     loadInventory();
                                                                 }
-                                                            }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                                                                <Trash2 size={12} />
+                                                            }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
+                                                                <Trash2 size={14} />
                                                             </button>
                                                         </td>
                                                     )}
@@ -454,25 +441,87 @@ export default function WorkOrderDetailsModal({
                                         </tbody>
                                     </table>
                                 </div>
+                            ) : (
+                                <div style={{ padding: '1.5rem', textAlign: 'center', background: 'var(--bg-hover)', borderRadius: '0.75rem', border: '1px dashed var(--border-color)', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                    No hardware or supplies recorded for this work order.
+                                </div>
                             )}
 
                             {workOrder.status !== 'completed' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: '8px', alignItems: 'end' }}>
-                                    <div>
-                                        <label style={{ fontSize: '0.65rem', marginBottom: '4px', display: 'block' }}>Item Name</label>
-                                        <input type="text" placeholder="Filter, Oil..." value={newItem.item_name} onChange={e => setNewItem({ ...newItem, item_name: e.target.value })} style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.8rem' }} />
+                                <div className="form-row inventory-log-row" style={{ alignItems: 'end', position: 'relative' }}>
+                                    <div ref={dropdownRef} style={{ position: 'relative' }}>
+                                        <label style={{ fontSize: '0.65rem', marginBottom: '4px', display: 'block', color: 'var(--text-muted)' }}>Search My Stock</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Find part..."
+                                            value={searchTerm}
+                                            onChange={e => {
+                                                setSearchTerm(e.target.value);
+                                                setShowOptions(true);
+                                                setNewItem(prev => ({ ...prev, item_name: e.target.value }));
+                                            }}
+                                            onFocus={() => setShowOptions(true)}
+                                            style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                                        />
+                                        {showOptions && (searchTerm || filteredStockItems.length > 0) && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                bottom: '100%',
+                                                left: 0,
+                                                right: 0,
+                                                zIndex: 100,
+                                                background: 'var(--bg-card)',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: '8px',
+                                                marginBottom: '4px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                boxShadow: '0 -4px 15px -3px rgba(0, 0, 0, 0.3)'
+                                            }}>
+                                                {filteredStockItems.map(item => (
+                                                    <div
+                                                        key={item.id}
+                                                        onClick={() => {
+                                                            setSearchTerm(item.item_name);
+                                                            setNewItem({
+                                                                ...newItem,
+                                                                item_name: item.item_name,
+                                                                master_id: item.master_id || item.master?.id || null
+                                                            });
+                                                            setShowOptions(false);
+                                                        }}
+                                                        style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.8rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    >
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontWeight: 600 }}>{item.item_name}</span>
+                                                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{item.item_category}</span>
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981' }}>{item.balance} {item.unit}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {searchTerm && filteredStockItems.length === 0 && (
+                                                    <div style={{ padding: '12px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        No stock matching "{searchTerm}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: '0.65rem', marginBottom: '4px', display: 'block' }}>Qty</label>
-                                        <input type="number" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: e.target.value })} style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.8rem' }} />
+                                        <label style={{ fontSize: '0.65rem', marginBottom: '4px', display: 'block', color: 'var(--text-muted)' }}>Qty</label>
+                                        <input type="number" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }} />
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: '0.65rem', marginBottom: '4px', display: 'block' }}>Notes</label>
-                                        <input type="text" placeholder="Serial num..." value={newItem.notes} onChange={e => setNewItem({ ...newItem, notes: e.target.value })} style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.8rem' }} />
+                                        <label style={{ fontSize: '0.65rem', marginBottom: '4px', display: 'block', color: 'var(--text-muted)' }}>Notes</label>
+                                        <input type="text" placeholder="Serial/Notes..." value={newItem.notes} onChange={e => setNewItem({ ...newItem, notes: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }} />
                                     </div>
                                     <button
                                         className="btn-maintain-action"
-                                        style={{ padding: '6px 12px' }}
+                                        style={{ padding: '8px 16px' }}
                                         disabled={!newItem.item_name}
                                         onClick={async () => {
                                             if (!profile || !newItem.item_name) return;
@@ -480,16 +529,18 @@ export default function WorkOrderDetailsModal({
                                                 await maintainService.saveInventoryLog(profile.company_id!, workOrder.id, profile.id, [{
                                                     item_name: newItem.item_name,
                                                     quantity: parseFloat(newItem.quantity),
-                                                    notes: newItem.notes
+                                                    notes: newItem.notes,
+                                                    master_id: newItem.master_id
                                                 }]);
-                                                setNewItem({ item_name: '', quantity: '1', notes: '' });
+                                                setNewItem({ item_name: '', quantity: '1', notes: '', master_id: null });
+                                                setSearchTerm('');
                                                 loadInventory();
                                             } catch (e: any) {
                                                 alert('Failed to log item: ' + e.message);
                                             }
                                         }}
                                     >
-                                        <Plus size={14} />
+                                        <Plus size={16} />
                                     </button>
                                 </div>
                             )}
@@ -501,7 +552,7 @@ export default function WorkOrderDetailsModal({
                                 <Camera size={14} /> MAINTENANCE PHOTOS (BEFORE/AFTER)
                             </label>
 
-                            <div className="media-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                            <div className="media-grid" style={{ gap: '1rem', marginTop: '0.5rem' }}>
                                 {/* Before Photos */}
                                 <div className="media-group">
                                     <h4 style={{ fontSize: '0.75rem', marginBottom: '8px', color: 'var(--text-main)' }}>Before Photos</h4>
@@ -577,6 +628,86 @@ export default function WorkOrderDetailsModal({
                                 </div>
                             </div>
                         </div>
+
+                        {/* Diesel & Hour Meter Reading Section - Moved to Base with Premium Styling */}
+                        {workOrder.status !== 'completed' && (
+                            <div className="detail-section" style={{ marginTop: '1rem', padding: '1.25rem', background: 'rgba(59, 130, 246, 0.03)', borderRadius: '1rem', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                                    <Fuel size={16} style={{ color: '#3b82f6' }} /> FINAL LOG ENTRY & SUBMISSION
+                                </label>
+                                <div className="form-row three-col" style={{ marginBottom: '1rem' }}>
+                                    <div className="form-group">
+                                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Diesel Level (L)</label>
+                                        <input
+                                            type="number"
+                                            className="maintenance-input"
+                                            placeholder="Liters..."
+                                            value={workOrder.status === 'in_progress' ? dieselAfter : dieselBefore}
+                                            onChange={(e) => workOrder.status === 'in_progress' ? setDieselAfter(e.target.value) : setDieselBefore(e.target.value)}
+                                            style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Hour Meter (h)</label>
+                                        <input
+                                            type="number"
+                                            className="maintenance-input"
+                                            placeholder="Hours..."
+                                            value={hourMeter}
+                                            onChange={(e) => setHourMeter(e.target.value)}
+                                            style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', display: 'block', fontWeight: 600 }}>Confirm Asset</label>
+                                        <select
+                                            className="maintenance-input"
+                                            value={assetId}
+                                            onChange={(e) => setAssetId(e.target.value)}
+                                            style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                                        >
+                                            <option value="">Select Asset</option>
+                                            {filteredAssets.map((a: any) => (
+                                                <option key={a.id} value={a.id}>{a.site_id_code || a.id.slice(0, 8)} ({a.type})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <button
+                                    className="btn-submit"
+                                    style={{ width: '100%', height: '44px', fontSize: '0.9rem', fontWeight: 700, gap: '8px' }}
+                                    onClick={async () => {
+                                        if (!profile) return;
+
+                                        const dieselLevel = workOrder.status === 'in_progress' ? dieselAfter : dieselBefore;
+                                        if (!dieselLevel || isNaN(parseFloat(dieselLevel))) {
+                                            alert('Please enter a valid Diesel Level reading.');
+                                            return;
+                                        }
+
+                                        try {
+                                            await maintainService.saveDieselReading({
+                                                site_id: siteId,
+                                                work_order_id: workOrder.id,
+                                                asset_id: assetId || undefined,
+                                                company_id: profile.company_id!,
+                                                level: parseFloat(dieselLevel),
+                                                hour_meter: hourMeter ? parseFloat(hourMeter) : undefined,
+                                                reading_type: workOrder.status === 'in_progress' ? 'after' : 'before',
+                                                recorded_by: profile.id
+                                            });
+                                            alert('Visit log entry saved successfully.');
+                                            setHourMeter('');
+                                            onClose(); // Auto-close on successful log
+                                        } catch (e: any) {
+                                            alert('Failed to save log: ' + e.message);
+                                        }
+                                    }}
+                                >
+                                    <CheckCircle size={18} /> Submit Visit Log & Close
+                                </button>
+                            </div>
+                        )}
                     </>
                 ) : (
                     // EDIT MODE
@@ -600,7 +731,7 @@ export default function WorkOrderDetailsModal({
                         </div>
 
                         {/* Type + Priority */}
-                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-row">
                             <div className="form-group">
                                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                                     Type
@@ -632,7 +763,7 @@ export default function WorkOrderDetailsModal({
                         </div>
 
                         {/* Assign Engineer + Scheduled Date */}
-                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-row">
                             <div className="form-group">
                                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                                     Assign Engineer
@@ -662,7 +793,7 @@ export default function WorkOrderDetailsModal({
                         </div>
 
                         {/* Site + Asset */}
-                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-row">
                             <div className="form-group">
                                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>
                                     Site
@@ -713,8 +844,9 @@ export default function WorkOrderDetailsModal({
                             />
                         </div>
                     </form>
-                )}
-            </div>
-        </Modal>
+                )
+                }
+            </div >
+        </Modal >
     );
 }

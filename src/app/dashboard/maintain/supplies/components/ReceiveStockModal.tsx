@@ -49,7 +49,7 @@ export default function ReceiveStockModal({ isOpen, onClose, companyId, userId, 
                     </button>
                 </div>
 
-                <div className="modal-body" style={{ padding: '2rem', maxHeight: '85vh', overflowY: 'auto' }}>
+                <div className="modal-body" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
                     <ReceivingDashboard
                         companyId={companyId}
                         userId={userId}

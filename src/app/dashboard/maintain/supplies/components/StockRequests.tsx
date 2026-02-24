@@ -33,6 +33,7 @@ export default function StockRequests({ requests, loading, isAdmin, userId, onFu
         {
             key: 'created_at',
             label: 'Date / Engineer',
+            mobileLabel: 'Request By',
             fullWidth: true,
             render: (row) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -46,6 +47,7 @@ export default function StockRequests({ requests, loading, isAdmin, userId, onFu
         {
             key: 'items',
             label: 'Items Requested',
+            mobileLabel: 'Items',
             render: (row) => (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                     {row.items.map((item: any, idx: number) => (
@@ -59,6 +61,7 @@ export default function StockRequests({ requests, loading, isAdmin, userId, onFu
         {
             key: 'status',
             label: 'Status',
+            mobileLabel: 'Current Status',
             render: (row) => {
                 const colors: Record<string, string> = {
                     pending: '#f59e0b',
@@ -96,6 +99,7 @@ export default function StockRequests({ requests, loading, isAdmin, userId, onFu
         {
             key: 'actions',
             label: 'Actions',
+            mobileLabel: 'Fulfillment',
             align: 'right',
             render: (row) => (
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>

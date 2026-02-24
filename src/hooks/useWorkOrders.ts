@@ -38,6 +38,10 @@ export function useWorkOrders() {
                 // Engineers only see their assigned work orders
                 data = await maintainService.getEngineerWorkOrders(profile.id, filters);
             } else {
+                // For regional admins, we must restrict by clusters
+                if (profile?.role === 'admin' && profile?.cluster_ids) {
+                    filters.clusterIds = profile.cluster_ids;
+                }
                 data = await maintainService.getWorkOrders(profile.company_id, filters);
             }
 
@@ -88,10 +92,10 @@ export function useWorkOrders() {
         }
     };
 
-    const handleUpdateStatus = async (woId: string, status: string) => {
+    const handleUpdateStatus = async (woId: string, status: string, extraUpdates: any = {}) => {
         try {
             setSubmitting(true);
-            const updates: any = { status };
+            const updates: any = { status, ...extraUpdates };
             if (status === 'completed') updates.completed_at = new Date().toISOString();
             await maintainService.updateWorkOrder(woId, updates);
             showToast(`Work order updated to ${status}`, 'success');

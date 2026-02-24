@@ -56,7 +56,9 @@ export default function ClientSuppliesDashboard() {
     const mainColumns: DataTableColumn<any>[] = [
         {
             label: 'Client Name',
+            mobileLabel: 'Client',
             key: 'client_name',
+            fullWidth: true,
             render: (item) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <span className="client-pill">{item.client_name}</span>
@@ -96,6 +98,7 @@ export default function ClientSuppliesDashboard() {
         {
             label: 'Actions',
             key: 'actions',
+            fullWidth: true,
             render: (item) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     <RowActions

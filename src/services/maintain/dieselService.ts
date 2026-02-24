@@ -16,6 +16,7 @@ export const dieselService = {
             .insert(reading)
             .select()
             .single();
+
         if (error) throw error;
         return data;
     },

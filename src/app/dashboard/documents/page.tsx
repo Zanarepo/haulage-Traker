@@ -45,7 +45,8 @@ export default function DocumentCentre() {
         try {
             setLoading(true);
             const data = await documentService.getDeliveryDocuments(
-                isDriver ? profile?.id : undefined
+                isDriver ? profile?.id : undefined,
+                (profile?.role === 'admin' || profile?.role === 'site_engineer') ? profile?.cluster_ids : undefined
             );
             setDocuments(data || []);
         } catch (error) {
@@ -58,6 +59,7 @@ export default function DocumentCentre() {
     const columns: DataTableColumn<any>[] = [
         {
             label: 'Date',
+            mobileLabel: 'Date',
             key: 'created_at',
             render: (it: any) => (
                 <div className="date-group">
@@ -68,6 +70,7 @@ export default function DocumentCentre() {
         },
         {
             label: 'Trip & Asset',
+            mobileLabel: 'Trip & Asset',
             key: 'truck_plate_number',
             render: (it: any) => (
                 <div className="asset-group">
@@ -81,6 +84,7 @@ export default function DocumentCentre() {
         },
         {
             label: 'Delivery Site',
+            mobileLabel: 'Delivery Site',
             key: 'site_name',
             render: (it: any) => (
                 <div className="site-group">
@@ -91,6 +95,7 @@ export default function DocumentCentre() {
         },
         {
             label: 'Verification Docs',
+            mobileLabel: 'Verification Docs',
             key: 'docs',
             render: (it: any) => (
                 <div className="docs-badge-group">
@@ -102,6 +107,7 @@ export default function DocumentCentre() {
         },
         {
             label: 'Actions',
+            mobileLabel: 'Actions',
             key: 'actions',
             render: (it: any) => (
                 <button

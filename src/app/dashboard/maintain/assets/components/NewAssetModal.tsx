@@ -49,6 +49,9 @@ export default function NewAssetModal({
         installation_date: '',
         purchase_date: '',
         warranty_expiry_date: '',
+        pm_interval_hours: 250,
+        last_pm_hours: 0,
+        last_pm_date: '',
         notes: ''
     });
 
@@ -66,6 +69,9 @@ export default function NewAssetModal({
                 installation_date: '',
                 purchase_date: '',
                 warranty_expiry_date: '',
+                pm_interval_hours: 250,
+                last_pm_hours: 0,
+                last_pm_date: '',
                 notes: ''
             });
 
@@ -395,6 +401,41 @@ export default function NewAssetModal({
                                 style={inputStyle}
                             />
                         </div>
+                    </div>
+                </div>
+
+                {/* Maintenance Tracking */}
+                <span style={sectionLabelStyle}>Maintenance Schedule</span>
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '0.75rem' }}>
+                    <div className="form-group">
+                        <label style={labelStyle}>Svc Interval (hrs)</label>
+                        <input
+                            name="pm_interval_hours"
+                            type="number"
+                            value={formData.pm_interval_hours}
+                            onChange={handleChange}
+                            style={inputStyle}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label style={labelStyle}>Last Svc (hrs)</label>
+                        <input
+                            name="last_pm_hours"
+                            type="number"
+                            value={formData.last_pm_hours}
+                            onChange={handleChange}
+                            style={inputStyle}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label style={labelStyle}>Last Svc Date</label>
+                        <input
+                            name="last_pm_date"
+                            type="date"
+                            value={formData.last_pm_date}
+                            onChange={handleChange}
+                            style={inputStyle}
+                        />
                     </div>
                 </div>
 

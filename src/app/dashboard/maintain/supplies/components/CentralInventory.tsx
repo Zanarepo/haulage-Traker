@@ -3,6 +3,7 @@ import { Package, Hash, Tag, Layers, RefreshCcw, Search, Trash2, Edit2, Plus } f
 import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 import { maintainService } from '@/services/maintainService';
 import { useToast } from '@/hooks/useToast';
+import EditProductModal from './EditProductModal';
 
 interface CentralInventoryProps {
     companyId: string;
@@ -16,6 +17,8 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
     const [inventory, setInventory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedEditProduct, setSelectedEditProduct] = useState<any | null>(null);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -37,14 +40,25 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
 
     const handleDeleteProduct = async (product: any) => {
         if (!confirm(`Are you sure you want to delete "${product.product_name}"? This will remove all associated stock units and historical links.`)) return;
-        // Logic for deleting master product can be added to maintainService
-        showToast('Delete functionality is restricted to Superadmins.', 'warning');
+
+        try {
+            setLoading(true);
+            await maintainService.deleteMasterProduct(product.id);
+            showToast('Product deleted successfully.', 'success');
+            loadCentralInventory();
+        } catch (err: any) {
+            console.error('[CentralInventory] Delete failed:', err);
+            showToast(err.message || 'Failed to delete product.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const columns: DataTableColumn<any>[] = [
         {
             key: 'product_name',
             label: 'Product Details',
+            mobileLabel: 'Product Name',
             fullWidth: true,
             render: (row) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -56,6 +70,7 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
         {
             key: 'total_in_stock',
             label: 'Warehouse Stock',
+            mobileLabel: 'In Stock',
             render: (row) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div className={`qty-tag ${row.total_in_stock <= row.low_stock_threshold ? 'low-stock' : ''}`} style={{ position: 'relative' }}>
@@ -81,6 +96,7 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
         {
             key: 'last_purchase_price',
             label: 'Latest Cost',
+            mobileLabel: 'Latest Cost',
             render: (row) => (
                 <span style={{ fontWeight: 600 }}>
                     {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(row.last_purchase_price || 0)}
@@ -90,6 +106,7 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
         {
             key: 'actions',
             label: 'Actions',
+            mobileLabel: 'Quick Actions',
             align: 'right',
             render: (row) => (
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
@@ -98,7 +115,11 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
                             <button className="row-action-btn edit" onClick={(e) => { e.stopPropagation(); onRestock?.(row); }} title="Add to Batch / Restock">
                                 <Plus size={14} />
                             </button>
-                            <button className="row-action-btn edit" onClick={(e) => { e.stopPropagation(); showToast('Edit metadata coming soon.', 'info'); }} title="Edit Product">
+                            <button className="row-action-btn edit" onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEditProduct(row);
+                                setIsEditModalOpen(true);
+                            }} title="Edit Product">
                                 <Edit2 size={14} />
                             </button>
                             <button className="row-action-btn delete" onClick={(e) => { e.stopPropagation(); handleDeleteProduct(row); }}>
@@ -118,19 +139,18 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
 
     return (
         <div className="central-inventory-view">
-            <div className="inventory-controls" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div className="search-pill-wrapper" style={{ flex: 1, position: 'relative' }}>
-                    <Search size={16} className="search-icon" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <div className="inventory-controls">
+                <div className="search-pill-wrapper">
+                    <Search size={16} className="search-icon" />
                     <input
                         type="text"
                         placeholder="Search master inventory (name, part number)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="filter-pill"
-                        style={{ width: '100%', paddingLeft: '2.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', height: '44px', borderRadius: '30px' }}
+                        className="inventory-search-input"
                     />
                 </div>
-                <button className="btn-refresh" onClick={loadCentralInventory} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '0.6rem', borderRadius: '50%', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <button className="btn-refresh-pill" onClick={loadCentralInventory} title="Refresh Inventory">
                     <RefreshCcw size={18} />
                 </button>
             </div>
@@ -143,6 +163,16 @@ export default function CentralInventory({ companyId, refreshKey, canManage, onR
                 onRowClick={(row) => onViewDetails?.(row)}
                 emptyMessage="No master inventory records found."
                 emptyIcon={<Package size={48} />}
+            />
+
+            <EditProductModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedEditProduct(null);
+                }}
+                product={selectedEditProduct}
+                onSuccess={loadCentralInventory}
             />
         </div>
     );

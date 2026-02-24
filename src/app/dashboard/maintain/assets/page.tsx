@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
+import './assets.css';
 import '../maintain.css';
 import '../../dashboard.css';
+import '../supplies/supplies.css'; // Leverage shared search bar styles
 import { useAssets } from '@/hooks/useAssets';
 import {
     Plus,
@@ -11,12 +13,15 @@ import {
     Gauge,
     Hash,
     Package,
-    Loader2,
     Edit2,
-    Trash2
+    Trash2,
+    LayoutGrid,
+    Activity,
+    RefreshCcw
 } from 'lucide-react';
 import NewAssetModal from './components/NewAssetModal';
 import AssetDetailsModal from './components/AssetDetailsModal';
+import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 
 const TYPE_ICONS: Record<string, any> = {
     generator: '⚡',
@@ -29,10 +34,10 @@ const TYPE_ICONS: Record<string, any> = {
     other: '🔧'
 };
 
-const STATUS_COLORS: Record<string, { bg: string, color: string }> = {
-    active: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981' },
-    inactive: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' },
-    decommissioned: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
+const HEALTH_STATUS_COLORS: Record<string, { bg: string, color: string, label: string }> = {
+    healthy: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Healthy' },
+    due_soon: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Due Soon' },
+    overdue: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', label: 'Overdue' }
 };
 
 export default function AssetRegistryPage() {
@@ -63,258 +68,196 @@ export default function AssetRegistryPage() {
         a.site?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-    };
-
-    const onCreateSubmit = async (data: any) => {
-        setSubmitting(true);
-        try {
-            await handleCreate(data);
-            setIsCreateModalOpen(false);
-        } finally {
-            setSubmitting(false);
+    const columns: DataTableColumn<any>[] = [
+        {
+            key: 'asset_info',
+            label: 'Asset / Equipment',
+            mobileLabel: 'Item Details',
+            fullWidth: true,
+            render: (asset) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="type-icon-wrapper">
+                        {TYPE_ICONS[asset.type] || '🔧'}
+                    </div>
+                    <div>
+                        <h3 className="model-name">{asset.make_model}</h3>
+                        <div className="detail-line">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Hash size={12} />
+                                <span>{asset.serial_number || 'No S/N'}</span>
+                            </div>
+                            <span style={{ opacity: 0.3 }}>•</span>
+                            <span className="category-pill" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, fontSize: '10px' }}>
+                                {asset.type.replace('_', ' ')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            key: 'location',
+            label: 'Location',
+            mobileLabel: 'Location',
+            render: (asset) => {
+                const cluster = asset.site?.clusters;
+                return (
+                    <div className="location-info">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>
+                            <MapPin size={14} style={{ color: 'var(--text-muted)' }} />
+                            <span>{asset.site?.name || 'Unassigned'}</span>
+                        </div>
+                        {cluster?.name && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', paddingLeft: '20px' }}>
+                                {cluster.name} {cluster.state && `• ${cluster.state}`}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
+            key: 'metrics',
+            label: 'Performance',
+            mobileLabel: 'Performance',
+            render: (asset) => (
+                <div className="metrics-group">
+                    <div className="metric-item">
+                        <span className="metric-label">Runtime</span>
+                        <div className="metric-value">
+                            <Gauge size={14} style={{ color: 'var(--text-muted)' }} />
+                            <span>{asset.hour_meter?.toLocaleString() || 0}h</span>
+                        </div>
+                    </div>
+                    <div className="metric-item">
+                        <span className="metric-label">Status</span>
+                        {asset.projections ? (
+                            <span className="status-badge" style={{
+                                background: HEALTH_STATUS_COLORS[asset.projections.healthStatus]?.bg,
+                                color: HEALTH_STATUS_COLORS[asset.projections.healthStatus]?.color
+                            }}>
+                                {HEALTH_STATUS_COLORS[asset.projections.healthStatus]?.label}
+                            </span>
+                        ) : (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No data</span>
+                        )}
+                    </div>
+                </div>
+            )
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            mobileLabel: 'Actions',
+            align: 'right',
+            render: (asset) => (
+                <div className="actions-group">
+                    {isManager && (
+                        <>
+                            <button
+                                className="btn-action"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    openDetails(asset);
+                                }}
+                                title="Edit Asset"
+                            >
+                                <Edit2 size={14} />
+                            </button>
+                            <button
+                                className="btn-action delete"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(asset.id);
+                                }}
+                                title="Delete Asset"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </>
+                    )}
+                </div>
+            )
         }
-    };
-
-    const onUpdateAsset = async (id: string, data: any) => {
-        setSubmitting(true);
-        try {
-            await handleUpdate(id, data);
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    ];
 
     return (
-        <div className="maintain-page">
-            <header className="page-header" style={{ marginBottom: '1.5rem' }}>
+        <div className="maintain-page asset-registry-container">
+            <header className="page-header">
                 <div className="header-info">
-                    <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>Asset Registry</h1>
-                    <p style={{ fontSize: '0.85rem' }}>Comprehensive tracking of technical infrastructure across all sites.</p>
+                    <h1>Asset Registry</h1>
+                    <p>Comprehensive tracking of technical infrastructure across all sites.</p>
                 </div>
                 <div className="header-actions">
                     {isManager && (
-                        <button className="btn-maintain-action" onClick={() => setIsCreateModalOpen(true)} style={{ height: '38px', padding: '0 1rem' }}>
-                            <Plus size={16} /> Register Asset
+                        <button className="btn-maintain-action" onClick={() => setIsCreateModalOpen(true)}>
+                            <Plus size={18} /> Register Asset
                         </button>
                     )}
                 </div>
             </header>
 
-            {/* Quick Stats - more compact */}
-            <div className="maintain-stats" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div className="stat-card" style={{ padding: '0.75rem 1rem' }}>
-                    <h3 style={{ fontSize: '0.7rem' }}>Total Assets</h3>
-                    <p className="value" style={{ fontSize: '1.25rem' }}>{stats.total}</p>
+            <div className="maintain-stats">
+                <div className="stat-card">
+                    <div className="card-content">
+                        <h3>Total Assets</h3>
+                        <p className="value">{stats.total}</p>
+                    </div>
                 </div>
-                <div className="stat-card" style={{ padding: '0.75rem 1rem' }}>
-                    <h3 style={{ fontSize: '0.7rem' }}>Operational</h3>
-                    <p className="value" style={{ fontSize: '1.25rem', color: '#10b981' }}>{stats.active}</p>
+                <div className="stat-card">
+                    <div className="card-content">
+                        <h3>Healthy</h3>
+                        <p className="value" style={{ color: '#10b981' }}>{stats.healthy}</p>
+                    </div>
                 </div>
-                <div className="stat-card" style={{ padding: '0.75rem 1rem' }}>
-                    <h3 style={{ fontSize: '0.7rem' }}>Service Due</h3>
-                    <p className="value" style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{stats.overdue}</p>
+                <div className="stat-card">
+                    <div className="card-content">
+                        <h3>Due Soon</h3>
+                        <p className="value" style={{ color: '#f59e0b' }}>{stats.dueSoon}</p>
+                    </div>
                 </div>
-                <div className="stat-card" style={{ padding: '0.75rem 1rem' }}>
-                    <h3 style={{ fontSize: '0.7rem' }}>Inactive</h3>
-                    <p className="value" style={{ fontSize: '1.25rem', color: '#6b7280' }}>{stats.inactive}</p>
+                <div className="stat-card">
+                    <div className="card-content">
+                        <h3>Overdue</h3>
+                        <p className="value" style={{ color: '#ef4444' }}>{stats.overdue}</p>
+                    </div>
                 </div>
             </div>
 
-            {/* Search Controls */}
-            <div style={{ marginBottom: '1rem' }}>
-                <div className="search-field" style={{
-                    maxWidth: '400px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    background: 'var(--bg-hover)',
-                    padding: '0 0.75rem',
-                    height: '38px',
-                    borderRadius: '0.5rem',
-                    border: '1px solid var(--border-color)'
-                }}>
-                    <Search size={16} style={{ color: 'var(--text-muted)' }} />
+            {/* Premium Search Bar Pattern */}
+            <div className="inventory-controls">
+                <div className="search-pill-wrapper">
+                    <Search size={16} className="search-icon" />
                     <input
                         type="text"
                         placeholder="Search by model, serial, or site..."
                         value={searchTerm}
-                        onChange={onSearchChange}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-main)',
-                            width: '100%',
-                            outline: 'none',
-                            fontSize: '0.85rem'
-                        }}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="inventory-search-input"
                     />
                 </div>
+                <button
+                    className="btn-refresh-pill"
+                    onClick={() => window.location.reload()}
+                    title="Refresh List"
+                >
+                    <RefreshCcw size={18} />
+                </button>
             </div>
 
-            {/* Asset List - Full Width Row based layout */}
-            <div className="asset-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {loading && <div className="maintain-empty">Loading assets...</div>}
-                {!loading && filteredAssets.length === 0 && (
-                    <div className="maintain-empty">
-                        <Package size={24} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-                        <p>No matches found in your registry.</p>
-                    </div>
-                )}
-                {filteredAssets.map(asset => {
-                    const statusStyle = STATUS_COLORS[asset.status] || STATUS_COLORS.active;
-                    const cluster = asset.site?.clusters;
+            <DataTable
+                columns={columns}
+                data={filteredAssets}
+                keyExtractor={(asset) => asset.id}
+                loading={loading}
+                onRowClick={openDetails}
+                emptyMessage="No matching assets found in the registry."
+            />
 
-                    return (
-                        <div
-                            key={asset.id}
-                            className="stat-card asset-row"
-                            style={{
-                                cursor: 'pointer',
-                                padding: '0.75rem 1.25rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1.5rem',
-                                width: '100%',
-                                minHeight: 'auto',
-                                transition: 'all 0.2s ease',
-                                border: '1px solid var(--border-color)',
-                                background: 'var(--bg-card)'
-                            }}
-                            onClick={() => openDetails(asset)}
-                        >
-                            {/* Type Icon */}
-                            <div style={{
-                                width: '40px',
-                                height: '40px',
-                                background: 'var(--bg-hover)',
-                                borderRadius: '0.5rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.1rem',
-                                flexShrink: 0
-                            }}>
-                                {TYPE_ICONS[asset.type] || '🔧'}
-                            </div>
-
-                            {/* Equipment info */}
-                            <div style={{ flex: 1, minWidth: '180px' }}>
-                                <h3 style={{
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    color: 'var(--text-main)',
-                                    margin: 0,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
-                                }}>
-                                    {asset.make_model}
-                                </h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                    <Hash size={12} />
-                                    <span>{asset.serial_number || 'No S/N'}</span>
-                                    <span style={{ opacity: 0.3 }}>•</span>
-                                    <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{asset.type.replace('_', ' ')}</span>
-                                </div>
-                            </div>
-
-                            {/* Location info */}
-                            <div style={{ flex: 1.2, minWidth: '200px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>
-                                    <MapPin size={14} style={{ color: 'var(--text-muted)' }} />
-                                    <span>{asset.site?.name || 'Unassigned'}</span>
-                                </div>
-                                {cluster?.name && (
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', paddingLeft: '20px' }}>
-                                        {cluster.name} {cluster.state && `• ${cluster.state}`}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Metrics */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexShrink: 0 }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                                    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Runtime</span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>
-                                        <Gauge size={14} style={{ color: 'var(--text-muted)' }} />
-                                        <span>{asset.hour_meter?.toLocaleString() || 0}h</span>
-                                    </div>
-                                </div>
-                                <div style={{ minWidth: '80px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                                    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Status</span>
-                                    <span className="status-tag" style={{
-                                        background: statusStyle.bg,
-                                        color: statusStyle.color,
-                                        border: `1px solid ${statusStyle.color}20`,
-                                        fontSize: '8px',
-                                        margin: 0
-                                    }}>
-                                        {asset.status}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Actions Group */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingLeft: '1rem', borderLeft: '1px solid var(--border-color)', flexShrink: 0 }}>
-                                {isManager && (
-                                    <>
-                                        <button
-                                            title="Edit Asset"
-                                            style={{
-                                                padding: '8px',
-                                                borderRadius: '6px',
-                                                background: 'var(--bg-hover)',
-                                                border: 'none',
-                                                color: 'var(--text-muted)',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openDetails(asset);
-                                                // We could potentially set a flag to open the modal in "edit mode" directly
-                                                // But openDetails handles the standard modal trigger.
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-color)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                                        >
-                                            <Edit2 size={14} />
-                                        </button>
-                                        <button
-                                            title="Delete Asset"
-                                            style={{
-                                                padding: '8px',
-                                                borderRadius: '6px',
-                                                background: 'var(--bg-hover)',
-                                                border: 'none',
-                                                color: 'var(--text-muted)',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(asset.id);
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Modals */}
             <NewAssetModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
-                onSubmit={onCreateSubmit}
+                onSubmit={handleCreate}
                 submitting={submitting}
             />
 
@@ -322,7 +265,7 @@ export default function AssetRegistryPage() {
                 isOpen={isDetailsModalOpen}
                 onClose={() => setIsDetailsModalOpen(false)}
                 asset={selectedAsset}
-                onUpdate={onUpdateAsset}
+                onUpdate={handleUpdate}
                 onDelete={handleDelete}
                 submitting={submitting}
             />

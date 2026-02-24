@@ -71,7 +71,9 @@ export default function TripsDashboard() {
     const columns: DataTableColumn<any>[] = [
         {
             label: 'Trip Info',
+            mobileLabel: 'Trip',
             key: 'truck_plate_number',
+            fullWidth: true,
             render: (it) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span className="truck-pill">{it.truck_plate_number}</span>
@@ -119,7 +121,9 @@ export default function TripsDashboard() {
         },
         {
             label: 'Actions',
+            mobileLabel: 'Available Actions',
             key: 'actions',
+            fullWidth: true,
             render: (it) => (
                 <RowActions
                     actions={[

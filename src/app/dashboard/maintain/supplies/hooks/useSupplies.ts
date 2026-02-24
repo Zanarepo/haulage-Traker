@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/useToast';
 import { maintainService } from '@/services/maintainService';
 import { supabase } from '@/lib/supabase';
 
@@ -7,6 +8,7 @@ export type TabType = 'stock' | 'inventory' | 'history' | 'receiving_history' | 
 
 export function useSupplies() {
     const { profile } = useAuth();
+    const { showToast } = useToast();
     const [allocations, setAllocations] = useState<any[]>([]);
     const [restockHistory, setRestockHistory] = useState<any[]>([]);
     const [receivingHistory, setReceivingHistory] = useState<any[]>([]);
@@ -30,14 +32,18 @@ export function useSupplies() {
     const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
     const isEngineer = profile?.role === 'site_engineer';
+    const isSuperadmin = profile?.role === 'superadmin';
     const isAdmin = ['superadmin', 'admin', 'accountant', 'warehouse_manager', 'storekeeper'].includes(profile?.role || '');
     const canManageReceive = ['superadmin', 'admin', 'warehouse_manager', 'storekeeper'].includes(profile?.role || '');
 
+    const assignedClusterIds = (profile as any)?.cluster_ids || [];
+    const clusterFilters = (!isSuperadmin && isAdmin) ? assignedClusterIds : undefined;
+
     useEffect(() => {
-        if (isAdmin && activeTab === 'stock' && !isEngineer) {
+        if (isSuperadmin && activeTab === 'stock' && !isEngineer) {
             setActiveTab('inventory');
         }
-    }, [profile?.role, isAdmin, isEngineer]);
+    }, [profile?.role, isSuperadmin, isEngineer]);
 
     const [stats, setStats] = useState({
         inflowCount: 0,
@@ -58,17 +64,29 @@ export function useSupplies() {
             const commonFilters = {
                 engineerId: isEngineer ? profile.id : (selectedEngineerId || undefined),
                 startDate,
-                endDate
+                endDate,
+                clusterIds: clusterFilters
             };
 
             const loadEngineers = async () => {
-                const { data } = await supabase
+                let query = supabase
                     .from('users')
-                    .select('id, full_name')
+                    .select('id, full_name, user_cluster_assignments(cluster_id)')
                     .eq('company_id', profile.company_id)
                     .eq('role', 'site_engineer')
                     .eq('is_active', true);
-                setAllEngineers(data || []);
+
+                const { data } = await query;
+                let filtered = data || [];
+
+                if (clusterFilters && clusterFilters.length > 0) {
+                    filtered = filtered.filter((eng: any) => {
+                        const engClusters = eng.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                        return engClusters.some((cid: string) => clusterFilters.includes(cid));
+                    });
+                }
+
+                setAllEngineers(filtered);
             };
 
             const loadRestockHistory = async () => {
@@ -79,7 +97,8 @@ export function useSupplies() {
             const loadReceivingHistory = async () => {
                 const data = await maintainService.getReceivingHistory(profile.company_id, {
                     startDate,
-                    endDate
+                    endDate,
+                    clusterIds: clusterFilters
                 });
                 setReceivingHistory(data);
             };
@@ -121,16 +140,25 @@ export function useSupplies() {
     };
 
     const handleDeleteBatch = async (batch: any) => {
-        if (!confirm(`Are you sure you want to delete the entire batch "${batch.batch_name || 'Individual Restock'}"? This will restore balances for all items in it.`)) return;
+        const batchName = batch.batch_name || batch.reference_no || 'Individual Restock';
+        if (!confirm(`Are you sure you want to delete the entire batch "${batchName}"? This will restore balances for all items in it.`)) return;
+
         try {
-            if (batch.batch_id) {
+            setLoading(true);
+            if (batch.type === 'inflow') {
+                await maintainService.deleteReceivingBatch(batch.id);
+            } else if (batch.batch_id) {
                 await maintainService.deleteBatch(batch.batch_id);
             } else {
                 await maintainService.deleteLedgerEntry(batch.id);
             }
+            showToast('Batch deleted successfully.', 'success');
             setRefreshKey(prev => prev + 1);
         } catch (err) {
             console.error('[DeleteBatch]', err);
+            showToast('Failed to delete batch.', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -165,6 +193,8 @@ export function useSupplies() {
         setSelectedProduct,
         isEngineer,
         isAdmin,
+        isSuperadmin,
+        assignedClusterIds,
         canManageReceive,
         handleDeleteBatch,
         stockRequests,

@@ -35,9 +35,9 @@ export function useTrips() {
                 (!isManager && !isEngineer) ? profile.id : undefined
             );
 
-            // If engineer, further filter by their assigned clusters
+            // If engineer or admin, further filter by their assigned clusters
             let visibleTrips = data || [];
-            if (isEngineer && profile.cluster_ids) {
+            if ((isEngineer || profile.role === 'admin') && profile.cluster_ids) {
                 visibleTrips = visibleTrips.filter(t => profile.cluster_ids?.includes(t.cluster_id));
             }
 

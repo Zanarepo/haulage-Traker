@@ -3,7 +3,9 @@ import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
 import Modal from '@/components/Modal/Modal';
 import { maintainService } from '@/services/maintainService';
 import { Package, FileText, Trash2, Edit3, ArrowUpRight, ArrowDownRight, Save } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/hooks/useAuth';
 import EditEntryModal from './EditEntryModal';
 
 interface BatchDetailsModalProps {
@@ -31,11 +33,25 @@ export default function BatchDetailsModal({
     onItemInspect,
     onSuccess
 }: BatchDetailsModalProps) {
+    const { profile } = useAuth();
     const { showToast } = useToast();
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [editingItem, setEditingItem] = useState<any | null>(null);
+
+    const isSuperadmin = profile?.role === 'superadmin';
+    const isAdmin = ['superadmin', 'admin', 'warehouse_manager', 'storekeeper'].includes(profile?.role || '');
+    const isEngineer = profile?.role === 'site_engineer';
+    const assignedClusterIds = (profile as any)?.cluster_ids || [];
+
+    // Helper to check if a record belongs to the user's allowed clusters
+    const isAllowedCluster = (itemClusters: string[]) => {
+        if (isSuperadmin) return true;
+        return itemClusters.some(cid => assignedClusterIds.includes(cid));
+    };
+
+    const [canManage, setCanManage] = useState(!isEngineer && isAdmin);
 
     const ITEMS_PER_PAGE = 5;
 
@@ -59,6 +75,32 @@ export default function BatchDetailsModal({
                 data = await maintainService.getItemHistory(engineerId, itemName);
             }
             setItems(data);
+
+            // Update management permission based on clusters if admin
+            if (!isEngineer) {
+                if (isSuperadmin) {
+                    setCanManage(true);
+                } else if (batchType === 'inflow' && batchId) {
+                    // For inflows, we check the batch's cluster_id
+                    const { data: batch } = await supabase
+                        .from('maintain_receiving_batches')
+                        .select('cluster_id')
+                        .eq('id', batchId)
+                        .single();
+
+                    if (batch?.cluster_id) {
+                        setCanManage(assignedClusterIds.includes(batch.cluster_id));
+                    } else {
+                        // Global batches might have null cluster_id, restrict to superadmin
+                        setCanManage(false);
+                    }
+                } else if (data.length > 0) {
+                    // Check first item's engineer clusters (most items in a batch/history view share the same context)
+                    const firstItem = data[0];
+                    const itemClusters = firstItem.engineer?.user_cluster_assignments?.map((ca: any) => ca.cluster_id) || [];
+                    setCanManage(isAllowedCluster(itemClusters));
+                }
+            }
         } catch (err) {
             console.error('[BatchDetails]', err);
         } finally {
@@ -70,11 +112,16 @@ export default function BatchDetailsModal({
         if (!confirm(`Are you sure you want to delete this ENTIRE batch? This will restore balances for all items in it.`)) return;
         try {
             setLoading(true);
-            await maintainService.deleteBatch(batchId!);
+            if (batchType === 'inflow') {
+                await maintainService.deleteReceivingBatch(batchId!);
+            } else {
+                await maintainService.deleteBatch(batchId!);
+            }
             showToast('Batch deleted successfully.', 'success');
             onClose();
             if (onSuccess) onSuccess();
         } catch (err) {
+            console.error('[DeleteBatch]', err);
             showToast('Failed to delete batch.', 'error');
         } finally {
             setLoading(false);
@@ -126,8 +173,12 @@ export default function BatchDetailsModal({
                     {item.quantity > 0 ? '+' : ''}{item.quantity} {item.unit || 'pcs'}
                 </strong>
             )
-        },
-        {
+        }
+    ];
+
+    // Conditionally add Actions column for non-engineers
+    if (canManage) {
+        columns.push({
             key: 'actions',
             label: 'Actions',
             align: 'right',
@@ -155,8 +206,8 @@ export default function BatchDetailsModal({
                     </button>
                 </div>
             )
-        }
-    ];
+        });
+    }
 
     const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
     const paginatedItems = items.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -167,7 +218,7 @@ export default function BatchDetailsModal({
             onClose={onClose}
             title={mode === 'batch' ? `${batchType === 'inflow' ? 'Inflow Batch' : 'Issuance Batch'}: ${batchName || 'Details'}` : `History: ${itemName}`}
             maxWidth="750px"
-            footer={mode === 'batch' ? (
+            footer={mode === 'batch' && canManage ? (
                 <div style={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
                     <button
                         className="btn-clear-all"

@@ -1,0 +1,268 @@
+/* ========== Asset Registry Premium Patterns ========== */
+
+.asset-registry-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Row Styling (Desktop) */
+.asset-registry-container .model-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.asset-registry-container .type-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.asset-registry-container .detail-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.asset-registry-container .location-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.asset-registry-container .metrics-group {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.asset-registry-container .metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.asset-registry-container .metric-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.asset-registry-container .metric-value {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* Custom Status Badge */
+.asset-registry-container .status-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.btn-action {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f640;
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.btn-action.delete:hover {
+    border-color: #ef444440;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.btn-action svg {
+    transition: transform 0.2s;
+}
+
+.btn-action:active {
+    transform: translateY(0);
+}
+
+/* Mobile Card Overrides (Alignment with Supplies Design) */
+@media (max-width: 768px) {
+    .asset-registry-container .dt-table tbody tr {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 1.25rem;
+        margin-bottom: 1.25rem;
+        display: block;
+        overflow: hidden;
+        padding: 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Card Header (First Cell) */
+    .asset-registry-container .dt-table td:first-child {
+        display: block;
+        background: var(--bg-hover);
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .asset-registry-container .dt-table td:first-child::before {
+        content: 'ITEM DETAILS';
+        display: inline-block;
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        letter-spacing: 0.05em;
+    }
+
+    .asset-registry-container .dt-table td:first-child>div {
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: flex-start !important;
+        width: 100%;
+        gap: 0;
+    }
+
+    .asset-registry-container .dt-table td:first-child .type-icon-wrapper {
+        display: none;
+    }
+
+    .asset-registry-container .dt-table td:first-child .model-name {
+        font-size: 1.25rem;
+        margin-bottom: 4px;
+    }
+
+    .asset-registry-container .dt-table td:first-child .detail-line {
+        justify-content: flex-end;
+    }
+
+    /* Standard Data Rows */
+    .asset-registry-container .dt-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--border-color-low);
+        min-height: 50px;
+    }
+
+    .asset-registry-container .dt-table td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .asset-registry-container .dt-table td>div {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .asset-registry-container .dt-table .metrics-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .asset-registry-container .dt-table .metric-label {
+        display: none;
+        /* Already covered by data-label */
+    }
+
+    /* Card Action Footer (Last Cell) */
+    .asset-registry-container .dt-table td:last-child {
+        background: var(--bg-hover);
+        justify-content: center;
+        padding: 1rem;
+        border-bottom: none;
+        margin-top: 0.5rem;
+    }
+
+    .asset-registry-container .dt-table td:last-child::before {
+        display: none;
+    }
+
+    .asset-registry-container .actions-group {
+        width: 100%;
+        justify-content: center;
+        gap: 12px;
+        position: relative;
+    }
+
+    /* Ensure action buttons are row-aligned on mobile */
+    .asset-registry-container .dt-table td>.actions-group {
+        flex-direction: row !important;
+        align-items: center !important;
+    }
+
+    .asset-registry-container .btn-action {
+        flex: 1;
+        max-width: 120px;
+        height: 48px !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        color: var(--text-muted);
+        box-shadow: none;
+        transform: none;
+    }
+
+    .asset-registry-container .btn-action:hover {
+        transform: none;
+        background: var(--bg-hover) !important;
+        box-shadow: none;
+    }
+}

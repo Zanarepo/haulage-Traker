@@ -57,6 +57,8 @@ export default function SupplyTrackingPage() {
         setSelectedProduct,
         isEngineer,
         isAdmin,
+        isSuperadmin,
+        assignedClusterIds,
         canManageReceive,
         handleDeleteBatch,
         stockRequests,
@@ -72,6 +74,7 @@ export default function SupplyTrackingPage() {
         {
             key: 'batch_name',
             label: 'Batch / Reference',
+            mobileLabel: 'Reference',
             fullWidth: true,
             render: (batch) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -87,6 +90,7 @@ export default function SupplyTrackingPage() {
         {
             key: 'engineer',
             label: 'Assigned To',
+            mobileLabel: 'Recipient',
             render: (batch) => batch.engineer?.full_name || '—'
         },
         {
@@ -125,6 +129,7 @@ export default function SupplyTrackingPage() {
         {
             key: 'reference_no',
             label: 'Batch ID / Supplier',
+            mobileLabel: 'Supply Info',
             fullWidth: true,
             render: (batch) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -143,21 +148,25 @@ export default function SupplyTrackingPage() {
         {
             key: 'total_items',
             label: 'Qty',
+            mobileLabel: 'Volume',
             render: (batch) => <div className="qty-tag"><strong>{batch.total_items}</strong> pcs</div>
         },
         {
             key: 'total_value',
             label: 'Value',
-            render: (batch) => <strong>{new Intl.NumberFormat('en-NG').format(batch.total_value)}</strong>
+            mobileLabel: 'Total Value',
+            render: (batch) => <strong className="value-text">{new Intl.NumberFormat('en-NG').format(batch.total_value)}</strong>
         },
         {
             key: 'receiver',
             label: 'Received By',
+            mobileLabel: 'Handler',
             render: (batch) => batch.receiver?.full_name || '—'
         },
         {
             key: 'actions',
             label: 'Actions',
+            mobileLabel: 'Audit',
             render: (batch) => (
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button
@@ -170,6 +179,18 @@ export default function SupplyTrackingPage() {
                     >
                         <ArrowRightLeft size={14} />
                     </button>
+                    {isAdmin && (
+                        <button
+                            className="btn-icon-danger"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBatch({ ...batch, type: 'inflow' });
+                            }}
+                            title="Delete Entire Inbound Batch"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
                 </div>
             )
         }
@@ -229,14 +250,13 @@ export default function SupplyTrackingPage() {
                 {activeTab === 'stock' && (
                     <div className="stock-view-wrapper">
                         {!isEngineer && (
-                            <div className="engineer-picker-bar" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-card)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                            <div className="engineer-picker-bar">
                                 <Search size={16} />
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>FILTER WALLET BY CLUSTER:</span>
+                                <span className="picker-label">FILTER WALLET BY CLUSTER:</span>
                                 <select
                                     className="engineer-select"
                                     value={selectedEngineerId || ''}
                                     onChange={(e) => setSelectedEngineerId(e.target.value)}
-                                    style={{ padding: '0.5rem', borderRadius: '0.4rem', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', minWidth: '200px' }}
                                 >
                                     <option value="">Select Cluster (Engineer)...</option>
                                     {allEngineers.map(eng => (

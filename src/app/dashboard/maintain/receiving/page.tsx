@@ -116,7 +116,7 @@ export default function ReceivingDashboardPage() {
                 </div>
             </div>
 
-            <div className="receiving-content-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '2rem' }}>
+            <div className="receiving-content-grid">
                 {/* Main Scanning Interface */}
                 <div className="card-elevated" style={{ background: 'var(--bg-card)', borderRadius: '1rem', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
                     <ReceivingDashboard

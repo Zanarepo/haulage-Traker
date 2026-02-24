@@ -12,10 +12,10 @@ export const clientService = {
     async getClients() {
         const { data, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sites(cluster_id)')
             .order('name');
         if (error) throw error;
-        return data as Client[];
+        return data as (Client & { sites: { cluster_id: string }[] })[];
     },
 
     async createClient(client: Partial<Client>) {

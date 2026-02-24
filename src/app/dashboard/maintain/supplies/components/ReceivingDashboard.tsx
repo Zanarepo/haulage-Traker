@@ -287,7 +287,7 @@ export default function ReceivingDashboard({ companyId, userId, onSuccess, prefi
                                                 onClick={() => item.mode === 'unique' && setExpandedRow(expandedRow === item.id ? null : item.id)}
                                                 style={{ cursor: item.mode === 'unique' ? 'pointer' : 'default' }}
                                             >
-                                                <td>
+                                                <td data-label="Product">
                                                     <div className="staged-product-cell">
                                                         <span className="p-name">{item.productName}</span>
                                                         <span className="p-meta">
@@ -297,18 +297,18 @@ export default function ReceivingDashboard({ companyId, userId, onSuccess, prefi
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td>
+                                                <td data-label="Type">
                                                     <span className={`mode-pill ${item.mode}`}>
                                                         {item.mode === 'unique' ? <Barcode size={10} /> : <Package size={10} />}
                                                         {item.mode}
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Qty">
                                                     <div className="qty-tag">
                                                         <strong>{item.quantity}</strong> {item.unit}
                                                     </div>
                                                 </td>
-                                                <td> {new Intl.NumberFormat('en-NG').format(item.price * item.quantity)}</td>
+                                                <td data-label="Value"> {new Intl.NumberFormat('en-NG').format(item.price * item.quantity)}</td>
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '8px' }}>
                                                         <button

@@ -87,30 +87,48 @@
 
 /* Hero Section */
 .hero-section {
-    padding: 12rem 5% 8rem;
+    padding: 14rem 5% 10rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     position: relative;
+    min-height: 80vh;
+    overflow: hidden;
+    background: #020617;
+}
+
+.hero-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/screenshots/landingageimage.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.5;
+    z-index: 0;
 }
 
 .hero-glow {
     position: absolute;
-    top: 10%;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
     pointer-events: none;
-    z-index: 0;
+    z-index: 1;
 }
 
 .hero-content {
     max-width: 900px;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .badge {

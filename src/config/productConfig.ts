@@ -27,7 +27,7 @@ export const PRODUCTS: Record<ProductId, ProductModule> = {
         icon: '⛽',
         description: 'Fuel logistics & supply chain tracking',
         color: '#3b82f6', // Blue
-        dashboardPath: '/dashboard',
+        dashboardPath: '/dashboard/supply',
         sidebarKeys: [
             'inventory',
             'trips',

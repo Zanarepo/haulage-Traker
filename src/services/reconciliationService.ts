@@ -14,7 +14,7 @@ export const reconciliationService = {
     /**
      * Get pending reconciliation data for specific or all drivers within a company for a specific period
      */
-    async getPendingReconciliations(companyId: string, startDate: string, endDate: string, driverId?: string) {
+    async getPendingReconciliations(companyId: string, startDate: string, endDate: string, driverId?: string, clusterIds?: string[]) {
         // 1. Fetch all trips started within the period (Allocated)
         let tripsQuery = supabase
             .from('trips')
@@ -22,6 +22,7 @@ export const reconciliationService = {
                 id,
                 driver_id,
                 loaded_quantity,
+                cluster_id,
                 driver:users!driver_id (full_name)
             `)
             .gte('created_at', startDate)
@@ -29,6 +30,10 @@ export const reconciliationService = {
 
         if (driverId) {
             tripsQuery = tripsQuery.eq('driver_id', driverId);
+        }
+
+        if (clusterIds && clusterIds.length > 0) {
+            tripsQuery = tripsQuery.in('cluster_id', clusterIds);
         }
 
         const { data: trips, error: tripsError } = await tripsQuery;
@@ -41,13 +46,17 @@ export const reconciliationService = {
             .select(`
                 quantity_dispensed,
                 community_provision_qty,
-                trip:trips!trip_id (driver_id)
+                trip:trips!trip_id (driver_id, cluster_id)
             `)
             .gte('created_at', startDate)
             .lte('created_at', endDate);
 
         if (driverId) {
             logsQuery = logsQuery.eq('trip.driver_id', driverId);
+        }
+
+        if (clusterIds && clusterIds.length > 0) {
+            logsQuery = logsQuery.in('trip.cluster_id', clusterIds);
         }
 
         const { data: logs, error: logsError } = await logsQuery;

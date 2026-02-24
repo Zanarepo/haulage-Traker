@@ -95,7 +95,7 @@ export default function ProductDetailsModal({
         >
             <div className="product-details-content">
                 {/* Header Profile */}
-                <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div className="modal-header-profile" style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <div style={{
                         width: '64px',
                         height: '64px',
@@ -153,19 +153,19 @@ export default function ProductDetailsModal({
 
                 {activeTab === 'info' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-row">
                             <div style={infoCardStyle}>
                                 <span style={sectionLabelStyle}>Inventory Metadata</span>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                    <div className="info-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                                         <span style={{ color: 'var(--text-muted)' }}>Mfr / Supplier</span>
                                         <span style={{ fontWeight: 600 }}>{product.manufacturer || 'Generic'}</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                    <div className="info-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                                         <span style={{ color: 'var(--text-muted)' }}>Part Number</span>
                                         <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{product.part_no || 'N/A'}</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                    <div className="info-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                                         <span style={{ color: 'var(--text-muted)' }}>System ID</span>
                                         <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{product.id.slice(0, 13)}...</span>
                                     </div>
@@ -200,7 +200,7 @@ export default function ProductDetailsModal({
 
                         <div style={infoCardStyle}>
                             <span style={sectionLabelStyle}>Commercial Info</span>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="form-row">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
                                         <DollarSign size={20} />
@@ -210,7 +210,7 @@ export default function ProductDetailsModal({
                                         <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(product.last_purchase_price || 0)}</div>
                                     </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
+                                <div className="projection-stats-right">
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>EST. INVENTORY VALUE</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-muted)' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format((product.last_purchase_price || 0) * product.total_in_stock)}</div>
                                 </div>

@@ -1,36 +1,43 @@
 import { supabase } from '@/lib/supabase';
+import { maintenanceIntelligence } from './maintenanceIntelligence';
 
 export const assetService = {
-    async getAssets(companyId: string, siteId?: string, clusterId?: string) {
+    async getAssets(companyId: string, options?: { siteId?: string; clusterIds?: string[] }) {
         let query = supabase
             .from('maintain_assets')
-            .select('*')
+            .select('*, site:sites!inner(id, name, cluster_id, site_id_code, is_hybrid, solar_offset_hours, clusters(id, name, state))')
             .eq('company_id', companyId);
 
-        if (siteId) {
-            query = query.eq('site_id', siteId);
+        if (options?.siteId) {
+            query = query.eq('site_id', options.siteId);
         }
 
-        if (clusterId) {
-            query = query.eq('cluster_id', clusterId);
+        if (options?.clusterIds && options.clusterIds.length > 0) {
+            query = query.in('sites.cluster_id', options.clusterIds);
         }
 
         const { data, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
 
-        const enriched = await Promise.all((data || []).map(async (asset) => {
-            const siteRes = asset.site_id
-                ? await supabase.from('sites').select('id, name, site_id_code, clusters(name, state)').eq('id', asset.site_id).single()
-                : null;
-            return { ...asset, site: siteRes?.data || null };
-        }));
+        // Enrich with Proactive Intelligence
+        const enriched = (data || []).map(asset => {
+            const projections = maintenanceIntelligence.calculateAssetProjections(asset, asset.site);
+            return {
+                ...asset,
+                projections
+            };
+        });
 
         return enriched;
     },
 
     async createAsset(asset: any) {
         const cleanAsset = { ...asset };
-        ['manufacturing_date', 'installation_date', 'purchase_date', 'warranty_expiry_date'].forEach(field => {
+        const dateFields = [
+            'manufacturing_date', 'installation_date', 'purchase_date', 'warranty_expiry_date',
+            'last_pm_date', 'last_service_date'
+        ];
+        dateFields.forEach(field => {
             if (cleanAsset[field] === '') cleanAsset[field] = null;
         });
 
@@ -45,7 +52,11 @@ export const assetService = {
 
     async updateAsset(id: string, updates: any) {
         const cleanUpdates = { ...updates };
-        ['manufacturing_date', 'installation_date', 'purchase_date', 'warranty_expiry_date'].forEach(field => {
+        const dateFields = [
+            'manufacturing_date', 'installation_date', 'purchase_date', 'warranty_expiry_date',
+            'last_pm_date', 'last_service_date'
+        ];
+        dateFields.forEach(field => {
             if (cleanUpdates[field] === '') cleanUpdates[field] = null;
         });
 
@@ -69,125 +80,103 @@ export const assetService = {
     },
 
     async getAssetHistory(assetId: string) {
+        // 1. Fetch Work Orders with their latest visit reports
         const { data: workOrders } = await supabase
             .from('maintain_work_orders')
             .select(`
-                id, title, status, type, priority, completed_at, updated_at, engineer_id
+                id, title, status, type, priority, completed_at, updated_at, engineer_id,
+                reports:maintain_visit_reports(hour_meter_before, hour_meter_after, diesel_level_after)
             `)
             .eq('asset_id', assetId)
             .order('updated_at', { ascending: false });
 
+        // 2. Fetch User Names
         const engineerIds = [...new Set((workOrders || []).map(wo => wo.engineer_id).filter(Boolean))];
-        let engineerNames: Record<string, string> = {};
+        let userNames: Record<string, string> = {};
 
         if (engineerIds.length > 0) {
-            const { data: pData } = await supabase
-                .from('users')
-                .select('id, full_name')
-                .in('id', engineerIds);
-
-            if (pData) {
-                engineerNames = Object.fromEntries(pData.map(u => [u.id, u.full_name]));
-            }
-        }
-
-        const { data: readings } = await supabase
-            .from('maintain_diesel_readings')
-            .select('*')
-            .eq('asset_id', assetId);
-
-        const recorderIds = [...new Set((readings || []).map(r => r.recorded_by).filter(Boolean))];
-        let recorderNames: Record<string, string> = {};
-
-        if (recorderIds.length > 0) {
             const { data: usersData } = await supabase
                 .from('users')
                 .select('id, full_name')
-                .in('id', recorderIds);
-
+                .in('id', engineerIds);
             if (usersData) {
-                recorderNames = Object.fromEntries(usersData.map(u => [u.id, u.full_name]));
+                userNames = Object.fromEntries(usersData.map(u => [u.id, u.full_name]));
             }
         }
 
-        let lastHours: number | null = null;
-        const sortedReadings = (readings || []).sort((a, b) =>
-            new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
-        );
-
-        const readingsWithDelta = sortedReadings.map(r => {
-            const delta = (lastHours !== null && r.hour_meter !== null) ? Number(r.hour_meter) - lastHours : null;
-            if (r.hour_meter !== null) lastHours = Number(r.hour_meter);
-            return {
-                ...r,
-                delta,
-                recorder_name: r.recorded_by ? recorderNames[r.recorded_by] : 'System'
-            };
-        }).reverse();
-
-        const logs = [
-            ...(workOrders || []).map(wo => ({
-                id: wo.id,
-                type: 'maintenance',
-                title: wo.title,
-                status: wo.status,
-                priority: (wo as any).priority,
-                time: (wo as any).completed_at || (wo as any).updated_at,
-                user: (wo as any).engineer_id ? engineerNames[(wo as any).engineer_id] : 'System',
-                details: `${(wo as any).type.toUpperCase()} ticket`
-            })),
-            ...readingsWithDelta.map(r => {
-                const isRefill = String(r.reading_type).toLowerCase() === 'refill';
-                return {
-                    id: r.id,
-                    type: 'reading',
-                    time: r.recorded_at,
-                    user: (r as any).recorder_name || 'System',
-                    details: isRefill
-                        ? `FUEL REFILL: ${r.level}L confirmed`
-                        : `${String(r.reading_type).toUpperCase()}: ${r.hour_meter ? `${r.hour_meter} hrs` : ''}${r.delta ? ` (+${r.delta}h run)` : ''}${r.hour_meter && r.level ? ' | ' : ''}${r.level ? `${r.level}L fuel` : ''}`
-                };
-            })
-        ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-
-        return logs;
-    },
-
-    async getAssetsForEngineer(companyId: string, engineerId: string) {
-        const { data: clusters } = await supabase
-            .from('user_cluster_assignments')
-            .select('cluster_id')
-            .eq('user_id', engineerId);
-
-        if (!clusters || clusters.length === 0) return [];
-
-        const clusterIds = clusters.map(c => c.cluster_id);
-
-        const { data: sites } = await supabase
-            .from('sites')
-            .select('id')
-            .in('cluster_id', clusterIds);
-
-        if (!sites || sites.length === 0) return [];
-
-        const siteIds = sites.map(s => s.id);
-
-        let query = supabase
-            .from('maintain_assets')
+        // 3. Fetch Diesel/Meter Readings
+        const { data: readings } = await supabase
+            .from('maintain_diesel_readings')
             .select('*')
-            .eq('company_id', companyId)
-            .in('site_id', siteIds);
+            .eq('asset_id', assetId)
+            .order('recorded_at', { ascending: false });
 
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (error) throw error;
+        // Add users who recorded readings to userNames
+        const recorderIds = [...new Set((readings || []).map(r => r.recorded_by).filter(Boolean))];
+        const missingRecorders = recorderIds.filter(id => !userNames[id]);
+        if (missingRecorders.length > 0) {
+            const { data: uData } = await supabase.from('users').select('id, full_name').in('id', missingRecorders);
+            uData?.forEach(u => userNames[u.id] = u.full_name);
+        }
 
-        const enriched = await Promise.all((data || []).map(async (asset) => {
-            const siteRes = asset.site_id
-                ? await supabase.from('sites').select('id, name, site_id_code, clusters(name, state)').eq('id', asset.site_id).single()
-                : null;
-            return { ...asset, site: siteRes?.data || null };
-        }));
+        // 4. Combine and Sort Chronologically for Calculation
+        let combined: any[] = [];
 
-        return enriched;
+        // Add Work Orders
+        (workOrders || []).forEach(wo => {
+            const report = (wo as any).reports?.[0];
+            combined.push({
+                id: wo.id,
+                date: wo.completed_at || wo.updated_at,
+                source: `${wo.type.toUpperCase()}: ${wo.title}`,
+                type: 'work_order',
+                is_pm: wo.type === 'preventive',
+                user: wo.engineer_id ? userNames[wo.engineer_id] : 'System',
+                new_meter: report?.hour_meter_after || null,
+                fuel: report?.diesel_level_after || null,
+                status: wo.status
+            });
+        });
+
+        // Add Readings
+        (readings || []).forEach(r => {
+            combined.push({
+                id: r.id,
+                date: r.recorded_at,
+                source: r.reading_type.toUpperCase() === 'REFILL' ? 'FUEL REFILL' : 'METER READING',
+                type: 'reading',
+                is_pm: false,
+                user: r.recorded_by ? userNames[r.recorded_by] : 'System',
+                new_meter: r.hour_meter || null,
+                fuel: r.level || null,
+                status: 'recorded'
+            });
+        });
+
+        // Sort ascending for calculation
+        combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // 5. Calculate Deltas
+        let lastMeter: number | null = null;
+        const processedHistory = combined.map(entry => {
+            const hasMeter = entry.new_meter !== null;
+            const currentMeter = hasMeter ? Number(entry.new_meter) : null;
+
+            const prev_meter = lastMeter;
+            const delta = (currentMeter !== null && prev_meter !== null) ? currentMeter - prev_meter : null;
+
+            if (currentMeter !== null) {
+                lastMeter = currentMeter;
+            }
+
+            return {
+                ...entry,
+                prev_meter,
+                delta
+            };
+        });
+
+        // 6. Return Sorted Descending for UI
+        return processedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
 };

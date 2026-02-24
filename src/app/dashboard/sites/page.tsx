@@ -213,7 +213,7 @@ export default function SitesManagementPage() {
 
     return (
         <div className="sites-page">
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <header className="page-header">
                 <div>
                     <h1>Clients & Sites</h1>
                     <p>Manage operational locations and client relationships</p>
@@ -417,6 +417,8 @@ function SiteModal({ isOpen, onClose, onSave, editingSite, clusters, clients, su
     const [clientId, setClientId] = useState(editingSite?.client_id || '');
     const [clientName, setClientName] = useState(''); // Text input for client name
     const [community, setCommunity] = useState(editingSite?.host_community || '');
+    const [isHybrid, setIsHybrid] = useState(editingSite?.is_hybrid || false);
+    const [solarHours, setSolarHours] = useState(editingSite?.solar_offset_hours || 0);
 
     const filteredClusters = selectedState
         ? clusters.filter(c => c.state === selectedState)
@@ -440,7 +442,9 @@ function SiteModal({ isOpen, onClose, onSave, editingSite, clusters, clients, su
             tank_capacity: capacity ? parseFloat(capacity) : undefined,
             cluster_id: clusterId,
             client_id: clientId,
-            host_community: community
+            host_community: community,
+            is_hybrid: isHybrid,
+            solar_offset_hours: Number(solarHours)
         }, clientName);
     };
 
@@ -552,11 +556,48 @@ function SiteModal({ isOpen, onClose, onSave, editingSite, clusters, clients, su
                 <div className="form-group">
                     <label>Host Community</label>
                     <input
-                        type="text"
-                        value={community}
-                        onChange={e => setCommunity(e.target.value)}
-                        placeholder="e.g. Victoria Island"
                     />
+                </div>
+
+                <div className="form-group hybrid-section" style={{
+                    background: 'var(--bg-main)',
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    border: '1px solid var(--border-color)',
+                    marginTop: '0.5rem'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isHybrid ? '1rem' : '0' }}>
+                        <div>
+                            <label style={{ margin: 0, fontWeight: 600 }}>Hybrid Power System</label>
+                            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>Uses Solar/Inverters to cushion usage</p>
+                        </div>
+                        <label className="switch">
+                            <input
+                                type="checkbox"
+                                checked={isHybrid}
+                                onChange={e => setIsHybrid(e.target.checked)}
+                            />
+                            <span className="slider round"></span>
+                        </label>
+                    </div>
+
+                    {isHybrid && (
+                        <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                            <label>Solar energy contribution (hrs per day)</label>
+                            <input
+                                type="number"
+                                value={solarHours}
+                                onChange={e => setSolarHours(parseFloat(e.target.value))}
+                                placeholder="e.g. 10.5"
+                                min="0"
+                                max="24"
+                                step="0.5"
+                            />
+                            <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                This will offset the calculated maintenance schedule for all generators at this site.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </form>
         </Modal>

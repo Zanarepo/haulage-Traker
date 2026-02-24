@@ -52,8 +52,8 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
             maxWidth="1000px"
             title="Issue Cluster Stock"
             footer={
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start', width: '100%' }}>
-                    <button type="button" className="btn-cancel" onClick={onClose} style={{ padding: '0.6rem 1.25rem' }}>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start', width: '100%', flexWrap: 'wrap' }}>
+                    <button type="button" className="btn-cancel" onClick={onClose} style={{ padding: '0.6rem 1.25rem', flex: 1, minWidth: '120px' }}>
                         Cancel
                     </button>
                     <button
@@ -61,7 +61,7 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
                         form="issue-stock-form"
                         className="btn-submit"
                         disabled={loading || stagedItems.length === 0 || !selectedEngineerId}
-                        style={{ padding: '0.6rem 1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        style={{ padding: '0.6rem 1.25rem', display: 'flex', alignItems: 'center', gap: '8px', flex: 2, minWidth: '200px', justifyContent: 'center' }}
                     >
                         <Save size={18} /> {loading ? 'Processing...' : `Assign ${stagedItems.length} Item(s)`}
                     </button>
@@ -71,7 +71,7 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
             <form id="issue-stock-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                 {/* 1. Hierarchical Selection Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', background: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                <div className="issue-grid-header" style={{ gap: '1rem', background: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
                     <div className="form-group">
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', marginBottom: '8px', color: 'var(--text-muted)', fontWeight: 600 }}>
                             <FileText size={14} /> BATCH REFERENCE
@@ -147,7 +147,7 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
                     </div>
 
                     {/* Entry Row: Searachable Input + Qty + Unit + Cat + Notes + Add */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.5fr 3fr 50px', gap: '12px', padding: '1rem', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
+                    <div className="issue-grid-entry" style={{ gap: '12px', padding: '1rem', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
                         <div ref={dropdownRef} className="form-group" style={{ position: 'relative' }}>
                             <input
                                 placeholder="Search or type new item..."
@@ -272,11 +272,11 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
                                 No items added yet. Use the fields above to stage inventory.
                             </div>
                         ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                            <table className="staged-items-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                 <tbody style={{ display: 'grid', gridTemplateColumns: '1fr' }}>
                                     {stagedItems.map((item) => (
-                                        <tr key={item.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.5fr 3fr 50px', gap: '12px', padding: '10px 16px', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }}>
-                                            <td style={{ fontWeight: 600 }}>
+                                        <tr key={item.id} className="staged-row" style={{ gap: '12px', padding: '10px 16px', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }}>
+                                            <td data-label="Item" style={{ fontWeight: 600 }}>
                                                 {item.item_name}
                                                 {item.barcodes.length > 0 && (
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
@@ -288,10 +288,10 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
                                                     </div>
                                                 )}
                                             </td>
-                                            <td>{item.quantity}</td>
-                                            <td>{item.unit}</td>
-                                            <td><span style={{ fontSize: '0.75rem', background: 'var(--bg-hover)', padding: '2px 6px', borderRadius: '4px' }}>{item.item_category}</span></td>
-                                            <td style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <td data-label="Qty">{item.quantity}</td>
+                                            <td data-label="Unit">{item.unit}</td>
+                                            <td data-label="Category"><span style={{ fontSize: '0.75rem', background: 'var(--bg-hover)', padding: '2px 6px', borderRadius: '4px' }}>{item.item_category}</span></td>
+                                            <td data-label="Notes" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                 <input
                                                     placeholder="Scan Barcode to Link..."
                                                     className="form-input"
@@ -310,7 +310,7 @@ export default function IssueStockModal({ isOpen, onClose, companyId, fulfillmen
                                                 />
                                                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{item.notes}</span>
                                             </td>
-                                            <td>
+                                            <td style={{ textAlign: 'right' }}>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveItem(item.id)}

@@ -2,38 +2,54 @@ import { supabase } from '@/lib/supabase';
 import { formatTimeAgo } from './utils';
 
 export const workOrderService = {
-    async getDashboardStats(companyId: string) {
+    async getDashboardStats(companyId: string, clusterIds?: string[]) {
+        let woQuery = supabase
+            .from('maintain_work_orders')
+            .select('*, sites!inner(cluster_id)', { count: 'exact', head: true })
+            .eq('company_id', companyId)
+            .in('status', ['open', 'assigned', 'in_progress']);
+
+        let assetQuery = supabase
+            .from('maintain_assets')
+            .select('*, sites!inner(cluster_id)', { count: 'exact', head: true })
+            .eq('company_id', companyId)
+            .eq('status', 'active');
+
+        let overdueQuery = supabase
+            .from('maintain_work_orders')
+            .select('*, sites!inner(cluster_id)', { count: 'exact', head: true })
+            .eq('company_id', companyId)
+            .in('status', ['open', 'assigned', 'in_progress'])
+            .lt('scheduled_date', new Date().toISOString());
+
+        if (clusterIds && clusterIds.length > 0) {
+            woQuery = woQuery.in('sites.cluster_id', clusterIds);
+            assetQuery = assetQuery.in('sites.cluster_id', clusterIds);
+            overdueQuery = overdueQuery.in('sites.cluster_id', clusterIds);
+        }
+
         const [workOrders, assets, overdue] = await Promise.all([
-            supabase
-                .from('maintain_work_orders')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .in('status', ['open', 'assigned', 'in_progress']),
-
-            supabase
-                .from('maintain_assets')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .eq('status', 'active'),
-
-            supabase
-                .from('maintain_work_orders')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .in('status', ['open', 'assigned', 'in_progress'])
-                .lt('scheduled_date', new Date().toISOString()),
+            woQuery,
+            assetQuery,
+            overdueQuery
         ]);
 
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        const { count: completedThisMonth } = await supabase
+        let completedQuery = supabase
             .from('maintain_work_orders')
-            .select('*', { count: 'exact', head: true })
+            .select('*, sites!inner(cluster_id)', { count: 'exact', head: true })
             .eq('company_id', companyId)
             .eq('status', 'completed')
             .gte('completed_at', startOfMonth.toISOString());
+
+        if (clusterIds && clusterIds.length > 0) {
+            completedQuery = completedQuery.in('sites.cluster_id', clusterIds);
+        }
+
+        const { count: completedThisMonth } = await completedQuery;
 
         return [
             {
@@ -63,15 +79,18 @@ export const workOrderService = {
         ];
     },
 
-    async getWorkOrders(companyId: string, filters?: { status?: string; type?: string }) {
+    async getWorkOrders(companyId: string, filters?: { status?: string; type?: string; clusterIds?: string[] }) {
         let query = supabase
             .from('maintain_work_orders')
-            .select('*')
+            .select('*, sites!inner(cluster_id)')
             .eq('company_id', companyId)
             .order('created_at', { ascending: false });
 
         if (filters?.status) query = query.eq('status', filters.status);
         if (filters?.type) query = query.eq('type', filters.type);
+        if (filters?.clusterIds && filters.clusterIds.length > 0) {
+            query = query.in('sites.cluster_id', filters.clusterIds);
+        }
 
         const { data, error } = await query;
         if (error) throw error;
@@ -119,8 +138,34 @@ export const workOrderService = {
             .eq('id', id)
             .select()
             .single();
+
         if (error) throw error;
         return data;
+    },
+
+    async getFailureAnalysis(companyId: string, clusterIds?: string[]) {
+        let query = supabase
+            .from('maintain_work_orders')
+            .select('fault_category, type, assets(make_model), sites!inner(cluster_id)')
+            .eq('company_id', companyId)
+            .eq('status', 'completed')
+            .not('fault_category', 'is', null);
+
+        if (clusterIds && clusterIds.length > 0) {
+            query = query.in('sites.cluster_id', clusterIds);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Group by category
+        const analysis = (data || []).reduce((acc: any, curr: any) => {
+            const cat = curr.fault_category || 'Other';
+            acc[cat] = (acc[cat] || 0) + 1;
+            return acc;
+        }, {});
+
+        return analysis;
     },
 
     async deleteWorkOrder(id: string) {
@@ -232,17 +277,23 @@ export const workOrderService = {
         return enriched;
     },
 
-    async getRecentActivities(companyId: string) {
-        const { data, error } = await supabase
+    async getRecentActivities(companyId: string, clusterIds?: string[]) {
+        let query = supabase
             .from('maintain_work_orders')
-            .select('id, title, type, status, priority, updated_at, engineer_id, site_id')
+            .select('id, title, type, status, priority, updated_at, engineer_id, site_id, sites!inner(cluster_id)')
             .eq('company_id', companyId)
             .order('updated_at', { ascending: false })
             .limit(10);
 
+        if (clusterIds && clusterIds.length > 0) {
+            query = query.in('sites.cluster_id', clusterIds);
+        }
+
+        const { data, error } = await query;
+
         if (error) return [];
 
-        const enriched = await Promise.all((data || []).map(async (wo) => {
+        const enriched = await Promise.all((data || []).map(async (wo: any) => {
             const [engineerRes, siteRes] = await Promise.all([
                 wo.engineer_id ? supabase.from('users').select('full_name').eq('id', wo.engineer_id).single() : null,
                 wo.site_id ? supabase.from('sites').select('name').eq('id', wo.site_id).single() : null,

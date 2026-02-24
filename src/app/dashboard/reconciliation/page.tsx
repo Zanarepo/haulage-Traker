@@ -91,15 +91,15 @@ export default function ReconciliationPage() {
                     <p>{isDriver ? 'View your supply activity and period balance' : 'Track supply activity across flexible periods'}</p>
                 </div>
 
-                <div className="header-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.75rem' }}>
+                <div className="header-actions">
                     <div className="date-mode-toggle">
                         <button className={`mode-btn ${dateMode === 'monthly' ? 'active' : ''}`} onClick={() => setDateMode('monthly')}>Monthly</button>
                         <button className={`mode-btn ${dateMode === 'quarterly' ? 'active' : ''}`} onClick={() => setDateMode('quarterly')}>Quarterly</button>
                         <button className={`mode-btn ${dateMode === 'custom' ? 'active' : ''}`} onClick={() => setDateMode('custom')}>Custom</button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <div className="period-selector" style={{ display: 'flex', gap: '8px', background: 'var(--bg-card)', padding: '4px', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                    <div className="period-controls">
+                        <div className="period-selector">
                             {dateMode === 'monthly' && (
                                 <select
                                     value={selectedMonth}
@@ -142,7 +142,7 @@ export default function ReconciliationPage() {
                                 </select>
                             )}
                         </div>
-                        <button className="btn-reconcile" onClick={loadData} disabled={loading}>
+                        <button className="btn-reconcile header-sync" onClick={loadData} disabled={loading}>
                             <RefreshCcw size={16} className={loading ? 'spinning' : ''} />
                             Sync Data
                         </button>
@@ -198,69 +198,49 @@ export default function ReconciliationPage() {
             </div>
 
             <main className="recon-main">
-                <div className="section-title" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', width: '100%', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', gap: '2rem' }}>
-                            <button
-                                onClick={() => setActiveTab('fleet')}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    padding: '0 0 8px 0',
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    color: activeTab === 'fleet' ? 'var(--text-main)' : 'var(--text-muted)',
-                                    borderBottom: activeTab === 'fleet' ? '2px solid #3b82f6' : '2px solid transparent',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {isDriver ? 'My Reconciliation' : 'Fleet Summary'}
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('community')}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    padding: '0 0 8px 0',
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    color: activeTab === 'community' ? 'var(--text-main)' : 'var(--text-muted)',
-                                    borderBottom: activeTab === 'community' ? '2px solid #3b82f6' : '2px solid transparent',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Community Summary
-                            </button>
-                        </div>
-
-                        {!isDriver && (
-                            <div className="filter-group" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                <div className="search-wrap" style={{ position: 'relative', width: '250px' }}>
-                                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input
-                                        type="text"
-                                        placeholder="Search driver..."
-                                        value={searchTerm}
-                                        onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
-                                        className="filter-input"
-                                    />
-                                </div>
-
-                                <div className="driver-filter">
-                                    <select
-                                        value={selectedDriver}
-                                        onChange={(e) => handleFilterChange(setSelectedDriver, e.target.value)}
-                                        className="filter-select"
-                                    >
-                                        <option value="all">All Drivers</option>
-                                        {uniqueDrivers.map(name => (
-                                            <option key={name} value={name}>{name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        )}
+                <div className="section-header-row">
+                    <div className="tab-switcher">
+                        <button
+                            onClick={() => setActiveTab('fleet')}
+                            className={`tab-btn ${activeTab === 'fleet' ? 'active' : ''}`}
+                        >
+                            {isDriver ? 'My Reconciliation' : 'Fleet Summary'}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('community')}
+                            className={`tab-btn ${activeTab === 'community' ? 'active' : ''}`}
+                        >
+                            Community Summary
+                        </button>
                     </div>
+
+                    {!isDriver && (
+                        <div className="filter-controls">
+                            <div className="search-wrap">
+                                <Search size={16} className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Search driver..."
+                                    value={searchTerm}
+                                    onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
+                                    className="filter-input"
+                                />
+                            </div>
+
+                            <div className="driver-filter">
+                                <select
+                                    value={selectedDriver}
+                                    onChange={(e) => handleFilterChange(setSelectedDriver, e.target.value)}
+                                    className="filter-select"
+                                >
+                                    <option value="all">All Drivers</option>
+                                    {uniqueDrivers.map(name => (
+                                        <option key={name} value={name}>{name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="recon-table-wrapper">
@@ -313,12 +293,12 @@ export default function ReconciliationPage() {
 
                                         {activeTab === 'fleet' ? (
                                             <>
-                                                <td><strong>{formatNumber(recon.total_allocated)} L</strong></td>
-                                                <td><strong>{formatNumber(recon.total_supplied)} L</strong></td>
-                                                <td style={{ color: recon.total_community > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
+                                                <td data-label="Allocated"><strong>{formatNumber(recon.total_allocated)} L</strong></td>
+                                                <td data-label="Site Deliveries"><strong>{formatNumber(recon.total_supplied)} L</strong></td>
+                                                <td data-label="Community" style={{ color: recon.total_community > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
                                                     {recon.total_community > 0 ? `${formatNumber(recon.total_community)} L` : '-'}
                                                 </td>
-                                                <td>
+                                                <td data-label="Actual Balance">
                                                     <span className={`balance-tag ${recon.balance > 0 ? 'overage' : recon.balance < 0 ? 'shortage' : 'balanced'
                                                         }`}>
                                                         {recon.balance > 0 ? <TrendingUp size={14} /> : recon.balance < 0 ? <TrendingDown size={14} /> : <CheckCircle2 size={14} />}
@@ -328,11 +308,11 @@ export default function ReconciliationPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <td>{recon.trip_count} Trips</td>
-                                                <td style={{ color: '#f59e0b' }}>
+                                                <td data-label="Trip Count">{recon.trip_count} Trips</td>
+                                                <td data-label="Provisioned" style={{ color: '#f59e0b' }}>
                                                     <strong>{formatNumber(recon.total_community)} L</strong>
                                                 </td>
-                                                <td>
+                                                <td data-label="Status">
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                                         <CheckCircle2 size={14} style={{ color: '#10b981' }} />
                                                         Logged
@@ -341,7 +321,7 @@ export default function ReconciliationPage() {
                                             </>
                                         )}
 
-                                        <td>
+                                        <td data-label="Actions">
                                             <div
                                                 style={{ display: 'flex', gap: '8px' }}
                                                 onClick={(e) => e.stopPropagation()}

@@ -8,6 +8,7 @@ async function getAdminStats(companyId: string) {
     const { count: activeTrips } = await supabase
         .from('trips')
         .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
         .eq('status', 'active');
 
     // 2. Fuel Dispensed (Current month)
@@ -17,7 +18,8 @@ async function getAdminStats(companyId: string) {
 
     const { data: dispensingData } = await supabase
         .from('dispensing_logs')
-        .select('quantity_dispensed, community_provision_qty')
+        .select('quantity_dispensed, community_provision_qty, trips!inner(company_id)')
+        .eq('trips.company_id', companyId)
         .gte('created_at', startOfMonth.toISOString());
 
     const totalFuel = (dispensingData || []).reduce(
@@ -28,13 +30,15 @@ async function getAdminStats(companyId: string) {
     // 3. Audit Alerts (Flagged financials)
     const { count: auditAlerts } = await supabase
         .from('financials')
-        .select('*', { count: 'exact', head: true })
+        .select('*, dispensing_logs!inner(trips!inner(company_id))', { count: 'exact', head: true })
+        .eq('dispensing_logs.trips.company_id', companyId)
         .eq('is_audit_flagged', true);
 
     // 4. Clusters
     const { count: clusterCount } = await supabase
         .from('clusters')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
 
     return [
         {
@@ -59,6 +63,78 @@ async function getAdminStats(companyId: string) {
             title: "Active Clusters",
             value: clusterCount?.toString() || "0",
             sub: "Strategic regions",
+            color: "purple"
+        }
+    ];
+}
+
+/**
+ * Get cluster-filtered stats for regional admins
+ */
+async function getRegionalAdminStats(companyId: string, clusterIds: string[]) {
+    if (!clusterIds || clusterIds.length === 0) {
+        return [
+            { title: "Active Trips", value: "0", sub: "No assigned clusters", color: "blue" },
+            { title: "Product Dispensed", value: "0 L", sub: "This month", color: "emerald" },
+            { title: "Audit Alerts", value: "0", sub: "Requires attention", color: "rose" },
+            { title: "Active Clusters", value: "0", sub: "Your regions", color: "purple" }
+        ];
+    }
+
+    // 1. Active Trips in these clusters
+    const { count: activeTrips } = await supabase
+        .from('trips')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .in('cluster_id', clusterIds);
+
+    // 2. Fuel Dispensed (Current month) in these clusters
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { data: dispensingData } = await supabase
+        .from('dispensing_logs')
+        .select('quantity_dispensed, community_provision_qty, sites!inner(cluster_id)')
+        .gte('created_at', startOfMonth.toISOString())
+        .in('sites.cluster_id', clusterIds);
+
+    const totalFuel = (dispensingData || []).reduce(
+        (sum, log) => sum + (Number(log.quantity_dispensed) || 0) + (Number(log.community_provision_qty) || 0),
+        0
+    );
+
+    // 3. Audit Alerts (Flagged financials) linked to these clusters
+    const { count: auditAlerts } = await supabase
+        .from('financials')
+        .select('*, dispensing_logs!inner(sites!inner(cluster_id))', { count: 'exact', head: true })
+        .eq('is_audit_flagged', true)
+        .in('dispensing_logs.sites.cluster_id', clusterIds);
+
+    return [
+        {
+            title: "Active Trips",
+            value: activeTrips?.toString() || "0",
+            sub: "In your clusters",
+            color: "blue"
+        },
+        {
+            title: "Product Dispensed",
+            value: `${totalFuel.toLocaleString()} L`,
+            sub: "Your regions (month)",
+            color: "emerald"
+        },
+        {
+            title: "Audit Alerts",
+            value: auditAlerts?.toString() || "0",
+            sub: "Requires attention",
+            color: "rose"
+        },
+        {
+            title: "My Clusters",
+            value: clusterIds.length.toString(),
+            sub: "Assigned regions",
             color: "purple"
         }
     ];
@@ -227,6 +303,9 @@ export const dashboardService = {
         if (role === 'site_engineer' && clusterIds) {
             return getEngineerStats(companyId, clusterIds, userId);
         }
+        if (role === 'admin' && clusterIds) {
+            return getRegionalAdminStats(companyId, clusterIds);
+        }
         return getAdminStats(companyId);
     },
 
@@ -253,6 +332,8 @@ export const dashboardService = {
             query = query.eq('trip.driver_id', userId);
         } else if (role === 'site_engineer') {
             query = query.eq('confirmed_by', userId);
+        } else if (role === 'admin' && clusterIds) {
+            query = query.in('sites.cluster_id', clusterIds);
         }
 
         const { data: logs, error } = await query;
