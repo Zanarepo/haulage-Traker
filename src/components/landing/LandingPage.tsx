@@ -114,9 +114,6 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                                 <button className="btn-primary" onClick={onRegister}>
                                     Get Visibility Now <ArrowRight size={18} style={{ marginLeft: '8px' }} />
                                 </button>
-                                <button className="btn-secondary" onClick={onLogin}>
-                                    Watch 90s Demo
-                                </button>
                             </>
                         )}
                     </div>
