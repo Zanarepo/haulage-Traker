@@ -14,9 +14,12 @@ import {
     Clock,
     Menu,
     Wrench,
-    CalendarClock, // Added for MaintainShowcase
-    Cpu, // Added for MaintainShowcase
-    PackageCheck // Added for MaintainShowcase
+    CalendarClock,
+    Cpu,
+    PackageCheck,
+    Mail,
+    MapPin,
+    MessageSquare
 } from 'lucide-react';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import ProductShowcase from './ProductShowcase';
@@ -308,13 +311,38 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                 <div className="footer-logo">
                     <NexHaulLogo size={32} />
                 </div>
-                <div style={{ marginBottom: '1.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap', marginBottom: '2rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                    <a href="mailto:hello@sellyticshq.com" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit', textDecoration: 'none' }}>
+                        <Mail size={18} /> hello@sellyticshq.com
+                    </a>
+                    <a href="https://wa.me/2349167690043" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit', textDecoration: 'none' }}>
+                        <MessageSquare size={18} /> 09167690043
+                    </a>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <MapPin size={18} /> Lagos, Nigeria
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem', color: '#64748b', fontSize: '0.85rem' }}>
                     NexHaul InfraSupply • <span style={{ opacity: 0.6 }}>NexHaul for Oil & Gas • NexHaul for Construction • NexHaul for Mining (Coming Soon)</span>
                 </div>
-                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                <p style={{ color: '#475569', fontSize: '0.85rem' }}>
                     &copy; {new Date().getFullYear()} Sellytics. All rights reserved. Built for modern haulage.
                 </p>
             </footer>
+
+            {/* Floating WhatsApp Button */}
+            <a
+                href="https://wa.me/2349167690043"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="floating-whatsapp"
+                aria-label="Contact on WhatsApp"
+            >
+                <div className="whatsapp-tooltip">Chat with us</div>
+                <MessageSquare size={24} />
+            </a>
         </div>
     );
 }
