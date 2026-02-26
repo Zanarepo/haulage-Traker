@@ -16,8 +16,8 @@ const SHOWCASE_VIEWS = [
         label: 'Super Admin',
         icon: ShieldCheck,
         image: '/screenshots/Superadmin.png',
-        title: 'Super Admin Dashboard',
-        description: 'Complete system overview with KPIs, team management, and security controls.',
+        title: 'Enterprise Mission Control',
+        description: 'Complete visibility over every site and team. Catch anomalies and verify audits from a single unified dashboard.',
         url: 'app.nexhaul.com/dashboard'
     },
     {
@@ -25,8 +25,8 @@ const SHOWCASE_VIEWS = [
         label: 'Inventory',
         icon: Package,
         image: '/screenshots/Inventory.png',
-        title: 'Inventory Management',
-        description: 'Real-time fuel levels, asset monitoring, and supply chain visibility.',
+        title: 'Precision Asset Tracking',
+        description: 'Real-time fuel levels and asset monitoring. Stop theft and leakage before they impact your bottom line.',
         url: 'app.nexhaul.com/dashboard/inventory'
     },
     {
@@ -34,8 +34,8 @@ const SHOWCASE_VIEWS = [
         label: 'Trips & Logistics',
         icon: Truck,
         image: '/screenshots/Trips&logistics.png',
-        title: 'Trips & Logistics',
-        description: 'Active trip dispatching, driver assignments, and delivery tracking.',
+        title: 'Automated Dispatch',
+        description: 'Smart driver assignment and tamper-proof delivery tracking. Know where your product is every second of the trip.',
         url: 'app.nexhaul.com/dashboard/trips'
     },
     {
@@ -43,8 +43,8 @@ const SHOWCASE_VIEWS = [
         label: 'Reconciliation',
         icon: RotateCcw,
         image: '/screenshots/reconciliation.png',
-        title: 'Supplies Reconciliation',
-        description: 'Period-based audits, shortage/overage detection, and verified reports.',
+        title: 'Instant Financial Closure',
+        description: 'Turn weeks of manual reconciliation into seconds. Automatically detect shortages and generate verified reports.',
         url: 'app.nexhaul.com/dashboard/reconciliation'
     },
 ];

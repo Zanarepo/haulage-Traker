@@ -49,6 +49,16 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
         }
     };
 
+    const [scrolled, setScrolled] = useState(false);
+
+    React.useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
     const handleNavAction = (action: () => void) => {
@@ -59,7 +69,7 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
     return (
         <div className="landing-container">
             {/* Navbar */}
-            <nav className="landing-nav">
+            <nav className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
                 <div className="nav-logo">
                     <NexHaulLogo size={32} />
                 </div>
@@ -88,12 +98,11 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             <header className="hero-section">
                 <div className="hero-glow"></div>
                 <div className="hero-content">
-                    <div className="badge">NexHaul Ecosystem</div>
-                    <h1>Smart Logistics & Asset Maintenance for Critical Industries</h1>
+                    <div className="badge">Next-Gen Asset Mission Control</div>
+                    <h1>Stop the Bleeding. Regain 100% Control Over Your Field Assets.</h1>
                     <p>
-                        The all-in-one mission control for internal teams and service providers
-                        managing fuel, asset health, and maintenance for Telecom towers,
-                        Data Centers, and high-stakes infrastructure.
+                        Eliminate fuel leakage, verify maintenance tasks in real-time, and slash
+                        operational downtime for Telecom and Data Center teams—without the manual paperwork.
                     </p>
                     <div className="hero-actions">
                         {!loading && user ? (
@@ -103,13 +112,23 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                         ) : (
                             <>
                                 <button className="btn-primary" onClick={onRegister}>
-                                    Start Free Trial <ArrowRight size={18} style={{ marginLeft: '8px' }} />
+                                    Get Visibility Now <ArrowRight size={18} style={{ marginLeft: '8px' }} />
                                 </button>
                                 <button className="btn-secondary" onClick={onLogin}>
-                                    Live Demo
+                                    Watch 90s Demo
                                 </button>
                             </>
                         )}
+                    </div>
+                </div>
+
+                <div className="trust-bar">
+                    <span>Powering Critical Infra:</span>
+                    <div className="trust-items">
+                        <div className="trust-item"><Zap size={16} /> <span>Telecom</span></div>
+                        <div className="trust-item"><Shield size={16} /> <span>Data Centers</span></div>
+                        <div className="trust-item"><FileText size={16} /> <span>IT Logistics</span></div>
+                        <div className="trust-item"><Users size={16} /> <span>Field Ops</span></div>
                     </div>
                 </div>
             </header>
@@ -118,8 +137,8 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             <section id="problem" className="comparison-section">
                 <div className="section-header">
                     <div className="category-badge">Logistics & Supply</div>
-                    <h2>The InfraSupply Solution</h2>
-                    <p>Stop the bleeding in your fuel and supply chain management.</p>
+                    <h2>Turn Your Supply Chain Into a Profit Center</h2>
+                    <p>Stop the bleeding in your fuel and supply chain management with iron-clad accountability.</p>
                 </div>
 
                 <div className="comparison-grid">
@@ -140,10 +159,10 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                             <Zap size={24} style={{ flexShrink: 0 }} /> The NexHaul Fix
                         </div>
                         <ul className="comparison-list">
-                            <li><Shield size={20} /> Digital Proof of Delivery with secure verification</li>
-                            <li><Clock size={20} /> Instant, period-based automated reconciliation</li>
-                            <li><FileText size={20} /> Centralized cloud storage for every dispatch</li>
-                            <li><Users size={20} /> Live tracking & role-based data isolation</li>
+                            <li><Shield size={20} /> <strong>Tamper-Proof Verification:</strong> See exactly where your fuel goes.</li>
+                            <li><Clock size={20} /> <strong>Instant Financial Closure:</strong> Automated reconciliation in seconds.</li>
+                            <li><FileText size={20} /> <strong>Centralized Audit Trail:</strong> Every dispatch stored in the cloud.</li>
+                            <li><Users size={20} /> <strong>Role-Based Isolation:</strong> Secure data for every tier of the team.</li>
                         </ul>
                     </div>
                 </div>
@@ -156,8 +175,8 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             <section className="comparison-section alt-bg">
                 <div className="section-header">
                     <div className="category-badge maintain">Operations & Maintenance</div>
-                    <h2>The NexHaul Maintain Solution</h2>
-                    <p>Break the cycle of reactive maintenance and equipment failure.</p>
+                    <h2>Predictive Maintenance. Zero Surprises.</h2>
+                    <p>Break the cycle of emergency repairs. Because "Reactive" is just a fancy word for expensive.</p>
                 </div>
 
                 <div className="comparison-grid">
@@ -178,10 +197,10 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                             <Wrench size={24} style={{ flexShrink: 0 }} /> Predictive Operations
                         </div>
                         <ul className="comparison-list">
-                            <li><CalendarClock size={20} /> Proactive PM Scheduling with health alerts</li>
-                            <li><Users size={20} /> Digital Work Orders with verified task reporting</li>
-                            <li><Cpu size={20} /> Automated Central Asset Health Registry</li>
-                            <li><PackageCheck size={20} /> Granular tracking of maintenance materials</li>
+                            <li><CalendarClock size={20} /> <strong>Smart Health Alerts:</strong> Catch failures before they cause blackouts.</li>
+                            <li><Users size={20} /> <strong>Digital Work Orders:</strong> Verified task reporting from the field.</li>
+                            <li><Cpu size={20} /> <strong>Single Source of Truth:</strong> Central asset registry for every site.</li>
+                            <li><PackageCheck size={20} /> <strong>Inventory Precision:</strong> Real-time tracking of maintenance materials.</li>
                         </ul>
                     </div>
                 </div>
