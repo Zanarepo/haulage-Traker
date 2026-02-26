@@ -9,7 +9,8 @@ export function useRegister() {
         password: '',
         fullName: '',
         companyName: '',
-        phone: ''
+        phone: '',
+        modules: ['infra_supply'] as string[]
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -18,6 +19,21 @@ export function useRegister() {
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    }, []);
+
+    const toggleModule = useCallback((moduleId: string) => {
+        setFormData(prev => {
+            const current = [...prev.modules];
+            const index = current.indexOf(moduleId);
+            if (index > -1) {
+                if (current.length > 1) { // Must have at least one
+                    current.splice(index, 1);
+                }
+            } else {
+                current.push(moduleId);
+            }
+            return { ...prev, modules: current };
+        });
     }, []);
 
     const handleRegister = async (e: React.FormEvent) => {
@@ -41,6 +57,7 @@ export function useRegister() {
         error,
         success,
         handleChange,
+        toggleModule,
         handleRegister
     };
 }

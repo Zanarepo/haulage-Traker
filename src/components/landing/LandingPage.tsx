@@ -12,10 +12,15 @@ import {
     Users,
     Lock,
     Clock,
-    Menu
+    Menu,
+    Wrench,
+    CalendarClock, // Added for MaintainShowcase
+    Cpu, // Added for MaintainShowcase
+    PackageCheck // Added for MaintainShowcase
 } from 'lucide-react';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import ProductShowcase from './ProductShowcase';
+import MaintainShowcase from './MaintainShowcase';
 import { useAuth } from '@/hooks/useAuth';
 import './landing.css';
 import { useRouter } from 'next/navigation';
@@ -27,8 +32,22 @@ interface LandingPageProps {
 
 export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const { user, loading } = useAuth();
+    const { user, profile, availableProfiles, loading } = useAuth();
     const router = useRouter();
+
+    const handleDashboardRedirect = () => {
+        if (availableProfiles?.length > 1) {
+            onLogin(); // Parent handles view switching
+            return;
+        }
+
+        if (profile) {
+            const isPlatform = profile.type === 'platform';
+            router.push(isPlatform ? '/nexhaul' : '/dashboard');
+        } else {
+            router.push('/dashboard');
+        }
+    };
 
     const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
@@ -50,12 +69,12 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                 </button>
 
                 <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-                    <a href="#problem" onClick={() => setMobileMenuOpen(false)}>The Problem</a>
-                    <a href="#features" onClick={() => setMobileMenuOpen(false)}>Solution</a>
+                    <a href="#problem" onClick={() => setMobileMenuOpen(false)}>Solution</a>
+                    <a href="#ecosystem" onClick={() => setMobileMenuOpen(false)}>Ecosystem</a>
                     <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
 
                     {!loading && user ? (
-                        <button className="btn-nav-create" onClick={() => router.push('/dashboard')}>Dashboard</button>
+                        <button className="btn-nav-create" onClick={handleDashboardRedirect}>Dashboard</button>
                     ) : (
                         <>
                             <button className="btn-nav-login" onClick={() => handleNavAction(onLogin)}>Login</button>
@@ -69,16 +88,16 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             <header className="hero-section">
                 <div className="hero-glow"></div>
                 <div className="hero-content">
-                    <div className="badge">NexHaul InfraSupply</div>
-                    <h1>Smart Fuel & Asset Tracking for Critical Sites</h1>
+                    <div className="badge">NexHaul Ecosystem</div>
+                    <h1>Smart Logistics & Asset Maintenance for Critical Industries</h1>
                     <p>
-                        The ultimate solution for internal teams and service providers
-                        managing fuel, diesel, and maintenance logistics for Telecom towers,
-                        IT hubs, and critical infrastructure.
+                        The all-in-one mission control for internal teams and service providers
+                        managing fuel, asset health, and maintenance for Telecom towers,
+                        Data Centers, and high-stakes infrastructure.
                     </p>
                     <div className="hero-actions">
                         {!loading && user ? (
-                            <button className="btn-primary" onClick={() => router.push('/dashboard')}>
+                            <button className="btn-primary" onClick={handleDashboardRedirect}>
                                 Back to Dashboard <ArrowRight size={18} style={{ marginLeft: '8px' }} />
                             </button>
                         ) : (
@@ -95,42 +114,84 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                 </div>
             </header>
 
-            {/* Problem vs Solution Section */}
+            {/* PROBLEM / SOLUTION 1: INFRA-SUPPLY */}
             <section id="problem" className="comparison-section">
                 <div className="section-header">
-                    <h2>Why NexHaul InfraSupply?</h2>
-                    <p>Whether you are an internal department or a service provider, managing remote assets is complex. We made it effortless.</p>
+                    <div className="category-badge">Logistics & Supply</div>
+                    <h2>The InfraSupply Solution</h2>
+                    <p>Stop the bleeding in your fuel and supply chain management.</p>
                 </div>
-                {/* ... (comparison-grid content stays the same) ... */}
+
                 <div className="comparison-grid">
                     <div className="comparison-card problem">
                         <div className="card-title red">
-                            <X size={24} /> The Problem
+                            <X size={24} style={{ flexShrink: 0 }} /> Reactive Supply Chain
                         </div>
                         <ul className="comparison-list">
-                            <li><Shield size={20} /> Untracked fuel leakage and shortages</li>
-                            <li><Clock size={20} /> Manual reconciliation delays (days/weeks)</li>
-                            <li><FileText size={20} /> Lost waybills and paper trail issues</li>
-                            <li><Lock size={20} /> Zero transparency on driver activities</li>
+                            <li><Shield size={20} /> Untracked fuel leakage & unverified drops</li>
+                            <li><Clock size={20} /> Weeks-long delay in manual reconciliation</li>
+                            <li><FileText size={20} /> Lost waybills and unsearchable paper trails</li>
+                            <li><Lock size={20} /> Zero real-time visibility on driver movement</li>
                         </ul>
                     </div>
 
                     <div className="comparison-card solution" id="features">
                         <div className="card-title green">
-                            <Zap size={24} /> The NexHaul Fix
+                            <Zap size={24} style={{ flexShrink: 0 }} /> The NexHaul Fix
                         </div>
                         <ul className="comparison-list">
-                            <li><Shield size={20} /> Real-time dispensing and asset tracking</li>
-                            <li><Clock size={20} /> Automated period-based reconciliation</li>
-                            <li><FileText size={20} /> Digital waybills and secure signatures</li>
-                            <li><Users size={20} /> Full audit trails and role-based privacy</li>
+                            <li><Shield size={20} /> Digital Proof of Delivery with secure verification</li>
+                            <li><Clock size={20} /> Instant, period-based automated reconciliation</li>
+                            <li><FileText size={20} /> Centralized cloud storage for every dispatch</li>
+                            <li><Users size={20} /> Live tracking & role-based data isolation</li>
                         </ul>
                     </div>
                 </div>
             </section>
 
+            {/* Product Showcase: InfraSupply */}
+            <ProductShowcase />
+
+            {/* PROBLEM / SOLUTION 2: MAINTENANCE */}
+            <section className="comparison-section alt-bg">
+                <div className="section-header">
+                    <div className="category-badge maintain">Operations & Maintenance</div>
+                    <h2>The NexHaul Maintain Solution</h2>
+                    <p>Break the cycle of reactive maintenance and equipment failure.</p>
+                </div>
+
+                <div className="comparison-grid">
+                    <div className="comparison-card problem">
+                        <div className="card-title red">
+                            <Clock size={24} style={{ flexShrink: 0 }} /> Fragmented Operations
+                        </div>
+                        <ul className="comparison-list">
+                            <li><CalendarClock size={20} /> Reactive maintenance (fixing only on failure)</li>
+                            <li><Users size={20} /> Unmonitored field activities & unverified reports</li>
+                            <li><Cpu size={20} /> Fragmented asset history buried in Excel files</li>
+                            <li><PackageCheck size={20} /> Unverified usage of expensive spare parts</li>
+                        </ul>
+                    </div>
+
+                    <div className="comparison-card solution">
+                        <div className="card-title purple">
+                            <Wrench size={24} style={{ flexShrink: 0 }} /> Predictive Operations
+                        </div>
+                        <ul className="comparison-list">
+                            <li><CalendarClock size={20} /> Proactive PM Scheduling with health alerts</li>
+                            <li><Users size={20} /> Digital Work Orders with verified task reporting</li>
+                            <li><Cpu size={20} /> Automated Central Asset Health Registry</li>
+                            <li><PackageCheck size={20} /> Granular tracking of maintenance materials</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            {/* Product Showcase: Maintain */}
+            <MaintainShowcase />
+
             {/* Ecosystem Section */}
-            <section className="ecosystem-section" id="use-cases">
+            <section className="ecosystem-section" id="ecosystem">
                 <div className="section-header">
                     <h2>The NexHaul Ecosystem</h2>
                     <p>Specialized tracking solutions for every industry that moves high-value product.</p>
@@ -142,6 +203,13 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                         <Zap size={32} />
                         <h3>InfraSupply</h3>
                         <p>For internal logistics teams or providers servicing Telecom, IT, and Data Centers.</p>
+                    </div>
+
+                    <div className="ecosystem-card active maintain">
+                        <div className="status-badge active">Active</div>
+                        <Wrench size={32} />
+                        <h3>NexHaul Maintain</h3>
+                        <p>Streamlined PM scheduling and work order automation for remote assets across IT, Telecoms, and Data Centers.</p>
                     </div>
 
                     <div className="ecosystem-card coming-soon">
@@ -173,9 +241,6 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                     </div>
                 </div>
             </section>
-
-            {/* Product Showcase */}
-            <ProductShowcase />
 
             {/* Pricing Section */}
             <section id="pricing" className="pricing-section">

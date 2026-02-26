@@ -4,6 +4,7 @@ import './company.css';
 import { useState } from 'react';
 import { useCompany } from '@/hooks/useCompany';
 import { useAuth } from '@/hooks/useAuth';
+import LoadingScreen from '@/components/common/LoadingScreen';
 import Modal from '@/components/Modal/Modal';
 import {
     ShieldCheck,
@@ -48,12 +49,7 @@ export default function CompanyManagementPage() {
     }
 
     if (loading) {
-        return (
-            <div className="loading-state-full">
-                <Loader2 size={32} className="spinning" />
-                <p>Loading company profile...</p>
-            </div>
-        );
+        return <LoadingScreen message="Loading company profile..." />;
     }
 
     const startEditing = () => {

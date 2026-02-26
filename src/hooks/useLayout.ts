@@ -6,8 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 export function useLayout() {
-    const { user, profile, loading, signOut } = useAuth();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const { user, profile, availableProfiles, loading, signOut, switchProfile } = useAuth();
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const isOnline = useOnlineStatus();
@@ -51,6 +51,7 @@ export function useLayout() {
     return {
         user,
         profile,
+        availableProfiles,
         loading,
         isCollapsed,
         isMobileOpen,
@@ -60,6 +61,7 @@ export function useLayout() {
         toggleMobileOpen,
         toggleDarkMode,
         closeMobile,
-        handleLogout
+        handleLogout,
+        switchProfile
     };
 }

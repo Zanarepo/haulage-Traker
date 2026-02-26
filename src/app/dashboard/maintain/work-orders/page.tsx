@@ -3,6 +3,7 @@
 import '../maintain.css';
 import '../../dashboard.css';
 import { useWorkOrders } from '@/hooks/useWorkOrders';
+import LoadingScreen from '@/components/common/LoadingScreen';
 import NewWorkOrderModal from './components/NewWorkOrderModal';
 import WorkOrderDetailsModal from './components/WorkOrderDetailsModal';
 import {
@@ -48,6 +49,10 @@ export default function WorkOrdersPage() {
         isManager,
         isEngineer,
     } = useWorkOrders();
+
+    if (loading && filteredWorkOrders.length === 0) {
+        return <LoadingScreen message="Loading work orders..." />;
+    }
 
     return (
         <div className="maintain-page">
@@ -121,8 +126,7 @@ export default function WorkOrdersPage() {
 
             {/* Work Orders List */}
             <div className="activity-list">
-                {loading && <div className="maintain-empty">Loading work orders…</div>}
-                {!loading && filteredWorkOrders.length === 0 && (
+                {filteredWorkOrders.length === 0 && (
                     <div className="maintain-empty">
                         <ClipboardList size={32} />
                         <p>{isEngineer ? 'No work orders assigned to you.' : 'No work orders found. Create your first one!'}</p>

@@ -29,6 +29,7 @@ import TripHistoryModal from './components/TripHistoryModal';
 import RowActions from '@/components/RowActions/RowActions';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import LoadingScreen from '@/components/common/LoadingScreen';
 
 export default function TripsDashboard() {
     const {
@@ -160,6 +161,10 @@ export default function TripsDashboard() {
             )
         }
     ];
+
+    if (loading && trips.length === 0) {
+        return <LoadingScreen message="Loading trips..." />;
+    }
 
     return (
         <div className="trips-page">

@@ -1,0 +1,467 @@
+/* ═══════════════════════════════════════════════════════════
+   NexHaul Mission Control Layout
+   Premium dark admin shell with mobile-first responsive design
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Root Layout ─────────────────────────────────────── */
+.nexhaul-layout {
+    display: flex;
+    min-height: 100vh;
+    background: #020617;
+    color: #f8fafc;
+}
+
+/* ─── Mobile Header (hidden on desktop) ──────────────── */
+.nh-mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 0 1rem;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 90;
+}
+
+.nh-menu-trigger {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nh-menu-trigger:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ─── Mobile Backdrop ─────────────────────────────────── */
+.nh-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 95;
+    animation: nh-fade-in 0.2s ease-out;
+}
+
+@keyframes nh-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ─── Sidebar ─────────────────────────────────────────── */
+.nexhaul-sidebar {
+    width: 260px;
+    background: #0f172a;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.nexhaul-sidebar.collapsed {
+    width: 80px;
+}
+
+/* ─── Sidebar Header ─────────────────────────────────── */
+.sidebar-header {
+    height: 64px;
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+
+/* ─── Admin Badge ─────────────────────────────────────── */
+.admin-badge {
+    margin: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    transition: all 0.3s;
+}
+
+.admin-badge.nexsuper {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.06);
+}
+
+.admin-badge.nexadmin {
+    background: rgba(168, 85, 247, 0.08);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    color: #a78bfa;
+}
+
+.admin-badge.nexsupport {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+}
+
+.nexhaul-sidebar.collapsed .admin-badge span {
+    display: none;
+}
+
+.nexhaul-sidebar.collapsed .admin-badge {
+    justify-content: center;
+    margin: 0.75rem 0.5rem;
+    padding: 0.5rem;
+}
+
+/* ─── Navigation ──────────────────────────────────────── */
+.nav-list {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    overflow-y: auto;
+}
+
+.nav-list::-webkit-scrollbar {
+    width: 3px;
+}
+
+.nav-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 1rem;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 12px;
+    transition: all 0.2s;
+    margin-bottom: 2px;
+    font-size: 0.87rem;
+    font-weight: 500;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+
+.nav-item.active {
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    font-weight: 700;
+}
+
+.nav-item .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+}
+
+.nexhaul-sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 0.85rem;
+}
+
+.nexhaul-sidebar.collapsed .nav-item .title {
+    display: none;
+}
+
+/* ─── Sidebar Footer ─────────────────────────────────── */
+.sidebar-footer {
+    padding: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+}
+
+.user-details {
+    margin-bottom: 0.75rem;
+    padding: 0 0.25rem;
+}
+
+.user-details .name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-details .role {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: capitalize;
+}
+
+.switch-workspace-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.75rem;
+    color: #f1f5f9;
+    text-decoration: none;
+    border-radius: 10px;
+    margin-bottom: 0.4rem;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.switch-workspace-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.nexhaul-sidebar.collapsed .switch-workspace-btn span {
+    display: none;
+}
+
+.nexhaul-sidebar.collapsed .switch-workspace-btn {
+    justify-content: center;
+    padding: 0.7rem 0;
+}
+
+.logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.75rem;
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.nexhaul-sidebar.collapsed .logout-btn span {
+    display: none;
+}
+
+.nexhaul-sidebar.collapsed .logout-btn {
+    justify-content: center;
+    padding: 0.7rem 0;
+}
+
+/* ─── Main Content ────────────────────────────────────── */
+.nexhaul-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 260px;
+    transition: margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 100vh;
+}
+
+.nexhaul-main.sidebar-collapsed {
+    margin-left: 80px;
+}
+
+.nexhaul-header {
+    padding: 0 2rem;
+    height: 64px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #020617;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.nexhaul-header h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.nexhaul-content {
+    padding: 1.5rem 2rem;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* Show mobile header */
+    .nh-mobile-header {
+        display: flex;
+    }
+
+    /* Show backdrop when sidebar is open */
+    .nh-backdrop {
+        display: block;
+    }
+
+    /* Sidebar: slide-in from left, FULL HEIGHT */
+    .nexhaul-sidebar {
+        width: 280px;
+        transform: translateX(-100%);
+        visibility: hidden;
+        z-index: 1000;
+        height: 100vh;
+        height: 100dvh;
+        /* Dynamic viewport height for mobile browsers */
+        top: 0;
+        left: 0;
+        box-shadow: none;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            visibility 0.3s,
+            box-shadow 0.3s;
+    }
+
+    .nexhaul-sidebar.mobile-open {
+        transform: translateX(0);
+        visibility: visible;
+        box-shadow: 20px 0 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Override collapsed width on mobile — still hidden */
+    .nexhaul-sidebar.collapsed {
+        width: 280px;
+        transform: translateX(-100%);
+        visibility: hidden;
+    }
+
+    /* Force show text when mobile sidebar is open */
+    .nexhaul-sidebar.collapsed.mobile-open .admin-badge span,
+    .nexhaul-sidebar.collapsed.mobile-open .nav-item .title,
+    .nexhaul-sidebar.collapsed.mobile-open .switch-workspace-btn span,
+    .nexhaul-sidebar.collapsed.mobile-open .logout-btn span {
+        display: inline;
+    }
+
+    .nexhaul-sidebar.collapsed.mobile-open .nav-item {
+        justify-content: flex-start;
+        padding: 0.75rem 1rem;
+    }
+
+    .nexhaul-sidebar.collapsed.mobile-open .switch-workspace-btn,
+    .nexhaul-sidebar.collapsed.mobile-open .logout-btn {
+        justify-content: flex-start;
+        padding: 0.7rem 0.75rem;
+    }
+
+    .nexhaul-sidebar.collapsed.mobile-open .admin-badge {
+        justify-content: flex-start;
+        margin: 0.75rem 1rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Main content: no margin, top padding for mobile header */
+    .nexhaul-main {
+        margin-left: 0 !important;
+        padding-top: 56px;
+        /* mobile header height */
+    }
+
+    .nexhaul-main.sidebar-collapsed {
+        margin-left: 0 !important;
+    }
+
+    /* Header hidden (mobile header replaces it) */
+    .nexhaul-header {
+        display: none;
+    }
+
+    /* Content: tighter padding */
+    .nexhaul-content {
+        padding: 1rem;
+    }
+}
+
+/* ── Extra Small Phones ───────────────────────────────── */
+@media (max-width: 400px) {
+    .nexhaul-sidebar {
+        width: 260px;
+    }
+
+    .nexhaul-content {
+        padding: 0.75rem;
+    }
+
+    .nh-mobile-header {
+        padding: 0 0.75rem;
+        height: 52px;
+    }
+
+    .nexhaul-main {
+        padding-top: 52px;
+    }
+}

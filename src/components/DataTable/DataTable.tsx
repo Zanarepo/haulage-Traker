@@ -2,7 +2,7 @@
 
 import './DataTable.css';
 import React from 'react';
-import { Search, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePagination } from '@/hooks/usePagination';
 
 /* ═══════════════════════════════════════════════════════
@@ -145,7 +145,10 @@ export default function DataTable<T>({
             <div className="dt-wrapper">
                 {loading ? (
                     <div className="dt-loading">
-                        <Loader2 size={18} className="dt-spin" /> Loading...
+                        <div className="dt-spin-wrapper">
+                            <div className="dt-spin-ring" />
+                        </div>
+                        <span>Loading records...</span>
                     </div>
                 ) : totalItems === 0 ? (
                     <div className="dt-empty">

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { trackingService, DriverLocation } from '@/services/trackingService';
 import { useAuth } from '@/hooks/useAuth';
+import LoadingScreen from '@/components/common/LoadingScreen';
 import './tracking.css';
 
 // Dynamically import map to avoid SSR issues
@@ -98,6 +99,10 @@ export default function TrackingDashboard() {
         );
     }, [locations, searchTerm]);
 
+    if (loading && locations.length === 0) {
+        return <LoadingScreen message="Initializing fleet tracking..." />;
+    }
+
     return (
         <div className="tracking-dashboard">
             <div className="tracking-header">
@@ -135,9 +140,7 @@ export default function TrackingDashboard() {
                     </div>
 
                     <div className="driver-items-container">
-                        {loading && locations.length === 0 ? (
-                            <div className="empty-state">Loading fleet data...</div>
-                        ) : filteredLocations.length === 0 ? (
+                        {filteredLocations.length === 0 ? (
                             <div className="empty-state">No active drivers found.</div>
                         ) : (
                             filteredLocations.map(loc => (

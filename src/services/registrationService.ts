@@ -19,13 +19,15 @@ export const registrationService = {
         password,
         fullName,
         companyName,
-        phone
+        phone,
+        modules = ['infra_supply']
     }: {
         email: string;
         password: string;
         fullName: string;
         companyName: string;
         phone?: string;
+        modules?: string[];
     }) {
         try {
             const { data, error } = await supabase.auth.signUp({
@@ -37,6 +39,7 @@ export const registrationService = {
                         full_name: fullName,
                         company_name: companyName,
                         phone: phone || null,
+                        modules, // Added for dual-module selection
                     }
                 }
             });

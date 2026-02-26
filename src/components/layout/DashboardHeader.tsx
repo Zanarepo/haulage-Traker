@@ -2,6 +2,7 @@
 
 import React from 'react';
 import NotificationCenter from '@/components/NotificationCenter';
+import AppLauncher from './AppLauncher';
 import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardHeaderProps {
@@ -17,7 +18,8 @@ export default function DashboardHeader({ onNotificationUpdate }: DashboardHeade
                 {/* Could add breadcrumbs or page title here later */}
             </div>
 
-            <div className="header-right">
+            <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AppLauncher companyId={profile?.company_id || null} />
                 <NotificationCenter userId={profile?.id || ''} onUpdate={onNotificationUpdate} />
             </div>
         </header>

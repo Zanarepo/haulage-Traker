@@ -156,64 +156,6 @@
   color: var(--text-main);
 }
 
-/* ========== Product App Bar ========== */
-.product-app-bar {
-  display: flex;
-  gap: 4px;
-  padding: 0 1rem 0.75rem;
-  margin-bottom: 0.25rem;
-}
-
-.product-app-bar.collapsed {
-  flex-direction: column;
-  padding: 0 0.5rem 0.5rem;
-  align-items: center;
-}
-
-.app-bar-tab {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.app-bar-tab:hover {
-  background: var(--bg-hover);
-  color: var(--text-main);
-}
-
-.app-bar-tab.active {
-  background: var(--tab-color, #3b82f6);
-  border-color: var(--tab-color, #3b82f6);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.app-bar-tab .tab-icon {
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.app-bar-tab .tab-name {
-  white-space: nowrap;
-}
-
-.product-app-bar.collapsed .app-bar-tab {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border-radius: 12px;
-}
 
 /* ========== Nav Section Labels ========== */
 .nav-section-label {
@@ -359,6 +301,25 @@
   color: #fb7185;
   background: rgba(251, 113, 133, 0.1);
 }
+
+.footer-btn.switch-btn {
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  color: #a78bfa;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-btn.switch-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: #a78bfa;
+}
+
+.sidebar.collapsed .footer-btn.switch-btn {
+  justify-content: center;
+}
+
 
 /* ========== Top Header ========== */
 .dashboard-top-header {

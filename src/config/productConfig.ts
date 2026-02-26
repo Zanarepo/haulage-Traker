@@ -69,6 +69,7 @@ export const SHARED_SIDEBAR_KEYS = [
     'users',
     'clusters',
     'sites',
+    'app-center',
     'settings',
 ];
 

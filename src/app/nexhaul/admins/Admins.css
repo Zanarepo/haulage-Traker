@@ -1,0 +1,195 @@
+/* ═══════════════════════════════════════════════════════════
+   NexHaul Platform Admins - Premium Dashboard Styles
+   ═══════════════════════════════════════════════════════════ */
+
+.admins-page {
+    padding: 32px;
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Page Header ─────────────────────────────────────── */
+.admins-header {
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.admins-header h2 {
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.04em;
+    background: linear-gradient(to bottom, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.admins-header p {
+    color: #64748b;
+    font-size: 16px;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.add-admin-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #3b82f6;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+}
+
+.add-admin-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
+}
+
+.add-admin-btn svg {
+    transition: transform 0.3s ease;
+}
+
+.add-admin-btn:hover svg {
+    transform: rotate(90deg);
+}
+
+/* ─── Table Container ────────────────────────────────── */
+.table-container {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+/* ─── Custom Table Cells ────────────────────────────── */
+.admin-cell {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 4px 0;
+}
+
+.admin-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a78bfa;
+    font-weight: 950;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+tr:hover .admin-avatar {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.3);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+}
+
+.admin-info h4 {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+.admin-email {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: lowercase;
+    margin-top: 2px;
+}
+
+.role-badge {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 6px 14px;
+    border-radius: 10px;
+    width: fit-content;
+    border: 1px solid transparent;
+}
+
+.role-super {
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.role-admin {
+    background: rgba(59, 130, 246, 0.08);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.role-support {
+    background: rgba(148, 163, 184, 0.08);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+.contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.contact-phone {
+    font-size: 13px;
+    font-weight: 800;
+    color: #e2e8f0;
+}
+
+.contact-none {
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    font-style: italic;
+}
+
+/* ─── Responsive ──────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .admins-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .admins-page {
+        padding: 20px;
+    }
+}

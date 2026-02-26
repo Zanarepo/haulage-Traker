@@ -1,4 +1,4 @@
-export type UserRole = 'superadmin' | 'md' | 'accountant' | 'auditor' | 'admin' | 'driver' | 'site_engineer';
+export type UserRole = 'superadmin' | 'md' | 'accountant' | 'auditor' | 'admin' | 'driver' | 'site_engineer' | 'nexsuper' | 'nexadmin' | 'nexsupport';
 export type DriverType = 'internal' | 'external';
 export type TripStatus = 'pending' | 'active' | 'dispensed' | 'reconciled' | 'completed';
 
@@ -206,3 +206,18 @@ export interface MaintenanceTask {
     created_at: string;
 }
 
+// ============================================================
+// NexHaul Platform Admin Types
+// ============================================================
+
+export type NexHaulAdminRole = 'nexsuper' | 'nexadmin' | 'nexsupport';
+
+export interface NexHaulAdmin {
+    id: string;
+    full_name: string;
+    email: string;
+    phone_number?: string;
+    role: NexHaulAdminRole;
+    created_at: string;
+    updated_at: string;
+}

@@ -8,10 +8,12 @@ import RegisterForm from "@/components/auth/RegisterForm";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 import LandingPage from "@/components/landing/LandingPage";
 import AuthNavbar from "@/components/auth/AuthNavbar";
+import RoleSelector from "@/components/auth/RoleSelector";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const [view, setView] = useState<'landing' | 'login' | 'register' | 'forgot-password'>('landing');
+  const { user, profile, availableProfiles, loading } = useAuth();
+  const [view, setView] = useState<'landing' | 'login' | 'register' | 'forgot-password' | 'role-selection'>('landing');
   const router = useRouter();
 
   useEffect(() => {
@@ -26,48 +28,27 @@ export default function Home() {
       return;
     }
 
-    // Only redirect to dashboard if user is already logged in 
-    // and trying to access login/register views
-    if (!loading && user && (view === 'login' || view === 'register')) {
-      router.push('/dashboard');
+    // ONLY redirect if we are on login/register/role-selection views
+    if (!loading && user) {
+      const isEntryView = view === 'login' || view === 'register' || view === 'landing';
+
+      if (isEntryView) {
+        if (availableProfiles.length > 1 && !profile) {
+          setView('role-selection');
+        } else if (availableProfiles.length > 1 && view === 'landing') {
+          // If they came back to landing but have multiple options, show selector
+          setView('role-selection');
+        } else if (profile) {
+          const isPlatform = profile.type === 'platform';
+          router.push(isPlatform ? '/nexhaul' : '/dashboard');
+        }
+      }
     }
-  }, [user, loading, router, view]);
+  }, [user, loading, router, view, profile, availableProfiles]);
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="loader"></div>
-        <p>{user ? 'Redirecting to Dashboard...' : 'Loading NexHaul...'}</p>
-        <style jsx>{`
-          .loading-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #020617;
-            color: white;
-            gap: 1.5rem;
-          }
-          .loader {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #1e293b;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          p {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            letter-spacing: 0.05em;
-          }
-        `}</style>
-      </div>
+      <LoadingScreen message={user ? 'Redirecting to Dashboard...' : 'Loading NexHaul...'} />
     );
   }
 
@@ -84,6 +65,8 @@ export default function Home() {
         return <RegisterForm onBackToLogin={() => setView('login')} />;
       case 'forgot-password':
         return <ForgotPasswordForm onBackToLogin={() => setView('login')} />;
+      case 'role-selection':
+        return <RoleSelector />;
       default:
         return null;
     }

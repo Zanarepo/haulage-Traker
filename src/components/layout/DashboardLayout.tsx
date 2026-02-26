@@ -8,10 +8,9 @@ import { useCompanyModules } from '@/hooks/useCompanyModules';
 import { getItem, STORES } from '@/lib/indexedDB';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import { useSubscription } from '@/hooks/useSubscription';
-import { PRODUCTS, isSharedItem, ProductId } from '@/config/productConfig';
 import PlanBadge from '@/components/subscription/PlanBadge';
 import UpgradeModal from '@/components/subscription/UpgradeModal';
-//import NotificationCenter from '@/components/NotificationCenter';
+import { PRODUCTS, isSharedItem, ProductId } from '@/config/productConfig';
 import DashboardHeader from './DashboardHeader';
 import { notificationService } from '@/services/notificationService';
 import {
@@ -45,7 +44,8 @@ import {
   ShieldAlert,
   FileBarChart,
   BookOpen,
-  Barcode
+  Barcode,
+  LayoutGrid
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -68,6 +68,7 @@ const allSidebarItems: SidebarItem[] = [
   { key: 'users', title: 'Teams & Users', icon: <UsersIcon size={20} />, path: '/dashboard/users', roles: ['superadmin', 'admin'] },
   { key: 'clusters', title: 'Clusters', icon: <MapPin size={20} />, path: '/dashboard/clusters', roles: ['superadmin', 'admin', 'md'] },
   { key: 'sites', title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
+  { key: 'app-center', title: 'App Center', icon: <LayoutGrid size={20} />, path: '/dashboard/app-center', roles: ['superadmin'] },
 
   // ── InfraSupply ──
   { key: 'inventory', title: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['superadmin', 'admin', 'md', 'accountant'] },
@@ -106,8 +107,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     toggleMobileOpen,
     toggleDarkMode,
     closeMobile,
-    handleLogout
+    handleLogout,
+    availableProfiles,
+    switchProfile
   } = useLayout();
+
+  const hasNexHaulAccess = availableProfiles?.some(p => p.type === 'platform') ?? false;
 
   // Product modules
   const { activeModules, activeProduct, setActiveProduct: setActiveProductHook, isMultiProduct } = useCompanyModules(profile?.company_id || null);
@@ -123,6 +128,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Activate background location tracking
   useLocationTracking();
+
+  // Guard: Ensure tenant profile is active in Fleet Dashboard
+  useEffect(() => {
+    if (profile && profile.type !== 'tenant') {
+      const tenant = availableProfiles?.find(p => p.type === 'tenant');
+      if (tenant) {
+        switchProfile(tenant.id, 'tenant');
+      }
+    }
+  }, [profile, availableProfiles, switchProfile]);
 
   // Read lastUpdated directly from IndexedDB after mount (avoids hydration mismatch)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -207,57 +222,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ── Product App Bar (only if multi-product) ── */}
-          {isMultiProduct && (!isCollapsed || isMobileOpen) && (
-            <div className="product-app-bar">
-              {activeModules.map((modId) => {
-                const product = PRODUCTS[modId];
-                return (
-                  <button
-                    key={modId}
-                    className={`app-bar-tab ${activeProduct === modId ? 'active' : ''}`}
-                    onClick={() => setActiveProduct(modId)}
-                    style={{ '--tab-color': product.color } as React.CSSProperties}
-                  >
-                    <span className="tab-icon">{product.icon}</span>
-                    <span className="tab-name">{product.shortName}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
 
-          {/* Collapsed: show product icon only */}
-          {isMultiProduct && isCollapsed && !isMobileOpen && (
-            <div className="product-app-bar collapsed">
-              {activeModules.map((modId) => {
-                const product = PRODUCTS[modId];
-                return (
-                  <button
-                    key={modId}
-                    className={`app-bar-tab ${activeProduct === modId ? 'active' : ''}`}
-                    onClick={() => setActiveProduct(modId)}
-                    title={product.name}
-                  >
-                    <span className="tab-icon">{product.icon}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* User Profile Info */}
-          {(!isCollapsed || isMobileOpen) && (
-            <div className="user-capsule">
-              <div className="profile-info">
-                <p className="user-name">{profile?.full_name || 'User'}</p>
-                <div className={`role-tag ${profile?.role}`}>{profile?.role}</div>
-              </div>
-              {profile?.company_id && (
-                <PlanBadgeWrapper companyId={profile.company_id} email={profile.email || ''} />
-              )}
-            </div>
-          )}
 
           {/* Navigation */}
           <nav className="nav-list">
@@ -299,6 +264,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               {(!isCollapsed || isMobileOpen) && <span>Appearance</span>}
             </button>
+
+            {hasNexHaulAccess && (
+              <button
+                onClick={() => {
+                  const platform = availableProfiles?.find(p => p.type === 'platform');
+                  if (platform) {
+                    switchProfile(platform.id, 'platform');
+                    router.push('/nexhaul');
+                  }
+                }}
+                className="footer-btn switch-btn"
+              >
+                <ShieldCheck size={18} className="text-purple-400" />
+                {(!isCollapsed || isMobileOpen) && <span>Switch to NexHaul</span>}
+              </button>
+            )}
 
             <button onClick={handleLogout} className="footer-btn logout">
               <LogOut size={18} />
@@ -390,41 +371,5 @@ function renderNavItem(
         </>
       )}
     </a>
-  );
-}
-
-/** Small wrapper to isolate the useSubscription hook from the layout */
-function PlanBadgeWrapper({ companyId, email }: { companyId: string; email: string }) {
-  const { effectivePlanId, trialDaysRemaining, isTrialActive, isFreePlan } = useSubscription(companyId);
-  const [showUpgrade, setShowUpgrade] = useState(false);
-
-  const showUpgradeButton = isTrialActive || isFreePlan;
-
-  return (
-    <>
-      <PlanBadge
-        plan={effectivePlanId}
-        trialDaysRemaining={trialDaysRemaining}
-        onClick={() => setShowUpgrade(true)}
-      />
-      {showUpgradeButton && (
-        <button
-          className="sidebar-upgrade-btn"
-          onClick={() => setShowUpgrade(true)}
-        >
-          <Crown size={14} />
-          Upgrade Plan
-        </button>
-      )}
-      {showUpgrade && (
-        <UpgradeModal
-          isOpen={showUpgrade}
-          onClose={() => setShowUpgrade(false)}
-          currentPlan={effectivePlanId}
-          companyId={companyId}
-          userEmail={email}
-        />
-      )}
-    </>
   );
 }

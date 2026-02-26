@@ -14,6 +14,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     error,
     success,
     handleChange,
+    toggleModule,
     handleRegister
   } = useRegister();
 
@@ -137,6 +138,35 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         </div>
 
         <div className="input-group">
+          <label>Choose Your Modules (Trial)</label>
+          <div className="module-selector">
+            <div
+              className={`module-card ${formData.modules.includes('infra_supply') ? 'active' : ''}`}
+              onClick={() => toggleModule('infra_supply')}
+            >
+              <span className="mod-icon">⛽</span>
+              <div className="mod-info">
+                <span className="mod-name">NexSupply</span>
+                <span className="mod-desc">Logistics & Fuel</span>
+              </div>
+              <div className="check-indicator"></div>
+            </div>
+
+            <div
+              className={`module-card ${formData.modules.includes('maintain') ? 'active' : ''}`}
+              onClick={() => toggleModule('maintain')}
+            >
+              <span className="mod-icon">🔧</span>
+              <div className="mod-info">
+                <span className="mod-name">NexMaintain</span>
+                <span className="mod-desc">Asset Maintenance</span>
+              </div>
+              <div className="check-indicator"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="input-group">
           <label>Create Password</label>
           <input
             type="password"
@@ -213,6 +243,63 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         }
         input:focus {
           border-color: #38bdf8;
+        }
+        .module-selector {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+        .module-card {
+          background: #334155;
+          border: 1px solid #475569;
+          border-radius: 0.75rem;
+          padding: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          position: relative;
+          overflow: hidden;
+        }
+        .module-card:hover {
+          border-color: #475569;
+          background: #3d4b5f;
+        }
+        .module-card.active {
+          background: rgba(59, 130, 246, 0.1);
+          border-color: #3b82f6;
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+        .mod-icon {
+          font-size: 1.25rem;
+        }
+        .mod-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .mod-name {
+          color: white;
+          font-weight: 700;
+          font-size: 0.85rem;
+        }
+        .mod-desc {
+          color: #94a3b8;
+          font-size: 0.7rem;
+        }
+        .check-indicator {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #475569;
+        }
+        .module-card.active .check-indicator {
+          background: #3b82f6;
+          box-shadow: 0 0 8px #3b82f6;
         }
         button[type="submit"] {
           width: 100%;
