@@ -1,21 +1,52 @@
 {
-    "name": "HaulageTracker",
-    "short_name": "HT",
-    "description": "Premium Diesel Monitoring & Logistics Tracker",
+    "name": "NexHaul — Effortless Tracking",
+    "short_name": "NexHaul",
+    "description": "Track fuel logistics, maintenance operations, and field assets in real-time. Built for Telecom, Data Centers, and IT Infrastructure.",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
+    "orientation": "portrait",
     "background_color": "#020617",
     "theme_color": "#3b82f6",
+    "categories": [
+        "business",
+        "productivity",
+        "utilities"
+    ],
+    "lang": "en",
+    "dir": "ltr",
     "icons": [
         {
             "src": "/icon-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "/icon-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
-    ]
+    ],
+    "screenshots": [],
+    "prefer_related_applications": false
 }
