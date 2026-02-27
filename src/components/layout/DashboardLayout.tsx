@@ -69,6 +69,7 @@ const allSidebarItems: SidebarItem[] = [
   { key: 'clusters', title: 'Clusters', icon: <MapPin size={20} />, path: '/dashboard/clusters', roles: ['superadmin', 'admin', 'md'] },
   { key: 'sites', title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { key: 'app-center', title: 'App Center', icon: <LayoutGrid size={20} />, path: '/dashboard/app-center', roles: ['superadmin'] },
+  { key: 'documents', title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
 
   // ── InfraSupply ──
   { key: 'inventory', title: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['superadmin', 'admin', 'md', 'accountant'] },
@@ -76,7 +77,6 @@ const allSidebarItems: SidebarItem[] = [
   { key: 'financials', title: 'Financials', icon: <BarChart3 size={20} />, path: '/dashboard/financials', roles: ['superadmin', 'md', 'accountant', 'auditor'], premiumOnly: true },
   { key: 'reconciliation', title: 'Supplies Reconciliation', icon: <Calculator size={20} />, path: '/dashboard/reconciliation', roles: ['superadmin', 'admin', 'md', 'accountant', 'driver', 'site_engineer'], premiumOnly: true },
   { key: 'tracking', title: 'Live Tracking', icon: <Navigation size={20} />, path: '/dashboard/tracking', roles: ['superadmin', 'admin', 'md'], premiumOnly: true },
-  { key: 'documents', title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'], premiumOnly: true },
 
   // ── Maintain ──
   { key: 'work-orders', title: 'Work Orders', icon: <ClipboardList size={20} />, path: '/dashboard/maintain/work-orders', roles: ['superadmin', 'admin', 'md', 'site_engineer'] },
@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   // Subscription state for feature gates
-  const { effectivePlanId, isFreePlan } = useSubscription(profile?.company_id || null);
+  const { effectivePlanId, infraPlanId, maintainPlanId, isFreePlan } = useSubscription(profile?.company_id || null);
   const [showSidebarUpgrade, setShowSidebarUpgrade] = useState(false);
 
   // Activate background location tracking
@@ -305,6 +305,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           currentPlan={effectivePlanId}
           companyId={profile.company_id}
           userEmail={profile.email || ''}
+          infraPlanId={infraPlanId}
+          maintainPlanId={maintainPlanId}
         />
       )}
     </div>

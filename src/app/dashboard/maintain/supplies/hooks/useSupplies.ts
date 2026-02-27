@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
+import { useSubscription } from '@/hooks/useSubscription';
 import { maintainService } from '@/services/maintainService';
 import { supabase } from '@/lib/supabase';
 
@@ -9,6 +10,7 @@ export type TabType = 'stock' | 'inventory' | 'history' | 'receiving_history' | 
 export function useSupplies() {
     const { profile } = useAuth();
     const { showToast } = useToast();
+    const { plan, effectivePlanId, infraPlanId, maintainPlanId } = useSubscription(profile?.company_id || null);
     const [allocations, setAllocations] = useState<any[]>([]);
     const [restockHistory, setRestockHistory] = useState<any[]>([]);
     const [receivingHistory, setReceivingHistory] = useState<any[]>([]);
@@ -162,11 +164,33 @@ export function useSupplies() {
         }
     };
 
+    // Plan-based supply limits
+    const supplyLimits = plan.features.maintain;
+
+    // Compute derived limit flags
+    const canIssueToCluster = restockHistory.length < supplyLimits.maxClusterIssues;
+    const canAddInflow = receivingHistory.length < supplyLimits.maxStockInflows;
+    const pendingReqs = stockRequests.filter((r: any) => r.status === 'pending').length;
+    const canRequestStock = pendingReqs < supplyLimits.maxPendingRequests;
+
+    // Slice history based on plan limits
+    const limitedRestockHistory = useMemo(() => {
+        const days = supplyLimits.restockLogDays;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return restockHistory.filter((r: any) => new Date(r.created_at) >= cutoff);
+    }, [restockHistory, supplyLimits.restockLogDays]);
+
+    const limitedInflowHistory = useMemo(() => {
+        const limit = supplyLimits.inflowHistoryLimit;
+        return limit >= 999 ? receivingHistory : receivingHistory.slice(0, limit);
+    }, [receivingHistory, supplyLimits.inflowHistoryLimit]);
+
     return {
         profile,
         allocations,
-        restockHistory,
-        receivingHistory,
+        restockHistory: limitedRestockHistory,
+        receivingHistory: limitedInflowHistory,
         loading,
         activeTab,
         setActiveTab,
@@ -203,6 +227,14 @@ export function useSupplies() {
         setFulfillmentData,
         isRequestModalOpen,
         setIsRequestModalOpen,
-        stats
+        stats,
+        // Plan limits for supply tracking
+        effectivePlanId,
+        infraPlanId,
+        maintainPlanId,
+        supplyLimits,
+        canIssueToCluster,
+        canAddInflow,
+        canRequestStock,
     };
 }

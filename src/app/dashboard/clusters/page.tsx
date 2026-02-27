@@ -46,7 +46,7 @@ export default function ClustersPage() {
     const [deletingCluster, setDeletingCluster] = useState<any | null>(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-    const { plan, isFreePlan, effectivePlanId, canAddCluster } = useSubscription(profile?.company_id || null);
+    const { plan, isFreePlan, effectivePlanId, infraPlanId, maintainPlanId, canAddCluster } = useSubscription(profile?.company_id || null);
 
     const handleAddCluster = async () => {
         try {
@@ -225,6 +225,8 @@ export default function ClustersPage() {
                     currentPlan={effectivePlanId}
                     companyId={profile.company_id}
                     userEmail={profile.email || ''}
+                    infraPlanId={infraPlanId}
+                    maintainPlanId={maintainPlanId}
                 />
             )}
         </div>

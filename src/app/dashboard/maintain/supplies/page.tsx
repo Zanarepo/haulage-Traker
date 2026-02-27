@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import './supplies.css';
 import '../maintain.css';
 import '../../dashboard.css';
@@ -7,7 +8,8 @@ import {
     History,
     ArrowRightLeft,
     Trash2,
-    Search
+    Search,
+    Lock
 } from 'lucide-react';
 import MyStock from './components/MyStock';
 import IssueStockModal from './components/IssueStockModal';
@@ -22,6 +24,7 @@ import SuppliesFilters from './components/SuppliesFilters';
 import StockRequests from './components/StockRequests';
 import RequestStockModal from './components/RequestStockModal';
 import ClusterReports from './components/ClusterReports';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 import { useSupplies } from './hooks/useSupplies';
 import { DataTableColumn } from '@/components/DataTable/DataTable';
 
@@ -67,8 +70,17 @@ export default function SupplyTrackingPage() {
         setFulfillmentData,
         isRequestModalOpen,
         setIsRequestModalOpen,
-        stats
+        stats,
+        effectivePlanId,
+        infraPlanId,
+        maintainPlanId,
+        supplyLimits,
+        canIssueToCluster,
+        canAddInflow,
+        canRequestStock,
     } = useSupplies();
+
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const historyColumns: DataTableColumn<any>[] = [
         {
@@ -205,9 +217,13 @@ export default function SupplyTrackingPage() {
                 isEngineer={isEngineer}
                 isAdmin={isAdmin}
                 canManageReceive={canManageReceive}
-                onAddInflow={() => setIsReceiveModalOpen(true)}
-                onIssueToEngineer={() => setIsIssueModalOpen(true)}
-                onRequestStock={() => setIsRequestModalOpen(true)}
+                onAddInflow={() => canAddInflow ? setIsReceiveModalOpen(true) : setShowUpgradeModal(true)}
+                onIssueToEngineer={() => canIssueToCluster ? setIsIssueModalOpen(true) : setShowUpgradeModal(true)}
+                onRequestStock={() => canRequestStock ? setIsRequestModalOpen(true) : setShowUpgradeModal(true)}
+                canAddInflow={canAddInflow}
+                canIssueToCluster={canIssueToCluster}
+                canRequestStock={canRequestStock}
+                onUpgrade={() => setShowUpgradeModal(true)}
             />
 
             <SuppliesStats
@@ -324,10 +340,24 @@ export default function SupplyTrackingPage() {
 
                 {activeTab === 'reports' && (
                     <div className="history-view">
-                        <ClusterReports
-                            companyId={profile?.company_id || ''}
-                            allEngineers={allEngineers}
-                        />
+                        {supplyLimits.clusterReports ? (
+                            <ClusterReports
+                                companyId={profile?.company_id || ''}
+                                allEngineers={allEngineers}
+                            />
+                        ) : (
+                            <div className="maintain-empty" style={{ textAlign: 'center' }}>
+                                <Lock size={48} style={{ opacity: 0.2 }} />
+                                <p>Cluster Reports are an <strong>Enterprise</strong> feature.</p>
+                                <button
+                                    className="btn-maintain-action"
+                                    style={{ marginTop: '0.75rem' }}
+                                    onClick={() => setShowUpgradeModal(true)}
+                                >
+                                    Upgrade to Enterprise
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -378,6 +408,22 @@ export default function SupplyTrackingPage() {
                 engineerId={profile?.id || ''}
                 onSuccess={() => setRefreshKey(prev => prev + 1)}
             />
+
+            {/* Upgrade Modal */}
+            {showUpgradeModal && profile?.company_id && (
+                <UpgradeModal
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentPlan={effectivePlanId}
+                    companyId={profile.company_id}
+                    userEmail={profile.email || ''}
+                    limitType="feature"
+                    featureName="This supply tracking feature"
+                    infraPlanId={infraPlanId}
+                    maintainPlanId={maintainPlanId}
+                    defaultModule="maintain"
+                />
+            )}
         </div>
     );
 }

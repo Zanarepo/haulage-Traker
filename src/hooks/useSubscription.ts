@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { subscriptionService, Subscription } from '@/services/subscriptionService';
-import { PlanId, getEffectivePlanId, getPlanConfig, PlanConfig, PlanFeatures } from '@/config/planConfig';
+import { PlanId, getEffectivePlanId, getPlanConfig, PlanConfig, PlanFeatures, mergeModulePlans } from '@/config/planConfig';
 
 interface UseSubscriptionReturn {
     subscription: Subscription | null;
     plan: PlanConfig;
     effectivePlanId: PlanId;
+    infraPlanId: PlanId;
+    maintainPlanId: PlanId;
     loading: boolean;
     error: string | null;
     trialDaysRemaining: number;
@@ -17,7 +19,7 @@ interface UseSubscriptionReturn {
     canAddCluster: () => Promise<{ allowed: boolean; current: number; max: number }>;
     canAddClient: () => Promise<{ allowed: boolean; current: number; max: number }>;
     canAddSite: () => Promise<{ allowed: boolean; current: number; max: number }>;
-    isFeatureEnabled: (feature: keyof PlanFeatures) => boolean;
+    isFeatureEnabled: (feature: 'liveTracking' | 'prioritySupport') => boolean;
     refresh: () => Promise<void>;
 }
 
@@ -48,19 +50,37 @@ export function useSubscription(companyId: string | null): UseSubscriptionReturn
         fetchSubscription();
     }, [fetchSubscription]);
 
-    // Compute effective plan
+    // Compute overall effective plan (for trial/expiry handling)
     const effectivePlanId = subscription
         ? getEffectivePlanId(subscription.plan, subscription.status, subscription.trial_end)
         : 'free' as PlanId;
 
-    const plan = getPlanConfig(effectivePlanId);
+    // Per-module plan tiers (read from DB columns, fallback to overall plan)
+    const infraPlanId: PlanId = (() => {
+        if (effectivePlanId === 'enterprise' || effectivePlanId === 'trial') return effectivePlanId;
+        if (subscription?.infra_supply_plan && subscription.infra_supply_plan !== 'free') {
+            return subscription.infra_supply_plan as PlanId;
+        }
+        return 'free';
+    })();
+
+    const maintainPlanId: PlanId = (() => {
+        if (effectivePlanId === 'enterprise' || effectivePlanId === 'trial') return effectivePlanId;
+        if (subscription?.maintain_plan && subscription.maintain_plan !== 'free') {
+            return subscription.maintain_plan as PlanId;
+        }
+        return 'free';
+    })();
+
+    // Merge per-module plans into a single PlanConfig (the magic adapter)
+    const plan = mergeModulePlans(infraPlanId, maintainPlanId, effectivePlanId, subscription);
 
     const trialDaysRemaining = subscription
         ? subscriptionService.getTrialDaysRemaining(subscription.trial_end)
         : 0;
 
     const isTrialActive = subscription?.plan === 'trial' && trialDaysRemaining > 0;
-    const isFreePlan = effectivePlanId === 'free';
+    const isFreePlan = effectivePlanId === 'free' && infraPlanId === 'free' && maintainPlanId === 'free';
 
     const canAddUser = useCallback(async () => {
         if (!companyId) return { allowed: false, current: 0, max: 0 };
@@ -86,8 +106,9 @@ export function useSubscription(companyId: string | null): UseSubscriptionReturn
         return { allowed: check.allowed, current: check.current, max: check.max };
     }, [companyId]);
 
+    // For top-level boolean features (liveTracking, prioritySupport)
     const isFeatureEnabled = useCallback(
-        (feature: keyof PlanFeatures): boolean => {
+        (feature: 'liveTracking' | 'prioritySupport'): boolean => {
             return plan.features[feature] ?? false;
         },
         [plan]
@@ -97,6 +118,8 @@ export function useSubscription(companyId: string | null): UseSubscriptionReturn
         subscription,
         plan,
         effectivePlanId,
+        infraPlanId,
+        maintainPlanId,
         loading,
         error,
         trialDaysRemaining,

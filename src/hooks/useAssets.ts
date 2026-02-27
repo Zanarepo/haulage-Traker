@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { maintainService } from '@/services/maintainService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export function useAssets() {
     const { profile } = useAuth();
     const { showToast } = useToast();
+    const { plan } = useSubscription(profile?.company_id || null);
 
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -51,6 +53,16 @@ export function useAssets() {
     };
 
     const handleCreate = async (data: any) => {
+        // Enforce plan-based asset limit
+        const maxAssets = plan.features.maintain.maxAssets;
+        if (assets.length >= maxAssets) {
+            showToast(
+                `Asset limit reached (${maxAssets}). Upgrade your plan to register more assets.`,
+                'error'
+            );
+            return;
+        }
+
         try {
             setSubmitting(true);
             await maintainService.createAsset({
@@ -120,6 +132,9 @@ export function useAssets() {
         decommissioned: assets.filter(a => a.status === 'decommissioned').length,
     }), [assets]);
 
+    const assetLimit = plan.features.maintain.maxAssets;
+    const canCreateAsset = assets.length < assetLimit;
+
     return {
         assets,
         filteredAssets,
@@ -143,5 +158,7 @@ export function useAssets() {
         stats,
         isManager,
         loadAssets,
+        assetLimit,
+        canCreateAsset,
     };
 }

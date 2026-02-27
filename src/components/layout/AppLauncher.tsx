@@ -145,9 +145,29 @@ export default function AppLauncher({ companyId }: { companyId: string | null })
                     overflow: hidden;
                     animation: slideDown 0.2s ease-out;
                 }
+
+                @media (max-width: 640px) {
+                    .launcher-dropdown {
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        right: auto;
+                        transform: translate(-50%, -50%);
+                        width: calc(100% - 40px);
+                        max-width: 340px;
+                        box-shadow: 0 0 0 100vw rgba(0, 0, 0, 0.5), 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+                        animation: mobileFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                    }
+                }
+
                 @keyframes slideDown {
                     from { opacity: 0; transform: translateY(-10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+
+                @keyframes mobileFadeIn {
+                    from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+                    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
                 }
                 .launcher-header {
                     padding: 1.25rem;

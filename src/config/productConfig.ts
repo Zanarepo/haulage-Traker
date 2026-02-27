@@ -34,7 +34,6 @@ export const PRODUCTS: Record<ProductId, ProductModule> = {
             'financials',
             'reconciliation',
             'tracking',
-            'documents',
             'supplies',
         ],
     },
@@ -70,6 +69,7 @@ export const SHARED_SIDEBAR_KEYS = [
     'clusters',
     'sites',
     'app-center',
+    'documents',
     'settings',
 ];
 

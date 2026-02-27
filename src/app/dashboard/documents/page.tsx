@@ -27,11 +27,12 @@ export default function DocumentCentre() {
     const [loading, setLoading] = useState(true);
 
     const { profile } = useAuth();
-    const { effectivePlanId, isFeatureEnabled } = useSubscription(profile?.company_id || null);
+    const { effectivePlanId, plan } = useSubscription(profile?.company_id || null);
 
-    // Check if user has full access (Enterprise or Trial)
-    const hasFullAuditAccess = isFeatureEnabled('fullDocumentAudit');
-    const isSmallBusiness = effectivePlanId === 'small_business';
+    // Document Centre — shared module features from plan config
+    const hasFullAuditAccess = plan.features.documents.fullDocumentAudit;
+    const canDownload = plan.features.documents.documentDownload;
+    const maxDocuments = plan.features.documents.maxDocuments;
 
     const isDriver = profile?.role === 'driver';
 
@@ -126,10 +127,10 @@ export default function DocumentCentre() {
         doc.trips?.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Limit to 3 for Small Business users
-    const displayDocs = isSmallBusiness && !hasFullAuditAccess
-        ? filteredDocs.slice(0, 3)
-        : filteredDocs;
+    // Limit documents based on plan
+    const displayDocs = maxDocuments >= 999
+        ? filteredDocs
+        : filteredDocs.slice(0, maxDocuments);
 
     return (
         <div className="document-centre-container">
@@ -161,9 +162,9 @@ export default function DocumentCentre() {
                     emptyMessage="No delivery documents found."
                 />
 
-                {isSmallBusiness && !hasFullAuditAccess && filteredDocs.length > 3 && (
+                {maxDocuments < 999 && filteredDocs.length > maxDocuments && (
                     <div className="premium-upgrade-banner">
-                        <p>You are viewing 3 of {filteredDocs.length} historical documents. Upgrade to Enterprise for full audit history.</p>
+                        <p>You are viewing {maxDocuments} of {filteredDocs.length} documents. Upgrade for full document access and audit history.</p>
                     </div>
                 )}
             </div>
@@ -201,9 +202,9 @@ export default function DocumentCentre() {
                                     <div className="block-label">
                                         <ImageIcon size={14} /> Waybill Proof
                                     </div>
-                                    <div className={`proof-image-wrapper ${isSmallBusiness && !hasFullAuditAccess ? 'blurred-proof' : ''}`}>
+                                    <div className={`proof-image-wrapper ${!hasFullAuditAccess ? 'blurred-proof' : ''}`}>
                                         <img src={selectedDoc.waybill_photo_url} alt="Waybill" />
-                                        {!isSmallBusiness && (
+                                        {canDownload && (
                                             <a href={selectedDoc.waybill_photo_url} target="_blank" rel="noreferrer" className="img-download-link">
                                                 <Download size={14} />
                                             </a>
@@ -218,7 +219,7 @@ export default function DocumentCentre() {
                                         <div className="block-label">
                                             <User size={14} /> Driver Sign-off
                                         </div>
-                                        <div className={`sig-display-box ${isSmallBusiness && !hasFullAuditAccess ? 'blurred-proof' : ''}`}>
+                                        <div className={`sig-display-box ${!hasFullAuditAccess ? 'blurred-proof' : ''}`}>
                                             <img src={selectedDoc.driver_signature_url} alt="Driver Sign" />
                                         </div>
                                         <p className="sig-author">{selectedDoc.trips?.driver?.full_name}</p>
@@ -230,7 +231,7 @@ export default function DocumentCentre() {
                                         <div className="block-label">
                                             <PenTool size={14} /> Engineer Sign-off
                                         </div>
-                                        <div className={`sig-display-box ${isSmallBusiness && !hasFullAuditAccess ? 'blurred-proof' : ''}`}>
+                                        <div className={`sig-display-box ${!hasFullAuditAccess ? 'blurred-proof' : ''}`}>
                                             <img src={selectedDoc.engineer_signature_url} alt="Engineer Sign" />
                                         </div>
                                         <p className="sig-author">{selectedDoc.engineer_name || 'Site Engineer'}</p>
@@ -238,10 +239,10 @@ export default function DocumentCentre() {
                                 )}
                             </div>
 
-                            {isSmallBusiness && !hasFullAuditAccess && (
+                            {!hasFullAuditAccess && (
                                 <div className="blur-overlay-notice">
                                     <Lock size={16} />
-                                    <span>Proof images are blurred on Small Business plan. <br /> <strong>Upgrade to Enterprise</strong> to view clear audit signatures and waybills.</span>
+                                    <span>Proof images are blurred on your current plan. <br /> <strong>Upgrade to Enterprise</strong> to view clear audit signatures and waybills.</span>
                                 </div>
                             )}
                         </div>

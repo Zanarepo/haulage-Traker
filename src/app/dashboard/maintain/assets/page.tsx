@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import './assets.css';
 import '../maintain.css';
 import '../../dashboard.css';
-import '../supplies/supplies.css'; // Leverage shared search bar styles
+import '../supplies/supplies.css';
 import { useAssets } from '@/hooks/useAssets';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
     Plus,
     Search,
@@ -22,6 +24,7 @@ import {
 import NewAssetModal from './components/NewAssetModal';
 import AssetDetailsModal from './components/AssetDetailsModal';
 import DataTable, { DataTableColumn } from '@/components/DataTable/DataTable';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 
 const TYPE_ICONS: Record<string, any> = {
     generator: '⚡',
@@ -56,10 +59,15 @@ export default function AssetRegistryPage() {
         handleCreate,
         handleUpdate,
         handleDelete,
-        stats
+        stats,
+        assetLimit,
+        canCreateAsset,
     } = useAssets();
 
     const [submitting, setSubmitting] = useState(false);
+    const { profile } = useAuth();
+    const { effectivePlanId, infraPlanId, maintainPlanId } = useSubscription(profile?.company_id || null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const filteredAssets = assets.filter(a =>
         a.make_model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -190,12 +198,48 @@ export default function AssetRegistryPage() {
                 </div>
                 <div className="header-actions">
                     {isManager && (
-                        <button className="btn-maintain-action" onClick={() => setIsCreateModalOpen(true)}>
-                            <Plus size={18} /> Register Asset
+                        <button
+                            className="btn-maintain-action"
+                            onClick={() => canCreateAsset ? setIsCreateModalOpen(true) : setShowUpgradeModal(true)}
+                            title={!canCreateAsset ? `Limit of ${assetLimit} assets reached. Upgrade to register more.` : 'Register a new asset'}
+                        >
+                            <Plus size={18} />
+                            {canCreateAsset ? 'Register Asset' : `Limit Reached (${assetLimit})`}
                         </button>
                     )}
                 </div>
             </header>
+
+            {/* Upgrade Banner when asset limit is hit */}
+            {isManager && !canCreateAsset && (
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: '0.75rem',
+                    padding: '1rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    marginBottom: '1rem',
+                }}>
+                    <div>
+                        <p style={{ margin: 0, fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem' }}>
+                            ⚠️ Asset Registry Limit Reached
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            Your plan allows {assetLimit} assets. Upgrade for unlimited asset tracking.
+                        </p>
+                    </div>
+                    <button
+                        className="btn-maintain-action"
+                        style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}
+                        onClick={() => setShowUpgradeModal(true)}
+                    >
+                        Upgrade Plan
+                    </button>
+                </div>
+            )}
 
             <div className="maintain-stats">
                 <div className="stat-card">
@@ -269,6 +313,23 @@ export default function AssetRegistryPage() {
                 onDelete={handleDelete}
                 submitting={submitting}
             />
+
+            {/* Upgrade Modal */}
+            {showUpgradeModal && profile?.company_id && (
+                <UpgradeModal
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentPlan={effectivePlanId}
+                    companyId={profile.company_id}
+                    userEmail={profile.email || ''}
+                    limitType="assets"
+                    currentUsage={stats.total}
+                    maxAllowed={assetLimit}
+                    infraPlanId={infraPlanId}
+                    maintainPlanId={maintainPlanId}
+                    defaultModule="maintain"
+                />
+            )}
         </div>
     );
 }

@@ -256,6 +256,8 @@ export default function TripsDashboard() {
                 onDispense={handleRecordDispense}
                 submitting={submitting}
                 trip={selectedTrip}
+                clusters={clusters}
+                sites={sites}
             />
 
             <DispatchModal
@@ -267,7 +269,6 @@ export default function TripsDashboard() {
                 clusters={clusters}
                 sites={sites}
                 allocations={aggregatedData}
-                isFreePlan={isFreePlan}
             />
 
             <TripHistoryModal

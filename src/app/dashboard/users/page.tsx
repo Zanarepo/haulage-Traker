@@ -77,7 +77,7 @@ export default function UsersPage() {
     const [userLimitInfo, setUserLimitInfo] = useState({ current: 0, max: 0 });
 
     const { clusters } = useClusters();
-    const { effectivePlanId, plan, canAddUser } = useSubscription(profile?.company_id || null);
+    const { effectivePlanId, infraPlanId, maintainPlanId, plan, canAddUser } = useSubscription(profile?.company_id || null);
 
     const activeCount = users.filter(u => u.is_active).length;
     const inactiveCount = users.filter(u => !u.is_active).length;
@@ -303,6 +303,8 @@ export default function UsersPage() {
                     limitType="users"
                     currentUsage={userLimitInfo.current}
                     maxAllowed={userLimitInfo.max}
+                    infraPlanId={infraPlanId}
+                    maintainPlanId={maintainPlanId}
                 />
             )}
         </div>

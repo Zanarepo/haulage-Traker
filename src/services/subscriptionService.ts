@@ -12,6 +12,8 @@ export interface Subscription {
     current_period_end: string | null;
     paystack_customer_code: string | null;
     paystack_subscription_code: string | null;
+    infra_supply_plan: string;   // Per-module plan tier
+    maintain_plan: string;       // Per-module plan tier
     created_at: string;
     updated_at: string;
 }
@@ -178,9 +180,10 @@ export const subscriptionService = {
     },
 
     /**
-     * Check if a specific feature is enabled for the company.
+     * Check if a specific top-level feature is enabled for the company.
+     * For module-specific features, access plan.features.infra_supply.* or plan.features.maintain.* directly.
      */
-    async isFeatureEnabled(companyId: string, feature: keyof typeof PLANS.enterprise.features): Promise<boolean> {
+    async isFeatureEnabled(companyId: string, feature: 'liveTracking' | 'prioritySupport'): Promise<boolean> {
         const effectivePlan = await this.getEffectivePlan(companyId);
         const config = getPlanConfig(effectivePlan);
         return config.features[feature] ?? false;
@@ -202,21 +205,31 @@ export const subscriptionService = {
     async initializePaystackCheckout(
         companyId: string,
         email: string,
-        plan: 'small_business' | 'enterprise'
+        plan: 'small_business' | 'enterprise',
+        targetModule?: 'infra_supply' | 'maintain' | 'both'
     ): Promise<{ authorization_url: string; reference: string }> {
-        const planConfig = getPlanConfig(plan);
+        // Calculate price based on module selection
+        let amount: number;
+        if (plan === 'enterprise') {
+            amount = 40000; // Enterprise always ₦40k
+        } else if (targetModule === 'both') {
+            amount = 25000; // Both modules ₦25k
+        } else {
+            amount = 18000; // Single module ₦18k
+        }
 
         const response = await fetch('/api/paystack/initialize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email,
-                amount: planConfig.price * 100, // Paystack uses kobo
+                amount: amount * 100, // Paystack uses kobo
                 plan: plan,
                 company_id: companyId,
                 metadata: {
                     company_id: companyId,
                     plan: plan,
+                    target_module: targetModule || 'both',
                 },
             }),
         });
@@ -232,19 +245,41 @@ export const subscriptionService = {
     /**
      * Update subscription after successful payment (called from webhook or verification).
      */
-    async upgradePlan(companyId: string, newPlan: PlanId) {
+    async upgradePlan(
+        companyId: string,
+        newPlan: PlanId,
+        targetModule?: 'infra_supply' | 'maintain' | 'both'
+    ) {
         const now = new Date().toISOString();
         const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
+        const updateData: Record<string, any> = {
+            status: 'active',
+            current_period_start: now,
+            current_period_end: periodEnd,
+            updated_at: now,
+        };
+
+        if (newPlan === 'enterprise') {
+            // Enterprise unlocks everything
+            updateData.plan = 'enterprise';
+            updateData.infra_supply_plan = 'enterprise';
+            updateData.maintain_plan = 'enterprise';
+        } else {
+            // Small Business — per module
+            if (targetModule === 'infra_supply' || targetModule === 'both') {
+                updateData.infra_supply_plan = 'small_business';
+            }
+            if (targetModule === 'maintain' || targetModule === 'both') {
+                updateData.maintain_plan = 'small_business';
+            }
+            // Set overall plan to 'small_business' (at least one module is paid)
+            updateData.plan = 'small_business';
+        }
+
         const { error } = await supabase
             .from('subscriptions')
-            .update({
-                plan: newPlan,
-                status: 'active',
-                current_period_start: now,
-                current_period_end: periodEnd,
-                updated_at: now,
-            })
+            .update(updateData)
             .eq('company_id', companyId);
 
         if (error) throw error;

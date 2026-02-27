@@ -265,42 +265,70 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             <section id="pricing" className="pricing-section">
                 <div className="section-header">
                     <h2>Simple, Transparent Pricing</h2>
-                    <p>Choose the plan that fits your logistics operation.</p>
+                    <p>Pay only for the modules you need. Upgrade anytime.</p>
                 </div>
 
-                <div className="pricing-grid">
+                <div className="pricing-grid three-col">
+                    {/* Free Plan */}
                     <div className="pricing-card">
-                        <div className="trial-badge">21 Days Free</div>
-                        <div className="plan-name">Small Business</div>
+                        <div className="trial-badge">Always Free</div>
+                        <div className="plan-name">Free</div>
                         <div className="plan-price">
-                            <span className="currency">₦</span>25,000<span className="period">/mo</span>
+                            <span className="currency">₦</span>0<span className="period">/mo</span>
                         </div>
-                        <p className="plan-desc">For growing operations managing multiple teams and sites.</p>
-                        <button className="btn-pricing outline" onClick={onRegister}>Get Started</button>
+                        <p className="plan-desc">Get started and explore with limited access to both modules.</p>
+                        <button className="btn-pricing outline" onClick={onRegister}>Create Account</button>
                         <ul className="features-list">
-                            <li><Check size={18} /> Up to 7 Teams & Clusters</li>
-                            <li><Check size={18} /> Up to 7 Clients & Sites</li>
-                            <li><Check size={18} /> Live Tracking Included</li>
-                            <li><Check size={18} /> Basic Document Access</li>
-                            <li><Check size={18} /> Standard Support</li>
+                            <li><Check size={18} /> Up to 3 team members</li>
+                            <li><Check size={18} /> 1 cluster & 3 clients</li>
+                            <li><Check size={18} /> 10 trips / 5 work orders</li>
+                            <li><Check size={18} /> 5 assets & 10 documents</li>
+                            <li><Check size={18} /> Basic document viewing</li>
                         </ul>
                     </div>
 
+                    {/* Small Business Plan */}
+                    <div className="pricing-card">
+                        <div className="trial-badge">21 Days Free Trial</div>
+                        <div className="plan-name">Small Business</div>
+                        <div className="plan-price">
+                            <span className="currency">₦</span>18,000<span className="period">/mo</span>
+                        </div>
+                        <p className="plan-desc" style={{ marginBottom: '0.25rem' }}>Per module — pick InfraSupply, Maintain, or both.</p>
+                        <p style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: 600, margin: '0 0 1rem', textAlign: 'center' }}>
+                            💡 Both modules: ₦25,000/mo — Save ₦11,000
+                        </p>
+                        <button className="btn-pricing outline" onClick={onRegister}>Get Started</button>
+                        <ul className="features-list">
+                            <li><Check size={18} /> Up to 7 teams & clusters</li>
+                            <li><Check size={18} /> Up to 7 clients & sites</li>
+                            <li><Check size={18} /> 50 work orders & 50 assets</li>
+                            <li><Check size={18} /> Live GPS tracking</li>
+                            <li><Check size={18} /> Multi-cluster dispatch</li>
+                            <li><Check size={18} /> Preventive scheduling</li>
+                            <li><Check size={18} /> Document downloads</li>
+                        </ul>
+                    </div>
+
+                    {/* Enterprise Plan */}
                     <div className="pricing-card featured">
-                        <div className="trial-badge">Most Popular</div>
-                        <div className="plan-name">Enterprise / Teams</div>
+                        <div className="trial-badge">Best Value</div>
+                        <div className="plan-name">Enterprise</div>
                         <div className="plan-price">
                             <span className="currency">₦</span>40,000<span className="period">/mo</span>
                         </div>
-                        <p className="plan-desc">Unlimited scale for large logistics companies and critical infra.</p>
+                        <p className="plan-desc">All modules, all features. Unlimited scale for critical infra.</p>
                         <button className="btn-pricing solid" onClick={onRegister}>Start Free Trial</button>
                         <ul className="features-list">
-                            <li><Check size={18} /> <strong>Unlimited</strong> Teams & Clusters</li>
-                            <li><Check size={18} /> <strong>Unlimited</strong> Clients & Sites</li>
-                            <li><Check size={18} /> Advanced Period Reconciliation</li>
+                            <li><Check size={18} /> <strong>Unlimited</strong> teams & clusters</li>
+                            <li><Check size={18} /> <strong>Unlimited</strong> clients & sites</li>
+                            <li><Check size={18} /> <strong>Unlimited</strong> work orders & assets</li>
                             <li><Check size={18} /> Full Document Audit Centre</li>
+                            <li><Check size={18} /> Auto Reconciliation</li>
+                            <li><Check size={18} /> Asset Health Projections</li>
+                            <li><Check size={18} /> Knowledge Base</li>
+                            <li><Check size={18} /> Cluster Reports & CSV Export</li>
                             <li><Check size={18} /> Priority 24/7 Support</li>
-                            <li><Check size={18} /> Multi-Cluster Analytics</li>
                         </ul>
                     </div>
                 </div>

@@ -16,6 +16,7 @@ import { History, X, Camera, PenTool, ShieldCheck, UserCheck } from 'lucide-reac
 import { tripService } from '@/services/tripService';
 import { documentService } from '@/services/documentService';
 import SignaturePad from '@/components/SignaturePad/SignaturePad';
+import { supabase } from '@/lib/supabase';
 
 interface DispenseModalProps {
     isOpen: boolean;
@@ -23,6 +24,8 @@ interface DispenseModalProps {
     onDispense: (logData: any) => Promise<void>;
     submitting: boolean;
     trip: any;
+    clusters: any[];
+    sites: any[];
 }
 
 export default function DispenseModal({
@@ -30,13 +33,20 @@ export default function DispenseModal({
     onClose,
     onDispense,
     submitting,
-    trip
+    trip,
+    clusters = [],
+    sites = []
 }: DispenseModalProps) {
     const [selectedSiteId, setSelectedSiteId] = useState('');
     const [quantity, setQuantity] = useState('');
     const [communityQuantity, setCommunityQuantity] = useState('');
     const [previousDrops, setPreviousDrops] = useState<any[]>([]);
     const [itinerary, setItinerary] = useState<any[]>([]);
+
+    // State for adding new stops
+    const [isAddingStop, setIsAddingStop] = useState(false);
+    const [tempClusterId, setTempClusterId] = useState('');
+    const [tempSiteId, setTempSiteId] = useState('');
 
     // Document state
     const [waybillFile, setWaybillFile] = useState<File | null>(null);
@@ -47,17 +57,28 @@ export default function DispenseModal({
     const loadData = useCallback(async () => {
         if (!trip) return;
         try {
-            setItinerary(trip.itineraries || []);
-            const firstPending = trip.itineraries?.find((it: any) => it.status === 'pending');
-            if (firstPending) {
-                setSelectedSiteId(firstPending.site_id);
+            // Fetch latest trip data to get fresh itinerary
+            const { data: freshTrip } = await supabase
+                .from('trips')
+                .select('*, itineraries:trip_itineraries(*, sites(*))')
+                .eq('id', trip.id)
+                .single();
+
+            const items = freshTrip?.itineraries || [];
+            setItinerary(items);
+
+            if (!selectedSiteId) {
+                const firstPending = items.find((it: any) => it.status === 'pending');
+                if (firstPending) {
+                    setSelectedSiteId(firstPending.site_id);
+                }
             }
             const logs = await tripService.getDispensingLogs(trip.id);
             setPreviousDrops(logs || []);
         } catch (error) {
             console.error('Failed to load dispensing data:', error);
         }
-    }, [trip]);
+    }, [trip, selectedSiteId]);
 
     useEffect(() => {
         if (isOpen && trip) {
@@ -67,10 +88,36 @@ export default function DispenseModal({
             setWaybillFile(null);
             setDriverSig(null);
             setEngineerSig(null);
+            setIsAddingStop(false);
+            setTempClusterId('');
+            setTempSiteId('');
         }
     }, [isOpen, trip, loadData]);
 
+    const handleAddCustomStop = async () => {
+        if (!tempSiteId) return;
+        setIsUploading(true);
+        try {
+            await tripService.createItinerary([{
+                trip_id: trip.id,
+                site_id: tempSiteId,
+                status: 'pending',
+                notes: 'Added by driver during trip'
+            }]);
+            await loadData(); // Refresh itinerary
+            setIsAddingStop(false);
+            setTempClusterId('');
+            setTempSiteId('');
+        } catch (err) {
+            console.error('Failed to add custom stop:', err);
+            alert('Failed to add new site to itinerary.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleUploadAndDispense = async (e: React.FormEvent) => {
+        // ... (existing logic)
         e.preventDefault();
         if (!selectedSiteId || !quantity) return;
 
@@ -106,10 +153,7 @@ export default function DispenseModal({
                 engineer_name: 'Site Engineer' // Default for now
             });
 
-            const updatedItinerary = itinerary.map(it =>
-                it.site_id === selectedSiteId ? { ...it, status: 'dispensed' } : it
-            );
-            setItinerary(updatedItinerary);
+            await loadData(); // Refresh to show newly dispensed status
             setQuantity('');
             setCommunityQuantity('');
             setWaybillFile(null);
@@ -172,10 +216,52 @@ export default function DispenseModal({
 
                 {/* Itinerary Progress */}
                 <div style={{ background: 'var(--bg-hover)', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                        <MapIcon size={16} className="text-primary" />
-                        <h3 style={{ fontSize: '0.9rem', fontWeight: 600, margin: 0 }}>Planned Itinerary Sites</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <MapIcon size={16} className="text-primary" />
+                            <h3 style={{ fontSize: '0.9rem', fontWeight: 600, margin: 0 }}>Active Itinerary</h3>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsAddingStop(!isAddingStop)}
+                            style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                            {isAddingStop ? 'Cancel Add' : '+ Add New Stop'}
+                        </button>
                     </div>
+
+                    {isAddingStop && (
+                        <div style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '0.75rem', border: '1px dashed #3b82f6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <p style={{ fontSize: '0.75rem', fontWeight: 600, margin: 0, color: 'var(--text-muted)' }}>Supply to a different cluster/site:</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px' }}>
+                                <select
+                                    value={tempClusterId}
+                                    onChange={e => setTempClusterId(e.target.value)}
+                                    style={{ width: '100%', height: '36px', borderRadius: '0.4rem', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.75rem' }}
+                                >
+                                    <option value="">Select Cluster...</option>
+                                    {clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <select
+                                    value={tempSiteId}
+                                    onChange={e => setTempSiteId(e.target.value)}
+                                    disabled={!tempClusterId}
+                                    style={{ width: '100%', height: '36px', borderRadius: '0.4rem', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.75rem' }}
+                                >
+                                    <option value="">Choose Site...</option>
+                                    {sites.filter(s => s.cluster_id === tempClusterId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                                <button
+                                    onClick={handleAddCustomStop}
+                                    disabled={!tempSiteId || isUploading}
+                                    style={{ height: '36px', padding: '0 10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                                >
+                                    {isUploading ? <Loader2 size={12} className="spinning" /> : 'Add'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {itinerary.map((it: any) => (
                             <div key={it.id} style={{
@@ -197,9 +283,12 @@ export default function DispenseModal({
                                     ) : (
                                         <Clock size={16} style={{ color: selectedSiteId === it.site_id ? '#3b82f6' : 'var(--text-muted)' }} />
                                     )}
-                                    <span style={{ fontSize: '0.9rem', fontWeight: selectedSiteId === it.site_id ? 700 : 500 }}>
-                                        {it.sites?.name}
-                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: selectedSiteId === it.site_id ? 700 : 500 }}>
+                                            {it.sites?.name}
+                                        </span>
+                                        {it.notes && <span style={{ fontSize: '0.65rem', color: '#3b82f6' }}>{it.notes}</span>}
+                                    </div>
                                 </div>
                                 <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 700, color: it.status === 'dispensed' ? '#10b981' : '#f59e0b' }}>
                                     {it.status}

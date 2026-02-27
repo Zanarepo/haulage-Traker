@@ -9,10 +9,11 @@
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(6px);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 10000;
-    padding: 1rem;
+    padding: 2rem 1rem;
+    overflow-y: auto;
 }
 
 .upgrade-modal {
@@ -24,6 +25,8 @@
     padding: 2.5rem;
     position: relative;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    margin: auto 0;
+    flex-shrink: 0;
 }
 
 .upgrade-close {

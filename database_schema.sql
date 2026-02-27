@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS trip_itineraries (
     trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
     site_id UUID REFERENCES sites(id),
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'dispensed')),
+    notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(trip_id, site_id)
 );
@@ -410,6 +411,12 @@ FOR SELECT USING (trip_id IN (SELECT id FROM trips WHERE cluster_id IN (SELECT i
 DROP POLICY IF EXISTS "Drivers can update itinerary status" ON trip_itineraries;
 CREATE POLICY "Drivers can update itinerary status" ON trip_itineraries
 FOR UPDATE USING (trip_id IN (SELECT id FROM trips WHERE driver_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Drivers can add itinerary stops" ON trip_itineraries;
+CREATE POLICY "Drivers can add itinerary stops" ON trip_itineraries
+FOR INSERT WITH CHECK (
+    trip_id IN (SELECT id FROM trips WHERE driver_id = auth.uid())
+);
 
 DROP POLICY IF EXISTS "Admins can manage all itineraries" ON trip_itineraries;
 CREATE POLICY "Admins can manage all itineraries" ON trip_itineraries

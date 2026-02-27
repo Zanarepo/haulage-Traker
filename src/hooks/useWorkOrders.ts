@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { maintainService } from '@/services/maintainService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export function useWorkOrders() {
     const { profile } = useAuth();
     const { showToast } = useToast();
+    const { plan } = useSubscription(profile?.company_id || null);
 
     const [workOrders, setWorkOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -59,6 +61,16 @@ export function useWorkOrders() {
     }, [loadWorkOrders]);
 
     const handleCreate = async (data: any) => {
+        // Enforce plan-based work order limit
+        const woLimit = plan.features.maintain.workOrderLimit;
+        if (workOrders.length >= woLimit) {
+            showToast(
+                `Work order limit reached (${woLimit}). Upgrade your plan to create more.`,
+                'error'
+            );
+            return;
+        }
+
         try {
             setSubmitting(true);
             await maintainService.createWorkOrder({
@@ -152,6 +164,9 @@ export function useWorkOrders() {
         ).length,
     }), [workOrders]);
 
+    const woLimit = plan.features.maintain.workOrderLimit;
+    const canCreateWorkOrder = workOrders.length < woLimit;
+
     return {
         workOrders,
         filteredWorkOrders,
@@ -178,5 +193,7 @@ export function useWorkOrders() {
         isManager,
         isEngineer,
         loadWorkOrders,
+        woLimit,
+        canCreateWorkOrder,
     };
 }

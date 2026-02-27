@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from 'react';
 import '../maintain.css';
 import '../../dashboard.css';
 import { useWorkOrders } from '@/hooks/useWorkOrders';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import LoadingScreen from '@/components/common/LoadingScreen';
 import NewWorkOrderModal from './components/NewWorkOrderModal';
 import WorkOrderDetailsModal from './components/WorkOrderDetailsModal';
+import UpgradeModal from '@/components/subscription/UpgradeModal';
 import {
     ClipboardList, Plus, Search,
 } from 'lucide-react';
@@ -48,7 +52,13 @@ export default function WorkOrdersPage() {
         stats,
         isManager,
         isEngineer,
+        woLimit,
+        canCreateWorkOrder,
     } = useWorkOrders();
+
+    const { profile } = useAuth();
+    const { effectivePlanId, infraPlanId, maintainPlanId } = useSubscription(profile?.company_id || null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     if (loading && filteredWorkOrders.length === 0) {
         return <LoadingScreen message="Loading work orders..." />;
@@ -68,14 +78,46 @@ export default function WorkOrdersPage() {
                     {isManager && (
                         <button
                             className="btn-maintain-action"
-                            onClick={() => setIsCreateModalOpen(true)}
+                            onClick={() => canCreateWorkOrder ? setIsCreateModalOpen(true) : setShowUpgradeModal(true)}
+                            title={!canCreateWorkOrder ? `Limit of ${woLimit} work orders reached. Upgrade to create more.` : 'Create a new work order'}
                         >
                             <Plus size={18} />
-                            New Work Order
+                            {canCreateWorkOrder ? 'New Work Order' : `Limit Reached (${woLimit})`}
                         </button>
                     )}
                 </div>
             </header>
+
+            {/* Upgrade Banner when limit is hit */}
+            {isManager && !canCreateWorkOrder && (
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: '0.75rem',
+                    padding: '1rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    marginBottom: '1rem',
+                }}>
+                    <div>
+                        <p style={{ margin: 0, fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem' }}>
+                            ⚠️ Work Order Limit Reached
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            Your current plan allows {woLimit} work orders. Upgrade to create unlimited work orders.
+                        </p>
+                    </div>
+                    <button
+                        className="btn-maintain-action"
+                        style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}
+                        onClick={() => setShowUpgradeModal(true)}
+                    >
+                        Upgrade Plan
+                    </button>
+                </div>
+            )}
 
             {/* Stats (engineers see their own; managers see all) */}
             <div className="maintain-stats">
@@ -195,6 +237,23 @@ export default function WorkOrdersPage() {
                 onUpdateStatus={handleUpdateStatus}
                 submitting={submitting}
             />
+
+            {/* Upgrade Modal */}
+            {showUpgradeModal && profile?.company_id && (
+                <UpgradeModal
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentPlan={effectivePlanId}
+                    companyId={profile.company_id}
+                    userEmail={profile.email || ''}
+                    limitType="work_orders"
+                    currentUsage={stats.total}
+                    maxAllowed={woLimit}
+                    infraPlanId={infraPlanId}
+                    maintainPlanId={maintainPlanId}
+                    defaultModule="maintain"
+                />
+            )}
         </div>
     );
 }
