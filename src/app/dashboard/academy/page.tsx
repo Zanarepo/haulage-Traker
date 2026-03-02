@@ -245,7 +245,7 @@ export default function AcademyPage() {
                     margin-bottom: 3rem;
                     background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
                     padding: 2.5rem;
-                    border-radius: 20px;
+                    border-radius: 24px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
                 .header-info h1 {
@@ -348,7 +348,7 @@ export default function AcademyPage() {
                 }
                 .academy-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
                     gap: 2rem;
                 }
                 .academy-card {
@@ -515,15 +515,74 @@ export default function AcademyPage() {
                     margin: 1.5rem 0 0.5rem;
                     font-size: 1.5rem;
                 }
+                @media (max-width: 1024px) {
+                    .academy-container { padding: 1.5rem; }
+                    .academy-header { padding: 2rem; }
+                    .header-info h1 { font-size: 2.25rem; }
+                }
                 @media (max-width: 768px) {
                     .academy-header {
                         flex-direction: column;
                         align-items: flex-start;
                         gap: 1.5rem;
                         padding: 1.5rem;
+                        margin-bottom: 2rem;
                     }
-                    .header-info h1 {
-                        font-size: 2rem;
+                    .header-info h1 { font-size: 1.75rem; }
+                    .header-info p { font-size: 1rem; }
+                    .header-stats { width: 100%; justify-content: space-between; gap: 0.75rem; }
+                    .stat-card { flex: 1; padding: 0.75rem 1rem; }
+                    .stat-value { font-size: 1.1rem; }
+                    
+                    .academy-controls { gap: 1.5rem; margin-bottom: 2rem; }
+                    .category-tabs { gap: 0.5rem; }
+                    .category-tab { padding: 0.5rem 1rem; font-size: 0.85rem; }
+                    
+                    .academy-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+                }
+                @media (max-width: 480px) {
+                    .academy-container { padding: 1rem; }
+                    .academy-header { padding: 1.25rem; border-radius: 16px; }
+                    .header-stats { flex-direction: column; }
+                    .stat-card { width: 100%; }
+                    
+                    .search-bar input { padding-left: 3rem; font-size: 0.9rem; }
+                    .search-icon { left: 1rem; }
+                    
+                    .academy-content { padding: 1.25rem; }
+                    .academy-content h3 { font-size: 1.05rem; }
+                }
+
+                /* Video Modal Mobile Optimizations */
+                @media (max-width: 768px) {
+                    :global(.video-modal) {
+                        max-height: 90vh !important;
+                        max-width: 95vw !important;
+                        width: 95vw !important;
+                        margin: auto !important;
+                        border-radius: 16px !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                    }
+                    :global(.video-modal .modal-body) {
+                        padding: 12px !important;
+                        background: #000 !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        min-height: 200px !important;
+                    }
+                    :global(.video-modal .modal-header) {
+                        padding: 1.25rem !important;
+                        background: #0f172a !important;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    }
+                    :global(.video-modal .modal-footer) {
+                        padding: 1.25rem !important;
+                        background: #0f172a !important;
+                        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
                     }
                 }
             `}</style>
@@ -534,8 +593,39 @@ export default function AcademyPage() {
                     onClose={() => setSelectedVideo(null)}
                     title={selectedVideo.title}
                     maxWidth="1000px"
+                    className="video-modal"
+                    footer={
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
+                            <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 500 }}>
+                                {selectedVideo.duration} • {selectedVideo.level}
+                            </div>
+                            <a
+                                href={selectedVideo.videoUrl.replace('embed/', 'watch?v=')}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '0.6rem 1rem',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '700',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                                <Play size={14} fill="white" />
+                                Watch on YouTube
+                            </a>
+                        </div>
+                    }
                 >
-                    <div style={{ width: '100%', background: '#000', borderRadius: '12px', overflow: 'hidden', lineHeight: 0 }}>
+                    <div style={{ width: '100%', background: '#000', borderRadius: '8px', overflow: 'hidden', lineHeight: 0, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
                         <iframe
                             width="100%"
                             height="100%"
@@ -544,7 +634,7 @@ export default function AcademyPage() {
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
-                            style={{ aspectRatio: '16/9', borderRadius: '12px' }}
+                            style={{ aspectRatio: '16/9', borderRadius: '8px' }}
                         ></iframe>
                     </div>
                 </Modal>

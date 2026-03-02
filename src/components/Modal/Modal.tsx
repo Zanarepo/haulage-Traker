@@ -11,6 +11,7 @@ interface ModalProps {
     children: React.ReactNode;
     footer?: React.ReactNode;
     maxWidth?: string;
+    className?: string;
 }
 
 export default function Modal({
@@ -19,7 +20,8 @@ export default function Modal({
     title,
     children,
     footer,
-    maxWidth = '600px'
+    maxWidth = '600px',
+    className = ''
 }: ModalProps) {
     // Handle ESC key to close
     useEffect(() => {
@@ -42,7 +44,7 @@ export default function Modal({
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div
-                className="modal-content"
+                className={`modal-content ${className}`}
                 onClick={(e) => e.stopPropagation()}
                 style={{ maxWidth }}
             >
