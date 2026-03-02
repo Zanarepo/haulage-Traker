@@ -308,9 +308,9 @@ export default function ReceivingDashboard({ companyId, userId, onSuccess, prefi
                                                         <strong>{item.quantity}</strong> {item.unit}
                                                     </div>
                                                 </td>
-                                                <td data-label="Value"> {new Intl.NumberFormat('en-NG').format(item.price * item.quantity)}</td>
-                                                <td>
-                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                <td data-label="Value"><strong>{new Intl.NumberFormat('en-NG').format(item.price * item.quantity)}</strong></td>
+                                                <td data-label="Actions">
+                                                    <div className="row-actions-flex" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                         <button
                                                             className="row-action-btn edit"
                                                             onClick={(e) => { e.stopPropagation(); startEditing(item); }}

@@ -68,10 +68,6 @@ export default function AppCenterPage() {
                     <h1>NexHaul App Center</h1>
                     <p>Discover and activate powerful modules to scale your operations.</p>
                 </div>
-                <div className="status-badge">
-                    <ShieldCheck size={16} />
-                    <span>Company ID: {profile?.company_id?.slice(0, 8)}...</span>
-                </div>
             </header>
 
             <div className="apps-grid">
@@ -184,30 +180,23 @@ export default function AppCenterPage() {
                     margin-bottom: 3rem;
                 }
                 h1 {
-                    font-size: 2rem;
+                    font-size: 2.5rem;
                     font-weight: 800;
                     color: white;
                     margin-bottom: 0.5rem;
                     letter-spacing: -0.02em;
+                    background: linear-gradient(to right, #fff, #94a3b8);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    -webkit-text-fill-color: transparent;
                 }
                 .app-center-header p {
                     color: #94a3b8;
                     font-size: 1.1rem;
                 }
-                .status-badge {
-                    background: #1e293b;
-                    border: 1px solid #334155;
-                    padding: 0.5rem 1rem;
-                    border-radius: 2rem;
-                    color: #94a3b8;
-                    font-size: 0.8rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                }
                 .apps-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
                     gap: 2rem;
                 }
                 .app-card {
@@ -340,6 +329,28 @@ export default function AppCenterPage() {
                 }
                 .visit-btn:hover {
                     color: white;
+                }
+
+                @media (max-width: 1024px) {
+                    .app-center-container { padding: 1.5rem; }
+                    .apps-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+                }
+
+                @media (max-width: 768px) {
+                    .app-center-header {
+                        flex-direction: column;
+                        gap: 1.5rem;
+                    }
+                    h1 { font-size: 2rem; }
+                    .app-center-header p { font-size: 1rem; }
+                    .apps-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+                    .account-section { margin-top: 3rem; }
+                }
+
+                @media (max-width: 480px) {
+                    .app-center-container { padding: 1rem; }
+                    .app-card-body { padding: 1.5rem; }
+                    .app-card-footer { padding: 1.25rem 1.5rem; }
                 }
             `}</style>
         </div>
