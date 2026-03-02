@@ -123,8 +123,8 @@ const ACADEMY_VIDEOS: AcademyVideo[] = [
         title: 'Issue Stock to Clusters',
         description: 'Learn how to distribute central inventory to specific operational clusters and site engineers.',
         duration: '1:05',
-        thumbnail: 'https://img.youtube.com/vi/j4BbWT_guGc/maxresdefault.jpg',
-        videoUrl: 'https://www.youtube.com/embed/j4BbWT_guGc',
+        thumbnail: 'https://img.youtube.com/vi/Bws-0-b8Geg/maxresdefault.jpg',
+        videoUrl: 'https://www.youtube.com/embed/Bws-0-b8Geg',
         category: 'Admin',
         level: 'Beginner'
     }
