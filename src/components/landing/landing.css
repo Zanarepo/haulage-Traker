@@ -201,6 +201,36 @@
     box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
 }
 
+.btn-hero-video {
+    display: flex;
+    align-items: center;
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(4px);
+}
+
+.btn-hero-video:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.video-container {
+    width: 100%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    line-height: 0;
+}
+
 .trust-bar {
     position: absolute;
     bottom: 2rem;
@@ -729,7 +759,7 @@
     }
 }
 
-/* Responsive */
+/* Responsive — Tablet */
 @media (max-width: 768px) {
     .mobile-menu-toggle {
         display: block;
@@ -768,27 +798,242 @@
         padding: 1rem;
     }
 
-    .comparison-grid {
-        grid-template-columns: 1fr;
+    /* Hero */
+    .hero-section {
+        padding: 8rem 5% 5rem;
+        min-height: auto;
+    }
+
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+
+    .hero-content p {
+        font-size: 1rem;
+        margin-bottom: 2rem;
     }
 
     .hero-actions {
         flex-direction: column;
         width: 100%;
-        max-width: 300px;
+        max-width: 320px;
         margin: 0 auto;
+        gap: 1rem;
+    }
+
+    .btn-primary,
+    .btn-hero-video {
+        width: 100%;
+        justify-content: center;
+        padding: 0.85rem;
+        font-size: 1rem;
+    }
+
+    .trust-bar {
+        position: relative;
+        bottom: auto;
+        margin-top: 3rem;
+        padding: 1rem;
+        gap: 0.75rem 1.5rem;
+    }
+
+    .trust-bar>span {
+        font-size: 0.7rem;
+        width: 100%;
+        text-align: center;
+    }
+
+    .trust-item {
+        font-size: 0.8rem;
+    }
+
+    /* Section Headers */
+    .section-header {
+        margin-bottom: 3rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.75rem;
+    }
+
+    .section-header p {
+        font-size: 0.95rem;
+    }
+
+    /* Comparison Sections */
+    .comparison-section {
+        padding: 4rem 4%;
+    }
+
+    .comparison-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .comparison-card {
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .comparison-list li {
+        padding: 1rem 0;
+        font-size: 0.9rem;
+        gap: 0.75rem;
+    }
+
+    /* Ecosystem */
+    .ecosystem-section {
+        padding: 4rem 4%;
+    }
+
+    .ecosystem-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .ecosystem-card {
+        padding: 1.75rem 1.5rem;
+        border-radius: 1rem;
+    }
+
+    .ecosystem-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .ecosystem-card p {
+        font-size: 0.85rem;
+    }
+
+    /* Pricing */
+    .pricing-section {
+        padding: 4rem 4%;
     }
 
     .pricing-grid,
     .pricing-grid.three-col {
         grid-template-columns: 1fr;
+        gap: 1.25rem;
     }
 
     .pricing-card {
-        padding: 2rem;
+        padding: 2rem 1.5rem;
+        border-radius: 20px;
+    }
+
+    .plan-name {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
     }
 
     .plan-price {
         font-size: 2.5rem;
+    }
+
+    .plan-price .currency {
+        font-size: 1.5rem;
+    }
+
+    .plan-price .period {
+        font-size: 0.9rem;
+    }
+
+    .plan-desc {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn-pricing {
+        padding: 0.85rem;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .features-list li {
+        font-size: 0.85rem;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .trial-badge {
+        top: 1rem;
+        right: 1rem;
+        font-size: 0.65rem;
+        padding: 0.3rem 0.75rem;
+    }
+
+    /* Category badges */
+    .category-badge {
+        font-size: 0.65rem;
+        padding: 0.3rem 0.6rem;
+    }
+
+    /* WhatsApp */
+    .floating-whatsapp {
+        width: 50px;
+        height: 50px;
+        bottom: 1.25rem;
+        right: 1.25rem;
+    }
+
+    .whatsapp-tooltip {
+        display: none;
+    }
+}
+
+/* Responsive — Small phones */
+@media (max-width: 480px) {
+    .hero-section {
+        padding: 7rem 4% 4rem;
+    }
+
+    .hero-content h1 {
+        font-size: 1.75rem;
+        letter-spacing: -0.03em;
+    }
+
+    .hero-content p {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.4rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .comparison-card {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+    }
+
+    .comparison-list li {
+        font-size: 0.82rem;
+        padding: 0.75rem 0;
+    }
+
+    .plan-price {
+        font-size: 2rem;
+    }
+
+    .plan-price .currency {
+        font-size: 1.2rem;
+    }
+
+    .ecosystem-card {
+        padding: 1.5rem 1.25rem;
     }
 }

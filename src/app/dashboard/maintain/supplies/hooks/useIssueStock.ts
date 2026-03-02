@@ -58,7 +58,7 @@ export function useIssueStock({ companyId, isOpen, onClose, onSuccess, fulfillme
 
             // Map requested items to staged items
             const staged = fulfillmentData.items.map((item: any) => {
-                const master = availableItems.find(m => m.product_name.toLowerCase() === item.item_name.toLowerCase());
+                const master = availableItems.find(m => (m.product_name || '').toLowerCase() === (item.item_name || '').toLowerCase());
                 return {
                     id: crypto.randomUUID(),
                     master_id: master?.id || '',
@@ -154,13 +154,16 @@ export function useIssueStock({ companyId, isOpen, onClose, onSuccess, fulfillme
 
     const filteredItems = useMemo(() => {
         if (!searchTerm) return availableItems;
+        const search = searchTerm.toLowerCase();
         return availableItems.filter(item =>
-            item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
+            (item.product_name || '').toLowerCase().includes(search)
         );
     }, [availableItems, searchTerm]);
 
     const exactMatch = useMemo(() => {
-        return availableItems.find(item => item.product_name.toLowerCase() === searchTerm.toLowerCase());
+        if (!searchTerm) return null;
+        const search = searchTerm.toLowerCase();
+        return availableItems.find(item => (item.product_name || '').toLowerCase() === search);
     }, [availableItems, searchTerm]);
 
     // Derived Regions
@@ -187,10 +190,12 @@ export function useIssueStock({ companyId, isOpen, onClose, onSuccess, fulfillme
         if (!searchTerm || newItem.quantity <= 0) return;
 
         // If exact match found, use it. Otherwise use the search term as name
-        const finalName = exactMatch ? exactMatch.name : searchTerm;
+        const finalName = exactMatch ? exactMatch.product_name : searchTerm;
+
+        if (!finalName) return;
 
         // Check for duplicates in staged list
-        if (stagedItems.find(i => i.item_name.toLowerCase() === finalName.toLowerCase())) {
+        if (stagedItems.find(i => i.item_name && i.item_name.toLowerCase() === finalName.toLowerCase())) {
             showToast(`"${finalName}" is already in the staged list.`, 'warning');
             return;
         }

@@ -19,11 +19,14 @@ import {
     PackageCheck,
     Mail,
     MapPin,
-    MessageSquare
+    MessageSquare,
+    Play
 } from 'lucide-react';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import ProductShowcase from './ProductShowcase';
 import MaintainShowcase from './MaintainShowcase';
+import FeatureVideoSection from './FeatureVideoSection';
+import Modal from '@/components/Modal/Modal';
 import { useAuth } from '@/hooks/useAuth';
 import './landing.css';
 import { useRouter } from 'next/navigation';
@@ -35,6 +38,7 @@ interface LandingPageProps {
 
 export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showVideoModal, setShowVideoModal] = useState(false);
     const { user, profile, availableProfiles, loading } = useAuth();
     const router = useRouter();
 
@@ -83,6 +87,7 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
 
                 <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
                     <a href="#problem" onClick={() => setMobileMenuOpen(false)}>Solution</a>
+                    <a href="#academy-preview" onClick={() => setMobileMenuOpen(false)}>Academy</a>
                     <a href="#ecosystem" onClick={() => setMobileMenuOpen(false)}>Ecosystem</a>
                     <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
 
@@ -113,11 +118,15 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                                 Back to Dashboard <ArrowRight size={18} style={{ marginLeft: '8px' }} />
                             </button>
                         ) : (
-                            <>
+                            <div className="hero-actions">
                                 <button className="btn-primary" onClick={onRegister}>
                                     Get Visibility Now <ArrowRight size={18} style={{ marginLeft: '8px' }} />
                                 </button>
-                            </>
+                                <button className="btn-hero-video" onClick={() => setShowVideoModal(true)}>
+                                    <Play size={18} fill="currentColor" style={{ marginRight: '8px' }} />
+                                    Watch Demo
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -261,6 +270,9 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                 </div>
             </section>
 
+            {/* Video Masterclass Section */}
+            <FeatureVideoSection />
+
             {/* Pricing Section */}
             <section id="pricing" className="pricing-section">
                 <div className="section-header">
@@ -371,6 +383,27 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                 <div className="whatsapp-tooltip">Chat with us</div>
                 <MessageSquare size={24} />
             </a>
+
+            {/* Video Modal */}
+            <Modal
+                isOpen={showVideoModal}
+                onClose={() => setShowVideoModal(false)}
+                title="NexHaul Product Walkthrough"
+                maxWidth="900px"
+            >
+                <div className="video-container">
+                    <iframe
+                        width="100%"
+                        height="100%"
+                        src="https://www.youtube.com/embed/i8WqIqTD9rQ?autoplay=1"
+                        title="NexHaul Onboarding Demo"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{ aspectRatio: '16/9', borderRadius: '12px' }}
+                    ></iframe>
+                </div>
+            </Modal>
         </div>
     );
 }

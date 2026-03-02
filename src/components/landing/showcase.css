@@ -169,7 +169,11 @@
     }
 
     .showcase-section .section-header h2 {
-        font-size: 1.8rem;
+        font-size: 1.75rem;
+    }
+
+    .showcase-section .section-header p {
+        font-size: 0.9rem;
     }
 
     .showcase-tabs {
@@ -185,13 +189,77 @@
         display: none;
     }
 
+    .showcase-browser {
+        border-radius: 0.75rem;
+    }
+
+    .browser-toolbar {
+        height: 36px;
+        padding: 0 0.75rem;
+    }
+
+    .toolbar-dot {
+        width: 8px;
+        height: 8px;
+    }
+
+    .toolbar-url {
+        font-size: 0.65rem;
+        height: 22px;
+        margin: 0 0.5rem;
+    }
+
     .screenshot-label {
-        bottom: 1rem;
-        left: 1rem;
+        bottom: 0.75rem;
+        left: 0.75rem;
+        right: 0.75rem;
         padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
     }
 
     .screenshot-label h4 {
         font-size: 0.85rem;
+    }
+
+    .screenshot-label p {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .showcase-section {
+        padding: 3rem 3%;
+    }
+
+    .showcase-section .section-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .showcase-section .section-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .showcase-tabs {
+        margin-bottom: 2rem;
+    }
+
+    .showcase-tab {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.75rem;
+    }
+
+    .screenshot-label {
+        bottom: 0.5rem;
+        left: 0.5rem;
+        right: 0.5rem;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .screenshot-label h4 {
+        font-size: 0.75rem;
+    }
+
+    .screenshot-label p {
+        font-size: 0.65rem;
     }
 }

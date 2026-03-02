@@ -69,6 +69,7 @@ const allSidebarItems: SidebarItem[] = [
   { key: 'clusters', title: 'Clusters', icon: <MapPin size={20} />, path: '/dashboard/clusters', roles: ['superadmin', 'admin', 'md'] },
   { key: 'sites', title: 'Clients & Sites', icon: <MapPin size={20} />, path: '/dashboard/sites', roles: ['superadmin', 'admin', 'md', 'accountant'] },
   { key: 'app-center', title: 'App Center', icon: <LayoutGrid size={20} />, path: '/dashboard/app-center', roles: ['superadmin'] },
+  { key: 'academy', title: 'NexHaul Academy', icon: <BookOpen size={20} />, path: '/dashboard/academy', roles: ['superadmin', 'md', 'accountant', 'auditor', 'admin', 'driver', 'site_engineer'] },
   { key: 'documents', title: 'Documents', icon: <FileText size={20} />, path: '/dashboard/documents', roles: ['superadmin', 'admin', 'md', 'accountant', 'auditor', 'driver', 'site_engineer'] },
 
   // ── InfraSupply ──
@@ -127,7 +128,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showSidebarUpgrade, setShowSidebarUpgrade] = useState(false);
 
   // Activate background location tracking
-  useLocationTracking();
+  const { isTracking, toggleTracking, isPermissionDenied, noActiveTrip } = useLocationTracking();
+
+  // Show alerts for tracking issues
+  useEffect(() => {
+    if (isPermissionDenied) {
+      alert("📍 Location Access Denied: We cannot track your live location. Please enable location permissions in your browser/phone settings to allow the office to monitor your trip.");
+    }
+  }, [isPermissionDenied]);
+
+  useEffect(() => {
+    if (noActiveTrip && isTracking) {
+      alert("🚛 No Active Trip: You cannot turn on live tracking without an 'Active' trip assigned to you. Please set a trip to active first.");
+    }
+  }, [noActiveTrip, isTracking]);
 
   // Guard: Ensure tenant profile is active in Fleet Dashboard
   useEffect(() => {
@@ -258,6 +272,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="last-sync">
                 Last cached: {new Date(lastUpdated).toLocaleTimeString()}
               </div>
+            )}
+
+            {profile?.role === 'driver' && (
+              <button
+                onClick={toggleTracking}
+                className={`footer-btn tracking-btn ${isTracking ? 'active' : ''} ${isPermissionDenied ? 'denied' : ''} ${noActiveTrip ? 'warning' : ''}`}
+              >
+                <Navigation size={18} className={isTracking ? 'pulse-icon' : ''} />
+                {(!isCollapsed || isMobileOpen) && (
+                  <div className="tracking-label">
+                    <span>
+                      {isPermissionDenied ? 'Permission Denied' :
+                        (noActiveTrip && isTracking) ? 'No Active Trip' :
+                          isTracking ? 'Live Tracking ON' : 'Start Tracking'}
+                    </span>
+                  </div>
+                )}
+              </button>
             )}
 
             <button onClick={toggleDarkMode} className="footer-btn">

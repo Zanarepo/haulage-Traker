@@ -69,6 +69,7 @@ export const SHARED_SIDEBAR_KEYS = [
     'clusters',
     'sites',
     'app-center',
+    'academy',
     'documents',
     'settings',
 ];
