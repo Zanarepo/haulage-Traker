@@ -618,17 +618,19 @@ export default function VisitWizardModal({
 
                         <div className="form-group" style={{ marginBottom: '2rem' }}>
                             <p style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.8rem' }}>Did the site pass initial safety checks?</p>
-                            <div className="detail-grid">
+                            <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                 <button
                                     onClick={() => setSafetyPassed(true)}
                                     style={{
-                                        padding: '12px',
-                                        borderRadius: '8px',
+                                        padding: '16px',
+                                        borderRadius: '12px',
                                         border: `2px solid ${safetyPassed === true ? '#10b981' : 'var(--border-color)'}`,
-                                        background: safetyPassed === true ? '#f0fdf4' : 'white',
-                                        color: safetyPassed === true ? '#059669' : 'var(--text-main)',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
+                                        background: safetyPassed === true ? '#10b981' : 'var(--bg-hover)',
+                                        color: safetyPassed === true ? 'white' : 'var(--text-main)',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        fontSize: '0.85rem'
                                     }}
                                 >
                                     YES — SAFE
@@ -636,13 +638,15 @@ export default function VisitWizardModal({
                                 <button
                                     onClick={() => setSafetyPassed(false)}
                                     style={{
-                                        padding: '12px',
-                                        borderRadius: '8px',
+                                        padding: '16px',
+                                        borderRadius: '12px',
                                         border: `2px solid ${safetyPassed === false ? '#ef4444' : 'var(--border-color)'}`,
-                                        background: safetyPassed === false ? '#fef2f2' : 'white',
-                                        color: safetyPassed === false ? '#991b1b' : 'var(--text-main)',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
+                                        background: safetyPassed === false ? '#ef4444' : 'var(--bg-hover)',
+                                        color: safetyPassed === false ? 'white' : 'var(--text-main)',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        fontSize: '0.85rem'
                                     }}
                                 >
                                     NO — ISSUES

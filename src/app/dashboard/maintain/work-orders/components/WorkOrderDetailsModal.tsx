@@ -23,7 +23,9 @@ import {
     Plus,
     ClipboardCheck,
     Info,
-    Navigation
+    Navigation,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import { useKnowledgeBase, SOP } from '../../knowledge-base/hooks/useKnowledgeBase';
 import SOPModal from '../../knowledge-base/components/SOPModal';
@@ -86,7 +88,7 @@ export default function WorkOrderDetailsModal({
     const [hourMeter, setHourMeter] = useState(''); // New Hour Meter state
     const [inventoryItems, setInventoryItems] = useState<any[]>([]); // To display logs
     const [newItem, setNewItem] = useState({ item_name: '', quantity: '1', notes: '', master_id: '' as string | null });
-    const [uploadingMedia, setUploadingMedia] = useState(false);
+    const [uploadingType, setUploadingType] = useState<'before' | 'after' | null>(null);
 
     // SOP Integration State
     const { sops, categories, submitExecution } = useKnowledgeBase();
@@ -112,6 +114,7 @@ export default function WorkOrderDetailsModal({
     const [description, setDescription] = useState('');
     const [scheduledDate, setScheduledDate] = useState('');
     const [showVisitWizard, setShowVisitWizard] = useState(false);
+    const [showComplianceAudit, setShowComplianceAudit] = useState(false);
 
     const isAdmin = ['superadmin', 'admin', 'md'].includes(profile?.role || '');
 
@@ -206,7 +209,7 @@ export default function WorkOrderDetailsModal({
     const handleUploadMedia = async (file: File, type: 'before' | 'after', header: string) => {
         if (!profile || !workOrder) return;
         try {
-            setUploadingMedia(true);
+            setUploadingType(type);
             await maintainService.uploadWorkOrderMedia(
                 file,
                 workOrder.id,
@@ -220,7 +223,7 @@ export default function WorkOrderDetailsModal({
             console.error('Upload failed:', error);
             alert('Failed to upload image: ' + error.message);
         } finally {
-            setUploadingMedia(false);
+            setUploadingType(null);
         }
     };
 
@@ -404,7 +407,7 @@ export default function WorkOrderDetailsModal({
                                             : `Linked Asset #${workOrder.asset_id.slice(0, 8)}`
                                         }
                                     </p>
-                                    {workOrder?.status === 'in_progress' && relevantSOPs.length > 0 && (
+                                    {(workOrder?.status === 'in_progress' || workOrder?.status === 'assigned') && relevantSOPs.length > 0 && (
                                         <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Procedural Checklists</label>
                                             {relevantSOPs.map(sop => (
@@ -625,145 +628,175 @@ export default function WorkOrderDetailsModal({
                             )}
                         </div>
 
-                        {/* Compliance Audit Trail Section */}
                         <div className="detail-section" style={{ marginTop: '1rem' }}>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                                <ClipboardCheck size={14} /> COMPLIANCE AUDIT TRAIL
-                            </label>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {/* Safety Logs */}
-                                {executionHistory.safetyLogs.map(log => (
-                                    <div key={log.id} style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        padding: '10px 12px',
-                                        background: 'var(--bg-hover)',
-                                        borderRadius: '8px',
-                                        border: `1px solid ${log.passed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}`
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{
-                                                width: '32px',
-                                                height: '32px',
-                                                borderRadius: '50%',
-                                                background: log.passed ? '#10b98120' : '#ef444420',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: log.passed ? '#10b981' : '#ef4444'
-                                            }}>
-                                                <AlertTriangle size={16} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Safety Sign-off</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>by {log.userName} • {new Date(log.created_at).toLocaleTimeString()}</div>
-                                            </div>
-                                        </div>
-                                        <span style={{
-                                            fontSize: '0.65rem',
-                                            fontWeight: 700,
-                                            color: log.passed ? '#10b981' : '#ef4444',
-                                            textTransform: 'uppercase'
-                                        }}>
-                                            {log.passed ? 'PASSED' : 'FAILED'}
+                            <div
+                                onClick={() => setShowComplianceAudit(!showComplianceAudit)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    cursor: 'pointer',
+                                    padding: '8px 0',
+                                    borderBottom: showComplianceAudit ? '1px solid var(--border-color)' : 'none',
+                                    marginBottom: showComplianceAudit ? '12px' : '0'
+                                }}
+                            >
+                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                                    <ClipboardCheck size={14} /> COMPLIANCE AUDIT TRAIL
+                                    {!showComplianceAudit && (executionHistory.safetyLogs.length + executionHistory.sopLogs.length) > 0 && (
+                                        <span style={{ fontSize: '0.65rem', background: 'var(--primary)', color: 'white', padding: '1px 6px', borderRadius: '10px', marginLeft: '4px' }}>
+                                            {executionHistory.safetyLogs.length + executionHistory.sopLogs.length}
                                         </span>
-                                    </div>
-                                ))}
+                                    )}
+                                </label>
+                                {showComplianceAudit ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                            </div>
 
-                                {/* SOP Logs */}
-                                {executionHistory.sopLogs.map(log => (
-                                    <div key={log.id}
-                                        onClick={() => {
-                                            const sop = sops.find(s => s.id === log.sop_id);
-                                            if (sop) {
-                                                setActiveSOP(sop);
-                                                setShowSOPChecklist(true);
-                                            }
-                                        }}
-                                        style={{
+                            {showComplianceAudit && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                                    {/* Safety Logs */}
+                                    {executionHistory.safetyLogs.map(log => (
+                                        <div key={log.id} style={{
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                             padding: '10px 12px',
                                             background: 'var(--bg-hover)',
                                             borderRadius: '8px',
-                                            border: '1px solid var(--border-color)',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{
-                                                width: '32px',
-                                                height: '32px',
-                                                borderRadius: '50%',
-                                                background: 'rgba(59, 130, 246, 0.1)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: '#3b82f6'
+                                            border: `1px solid ${log.passed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}`
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '50%',
+                                                    background: log.passed ? '#10b98120' : '#ef444420',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: log.passed ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    <AlertTriangle size={16} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Safety Sign-off</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>by {log.userName} • {new Date(log.created_at).toLocaleTimeString()}</div>
+                                                </div>
+                                            </div>
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                fontWeight: 700,
+                                                color: log.passed ? '#10b981' : '#ef4444',
+                                                textTransform: 'uppercase'
                                             }}>
-                                                <ClipboardCheck size={16} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{log.maintain_asset_sops?.title || 'SOP Check'}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>by {log.users?.full_name} • {new Date(log.submitted_at).toLocaleDateString()}</div>
-                                            </div>
+                                                {log.passed ? 'PASSED' : 'FAILED'}
+                                            </span>
                                         </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>COMPLETED</div>
-                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Click to View</div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
 
-                                {/* Pending / Unmet SOPs */}
-                                {relevantSOPs.filter(sop => !executionHistory.sopLogs.some(log => log.sop_id === sop.id)).map(sop => (
-                                    <div key={`pending-${sop.id}`}
-                                        style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: '10px 12px',
-                                            background: 'rgba(245, 158, 11, 0.03)',
-                                            borderRadius: '8px',
-                                            border: '1px dashed rgba(245, 158, 11, 0.3)',
-                                            opacity: 0.8
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{
-                                                width: '32px',
-                                                height: '32px',
-                                                borderRadius: '50%',
-                                                background: 'rgba(245, 158, 11, 0.1)',
+                                    {/* SOP Logs */}
+                                    {executionHistory.sopLogs.map(log => (
+                                        <div key={log.id}
+                                            onClick={() => {
+                                                const sop = sops.find(s => s.id === log.sop_id);
+                                                if (sop) {
+                                                    setActiveSOP(sop);
+                                                    setShowSOPChecklist(true);
+                                                }
+                                            }}
+                                            style={{
                                                 display: 'flex',
+                                                justifyContent: 'space-between',
                                                 alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: '#f59e0b'
-                                            }}>
-                                                <ClipboardList size={14} />
+                                                padding: '10px 12px',
+                                                background: 'var(--bg-hover)',
+                                                borderRadius: '8px',
+                                                border: '1px solid var(--border-color)',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(59, 130, 246, 0.1)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: '#3b82f6'
+                                                }}>
+                                                    <ClipboardCheck size={16} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{log.maintain_asset_sops?.title || 'SOP Check'}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>by {log.users?.full_name} • {new Date(log.submitted_at).toLocaleDateString()}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{sop.title}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requirement not yet fulfilled</div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>COMPLETED</div>
+                                                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Click to View</div>
                                             </div>
                                         </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>PENDING</div>
-                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Checklist Missing</div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
 
-                                {executionHistory.safetyLogs.length === 0 && executionHistory.sopLogs.length === 0 && relevantSOPs.length === 0 && !loadingHistory && (
-                                    <div style={{ padding: '1.5rem', textAlign: 'center', background: 'var(--bg-hover)', borderRadius: '0.75rem', border: '1px dashed var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                        No compliance logs found for this work order.
-                                    </div>
-                                )}
-                                {loadingHistory && <div style={{ textAlign: 'center', padding: '1rem' }}><Loader2 size={20} className="spinning" /></div>}
-                            </div>
+                                    {/* Pending / Unmet SOPs */}
+                                    {relevantSOPs.filter(sop => !executionHistory.sopLogs.some(log => log.sop_id === sop.id)).map(sop => (
+                                        <div key={`pending-${sop.id}`}
+                                            onClick={() => {
+                                                setActiveSOP(sop);
+                                                setShowSOPChecklist(true);
+                                            }}
+                                            style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '10px 12px',
+                                                background: 'rgba(245, 158, 11, 0.05)',
+                                                borderRadius: '8px',
+                                                border: '1px dashed rgba(245, 158, 11, 0.4)',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                opacity: 0.9
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(245, 158, 11, 0.05)'}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(245, 158, 11, 0.1)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: '#f59e0b'
+                                                }}>
+                                                    <ClipboardList size={14} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{sop.title}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requirement not yet fulfilled</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase' }}>PENDING</div>
+                                                <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                    Checklist <Plus size={12} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {executionHistory.safetyLogs.length === 0 && executionHistory.sopLogs.length === 0 && relevantSOPs.length === 0 && !loadingHistory && (
+                                        <div style={{ padding: '1.5rem', textAlign: 'center', background: 'var(--bg-hover)', borderRadius: '0.75rem', border: '1px dashed var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                            No compliance logs found for this work order.
+                                        </div>
+                                    )}
+                                    {loadingHistory && <div style={{ textAlign: 'center', padding: '1rem' }}><Loader2 size={20} className="spinning" /></div>}
+                                </div>
+                            )}
                         </div>
 
                         {/* Media Section */}
@@ -791,6 +824,16 @@ export default function WorkOrderDetailsModal({
                                                 )}
                                             </div>
                                         ))}
+
+                                        {uploadingType === 'before' && (
+                                            <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-hover)' }}>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <Loader2 size={24} className="spinning" style={{ color: 'var(--primary)', marginBottom: '4px' }} />
+                                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>UPLOADING...</div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {workOrder.status !== 'completed' && (
                                             <label className="upload-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border-color)', borderRadius: '8px', height: '60px', cursor: 'pointer' }}>
                                                 <Plus size={20} />
@@ -828,6 +871,16 @@ export default function WorkOrderDetailsModal({
                                                 )}
                                             </div>
                                         ))}
+
+                                        {uploadingType === 'after' && (
+                                            <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-hover)' }}>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <Loader2 size={24} className="spinning" style={{ color: 'var(--primary)', marginBottom: '4px' }} />
+                                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>UPLOADING...</div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {workOrder.status !== 'completed' && (
                                             <label className="upload-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border-color)', borderRadius: '8px', height: '60px', cursor: 'pointer' }}>
                                                 <Plus size={20} />
@@ -1115,16 +1168,11 @@ export default function WorkOrderDetailsModal({
                         // If it's the first time starting, move to in_progress
                         if (workOrder?.status === 'assigned') {
                             onUpdateStatus(workOrder.id, 'in_progress');
-                        }
-                        // If it's finishing, it should realistically mark WO as completed
-                        // but we leave that to the service or user choice?
-                        // Actually, the user said "engineer can just proceed with the work order and thedeailswouldbe captured in the site visit reports"
-                        // I'll mark as completed if they finished step 3
-                        if (workOrder?.status === 'in_progress') {
+                        } else if (workOrder?.status === 'in_progress') {
+                            // Mark as completed when finishing the visit
                             onUpdateStatus(workOrder.id, 'completed');
                         }
                         setShowVisitWizard(false);
-                        onUpdate(workOrder.id, {}); // Trigger refresh
                     }}
                 />
             )}

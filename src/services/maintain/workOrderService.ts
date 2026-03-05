@@ -136,11 +136,10 @@ export const workOrderService = {
             .from('maintain_work_orders')
             .update(updates)
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
         if (error) throw error;
-        return data;
+        return data?.[0] || null;
     },
 
     async getFailureAnalysis(companyId: string, clusterIds?: string[]) {

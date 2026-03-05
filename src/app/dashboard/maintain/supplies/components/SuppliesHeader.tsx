@@ -57,7 +57,7 @@ export default function SuppliesHeader({
                     <button
                         className="btn-maintain-action"
                         onClick={canRequestStock ? onRequestStock : (onUpgrade || onRequestStock)}
-                        style={{ background: 'var(--brand-main)', opacity: canRequestStock ? 1 : 0.7 }}
+                        style={{ opacity: canRequestStock ? 1 : 0.7 }}
                         title={!canRequestStock ? 'Request limit reached — upgrade your plan' : ''}
                     >
                         <Plus size={18} />

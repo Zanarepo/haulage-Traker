@@ -72,8 +72,11 @@ export default function TrackingDashboard() {
         const { eventType, new: newRecord, old: oldRecord } = payload;
 
         if (eventType === 'INSERT' || eventType === 'UPDATE') {
-            if (!newRecord.is_active) {
-                // Driver stopped tracking
+            const staleThreshold = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+            const isStale = newRecord.updated_at < staleThreshold;
+
+            if (!newRecord.is_active || isStale) {
+                // Driver stopped tracking or location is stale
                 setLocations(prev => prev.filter(l => l.driver_id !== newRecord.driver_id));
                 if (selectedId === newRecord.driver_id) setSelectedId(null);
                 return;
@@ -114,7 +117,8 @@ export default function TrackingDashboard() {
                         .from('driver_locations')
                         .select(selectStr)
                         .eq('driver_id', newRecord.driver_id)
-                        .eq('is_active', true);
+                        .eq('is_active', true)
+                        .gt('updated_at', staleThreshold);
 
                     if (clusterIds && clusterIds.length > 0) {
                         query = query.in('trips.cluster_id', clusterIds);
@@ -130,9 +134,7 @@ export default function TrackingDashboard() {
                         });
                     }
                 } catch (err) {
-                    // This might error with 'JSON object requested, but no rows were returned' 
-                    // if the driver doesn't match the cluster filter, which is fine.
-                    console.debug('Driver skipped or fetch failed (likely cluster mismatch)');
+                    // This might error if mismatch or stale
                 }
             }
         } else if (eventType === 'DELETE') {

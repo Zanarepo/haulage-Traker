@@ -74,10 +74,13 @@ export const trackingService = {
             `;
         }
 
+        const staleThreshold = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 mins
+
         let query = supabase
             .from('driver_locations')
             .select(selectStr)
-            .eq('is_active', true);
+            .eq('is_active', true)
+            .gt('updated_at', staleThreshold);
 
         if (clusterIds && clusterIds.length > 0) {
             query = query.in('trips.cluster_id', clusterIds);

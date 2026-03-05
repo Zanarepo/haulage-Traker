@@ -109,10 +109,18 @@ export function useLocationTracking() {
             },
             (error) => {
                 console.error('[Tracking] Position error:', error);
+
+                // If we hit ANY error (denied, unavailable, timeout), we stop the active status
+                // to prevent "stale" markers on the map.
+                setIsTracking(false);
+                localStorage.setItem('ht-location-tracking', 'disabled');
+
                 if (error.code === error.PERMISSION_DENIED) {
                     setIsPermissionDenied(true);
-                    setIsTracking(false);
-                    localStorage.setItem('ht-location-tracking', 'disabled');
+                }
+
+                if (user?.id) {
+                    trackingService.setInactive(user.id).catch(() => { });
                 }
             },
             {
@@ -139,7 +147,14 @@ export function useLocationTracking() {
     // Driver/Engineer Effect: Sync state changes to actual tracking
     useEffect(() => {
         const isTrackable = profile?.role === 'driver' || profile?.role === 'site_engineer';
-        if (!isTrackable || !user) return;
+        if (!isTrackable || !user) {
+            // If user logs out, stop local watch immediately
+            if (watchId.current !== null) {
+                navigator.geolocation.clearWatch(watchId.current);
+                watchId.current = null;
+            }
+            return;
+        }
 
         if (isTracking && watchId.current === null) {
             startTracking();
@@ -148,9 +163,11 @@ export function useLocationTracking() {
         }
 
         return () => {
-            // No automatic cleanup here to keep tracking running across page changes
-            // unless the component is truly unmounted and we want to stop it.
-            // But since this is used in DashboardLayout, it stays mounted.
+            // When component unmounts (rare as it's in DashboardLayout), stop watch
+            if (watchId.current !== null) {
+                navigator.geolocation.clearWatch(watchId.current);
+                watchId.current = null;
+            }
         };
     }, [isTracking, profile?.role, user?.id]);
 
