@@ -18,28 +18,30 @@ import SubscriptionManager from '@/components/subscription/SubscriptionManager';
 
 export default function AppCenterPage() {
     const { profile } = useAuth();
-    const { activeModules, loading: modulesLoading } = useCompanyModules(profile?.company_id || null);
+    const { activeModules, setActiveModules, loading: modulesLoading } = useCompanyModules(profile?.company_id || null);
     const [updating, setUpdating] = useState<ProductId | null>(null);
 
     const handleToggleModule = async (moduleId: ProductId) => {
         if (!profile?.company_id) return;
         setUpdating(moduleId);
 
+        const isInstalled = activeModules.includes(moduleId);
+
+        // Guard: prevent deactivating the last module
+        if (isInstalled && activeModules.length <= 1) {
+            alert('You must have at least one active module.');
+            setUpdating(null);
+            return;
+        }
+
+        const nextModules: ProductId[] = isInstalled
+            ? activeModules.filter(m => m !== moduleId)
+            : [...activeModules, moduleId];
+
+        // Optimistic update — change UI instantly
+        setActiveModules(nextModules);
+
         try {
-            const isInstalled = activeModules.includes(moduleId);
-            let nextModules: ProductId[];
-
-            if (isInstalled) {
-                // Prevent deactivating the last module
-                if (activeModules.length <= 1) {
-                    alert('You must have at least one active module.');
-                    return;
-                }
-                nextModules = activeModules.filter(m => m !== moduleId);
-            } else {
-                nextModules = [...activeModules, moduleId];
-            }
-
             const { error } = await supabase
                 .from('companies')
                 .update({ active_modules: nextModules })
@@ -47,10 +49,12 @@ export default function AppCenterPage() {
 
             if (error) throw error;
 
-            // Refresh page to update layout/sidebar
-            window.location.reload();
+            // Sync all other hook instances (sidebar, launcher)
+            window.dispatchEvent(new CustomEvent('nexhaul:modules-updated'));
         } catch (err) {
             console.error('Failed to update module:', err);
+            // Rollback optimistic update on error
+            setActiveModules(activeModules);
             alert('Failed to update module. Please try again.');
         } finally {
             setUpdating(null);

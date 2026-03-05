@@ -1,0 +1,39 @@
+Implementation Plan - SOP & Work Order Integration
+This plan details the steps to integrate Standard Operating Procedures (SOPs) directly into the Work Order workflow for engineers.
+
+Proposed Changes
+[Work Order Module]
+[MODIFY] 
+WorkOrderDetailsModal.tsx
+New State: Add showSOPChecklist and selectedSOP states.
+SOP Lookup: When the modal opens, if an asset is linked, search the local SOPs for a matching asset_type.
+"Execute SOP Checklist" Button:
+Add a button in the Asset detail row of the View Mode.
+Visibility: Only show when workOrder.status === 'in_progress'.
+Styling: Use a distinct maintenance color (emerald or blue) with a ClipboardCheck icon.
+SOP Modal Integration:
+Render the 
+SOPModal
+ as a child component.
+Configure it for isEngineer (checklist) mode.
+Pass the current workOrder.id to the 
+SOPModal
+ props.
+User Flow
+Engineer opens an Assigned Work Order.
+Engineer clicks "Start Work".
+Once the status is "In Progress", the "Execute SOP Checklist" button becomes active.
+Engineer clicks the button to open the procedure.
+Engineer ticks off steps as they work.
+Engineer clicks "Submit Execution" to save the record permanently.
+Engineer records final diesel/meter readings and closes the Work Order.
+Verification Plan
+Automated Tests
+N/A (Manual Verification in Browser)
+Manual Verification
+Log in as an Engineer.
+Open a Work Order and click "Start Work".
+Verify that the "Execute SOP Checklist" button appears.
+Click the button and verify the correct SOP opens for that asset type.
+Tick multiple steps and click "Submit Execution".
+Switch to an Admin account and verify the execution record appears in the database/logs.

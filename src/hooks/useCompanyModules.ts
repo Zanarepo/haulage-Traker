@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ProductId, PRODUCTS, DEFAULT_TRIAL_MODULES } from '@/config/productConfig';
 
@@ -21,12 +22,38 @@ export function useCompanyModules(companyId: string | null) {
     const [activeModules, setActiveModules] = useState<ProductId[]>(['infra_supply']);
     const [activeProduct, setActiveProductState] = useState<ProductId>('infra_supply');
     const [loading, setLoading] = useState(true);
+    const pathname = usePathname();
+
+    // Automatically switch active product if URL matches a product's dashboard path
+    useEffect(() => {
+        if (!pathname) return;
+
+        Object.values(PRODUCTS).forEach((product) => {
+            // Check if current path matches this product's dashboard prefix
+            if (pathname.startsWith(product.dashboardPath)) {
+                if (activeProduct !== product.id && activeModules.includes(product.id)) {
+                    setActiveProductState(product.id);
+                    localStorage.setItem(LAST_PRODUCT_KEY, product.id);
+                }
+            }
+        });
+    }, [pathname, activeProduct, activeModules]);
 
     useEffect(() => {
         if (!companyId) {
             setLoading(false);
             return;
         }
+
+        const applyModules = (modules: ProductId[]) => {
+            setActiveModules(modules);
+            const lastUsed = localStorage.getItem(LAST_PRODUCT_KEY) as ProductId | null;
+            if (lastUsed && modules.includes(lastUsed)) {
+                setActiveProductState(lastUsed);
+            } else {
+                setActiveProductState(modules[0]);
+            }
+        };
 
         const fetchModules = async () => {
             try {
@@ -39,15 +66,7 @@ export function useCompanyModules(companyId: string | null) {
                 if (error) throw error;
 
                 const modules = (data?.active_modules as ProductId[]) || ['infra_supply'];
-                setActiveModules(modules);
-
-                // Restore last-used product from localStorage
-                const lastUsed = localStorage.getItem(LAST_PRODUCT_KEY) as ProductId | null;
-                if (lastUsed && modules.includes(lastUsed)) {
-                    setActiveProductState(lastUsed);
-                } else {
-                    setActiveProductState(modules[0]);
-                }
+                applyModules(modules);
             } catch (err) {
                 console.error('[Modules] Failed to fetch active modules:', err);
                 setActiveModules(['infra_supply']);
@@ -56,7 +75,16 @@ export function useCompanyModules(companyId: string | null) {
             }
         };
 
+        // Initial fetch
         fetchModules();
+
+        // Listen for updates dispatched by App Center after a successful toggle
+        const handleModulesUpdated = () => fetchModules();
+        window.addEventListener('nexhaul:modules-updated', handleModulesUpdated);
+
+        return () => {
+            window.removeEventListener('nexhaul:modules-updated', handleModulesUpdated);
+        };
     }, [companyId]);
 
     const setActiveProduct = useCallback((productId: ProductId) => {
@@ -70,6 +98,7 @@ export function useCompanyModules(companyId: string | null) {
 
     return {
         activeModules,
+        setActiveModules,
         activeProduct,
         setActiveProduct,
         hasModule,

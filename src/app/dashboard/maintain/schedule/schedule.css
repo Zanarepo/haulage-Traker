@@ -6,6 +6,13 @@
     gap: 1.5rem;
 }
 
+@media (max-width: 768px) {
+    .schedule-page-container {
+        gap: 0.25rem !important;
+        justify-content: flex-start !important;
+    }
+}
+
 /* Row Styling (Desktop) */
 .schedule-page-container .model-name {
     font-size: 0.95rem;
@@ -220,5 +227,204 @@
         color: var(--text-muted);
         box-shadow: none;
         transform: none;
+    }
+}
+
+/* ========== Schedule Filters Bar ========== */
+.schedule-filters-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    width: 100%;
+}
+
+.schedule-filters-bar .main-search {
+    flex: 1 1 300px;
+}
+
+.filter-group-container {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.select-pill-wrapper {
+    flex: 1 1 180px;
+}
+
+.select-pill-wrapper select {
+    padding-left: 1.25rem !important;
+    width: 100%;
+}
+
+.date-range-pill {
+    flex: 1 1 300px;
+    background: var(--bg-card);
+    border-radius: 99px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+}
+
+.date-inputs-flex {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding-left: 3rem;
+    padding-right: 1.25rem;
+}
+
+.date-field {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-weight: 600;
+    width: 100%;
+    outline: none;
+    cursor: pointer;
+}
+
+.date-field::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+.date-separator {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.action-pills-flex {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.btn-refresh-pill.clear-btn {
+    color: #ef4444 !important;
+}
+
+.btn-refresh-pill.clear-btn:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+@media (max-width: 900px) {
+    .schedule-filters-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.25rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        flex: none !important;
+    }
+
+    .filter-group-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.25rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        flex: none !important;
+    }
+
+    .main-search,
+    .select-pill-wrapper,
+    .date-range-pill {
+        width: 100% !important;
+        flex: none !important;
+        margin: 0 !important;
+    }
+
+    .action-pills-flex {
+        justify-content: flex-end !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding-top: 0.25rem;
+    }
+
+    .date-range-pill {
+        min-height: 44px;
+    }
+
+    .date-inputs-flex {
+        padding-left: 2.75rem;
+        padding-right: 1rem;
+    }
+}
+
+/* ── Status Notifications ── */
+.status-notification-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-card);
+    z-index: 5;
+}
+
+.status-notification-dot.overdue {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.urgent-pulse-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ef4444;
+    margin-right: 6px;
+    vertical-align: middle;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    animation: urgentPulse 1.5s infinite;
+}
+
+@keyframes urgentPulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
     }
 }

@@ -54,6 +54,7 @@ export const PRODUCTS: Record<ProductId, ProductModule> = {
             'safety',
             'reports',
             'knowledge-base',
+            'tracking',
         ],
     },
 };

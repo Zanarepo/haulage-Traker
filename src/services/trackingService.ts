@@ -9,6 +9,7 @@ export interface DriverLocation {
     is_active: boolean;
     user?: {
         full_name: string;
+        role: string;
     };
     trips?: {
         truck_plate_number: string;
@@ -58,13 +59,24 @@ export const trackingService = {
      * Supports regional filtering via clusterIds.
      */
     async getActiveLocations(clusterIds?: string[]): Promise<DriverLocation[]> {
+        let selectStr = `
+            *,
+            user:users!driver_id (full_name, role),
+            trips:trips!trip_id (truck_plate_number, status, cluster_id)
+        `;
+
+        // If filtering by cluster, we MUST have a trip (inner join)
+        if (clusterIds && clusterIds.length > 0) {
+            selectStr = `
+                *,
+                user:users!driver_id (full_name, role),
+                trips:trips!trip_id!inner (truck_plate_number, status, cluster_id)
+            `;
+        }
+
         let query = supabase
             .from('driver_locations')
-            .select(`
-                *,
-                user:users!driver_id (full_name),
-                trips!trip_id!inner (truck_plate_number, status, cluster_id)
-            `)
+            .select(selectStr)
             .eq('is_active', true);
 
         if (clusterIds && clusterIds.length > 0) {

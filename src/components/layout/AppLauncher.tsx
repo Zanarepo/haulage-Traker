@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PRODUCTS, ProductId } from '@/config/productConfig';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function AppLauncher({ companyId }: { companyId: string | null }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,19 @@ export default function AppLauncher({ companyId }: { companyId: string | null })
     const { activeModules, activeProduct, setActiveProduct } = useCompanyModules(companyId);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const [companyName, setCompanyName] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!companyId) return;
+        supabase
+            .from('companies')
+            .select('name')
+            .eq('id', companyId)
+            .single()
+            .then(({ data }) => {
+                if (data?.name) setCompanyName(data.name);
+            });
+    }, [companyId]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -86,9 +100,9 @@ export default function AppLauncher({ companyId }: { companyId: string | null })
                     <div className="launcher-footer">
                         {profile && (
                             <div className="compact-profile">
-                                <div className="p-avatar">{profile.full_name?.[0].toUpperCase()}</div>
+                                <div className="p-avatar">{(companyName || profile.full_name)?.[0].toUpperCase()}</div>
                                 <div className="p-details">
-                                    <div className="p-name">{profile.full_name}</div>
+                                    <div className="p-name">{companyName || profile.full_name}</div>
                                     <div className="p-plan">
                                         <span className={`plan-dot ${effectivePlanId}`}></span>
                                         {effectivePlanId} Plan

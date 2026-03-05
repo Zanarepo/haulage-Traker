@@ -19,108 +19,152 @@ export function useLocationTracking() {
     const [isTracking, setIsTracking] = useState(false);
     const [isPermissionDenied, setIsPermissionDenied] = useState(false);
     const [noActiveTrip, setNoActiveTrip] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const watchId = useRef<number | null>(null);
 
-    // Load initial tracking state from localStorage
+    // Initial mount check for persistence
     useEffect(() => {
         const saved = localStorage.getItem('ht-location-tracking');
-        if (saved === 'enabled' && profile?.role === 'driver') {
+        if (saved === 'enabled' && (profile?.role === 'driver' || profile?.role === 'site_engineer')) {
             setIsTracking(true);
         }
     }, [profile?.role]);
 
-    // Handle tracking persistence and status cleanup
-    useEffect(() => {
-        if (profile?.role !== 'driver') return;
+    const startTracking = async () => {
+        if (!user || (profile?.role !== 'driver' && profile?.role !== 'site_engineer')) return;
 
-        localStorage.setItem('ht-location-tracking', isTracking ? 'enabled' : 'disabled');
+        setIsLoading(true);
+        setNoActiveTrip(false);
 
-        if (!isTracking && user?.id) {
+        // For drivers, we MUST have an active trip
+        if (profile?.role === 'driver') {
+            try {
+                // Find the most recent trip that is NOT completed
+                const { data: activeTrips, error } = await supabase
+                    .from('trips')
+                    .select('id')
+                    .eq('driver_id', user.id)
+                    .neq('status', 'completed')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                if (!activeTrips || activeTrips.length === 0) {
+                    setNoActiveTrip(true);
+                    setIsTracking(false);
+                    localStorage.setItem('ht-location-tracking', 'disabled');
+                    alert("🚛 No Active Trip: You cannot turn on live tracking without an 'Active' trip assigned to you. Please set a trip to active first.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                const tripId = activeTrips[0].id;
+
+                // Set states BEFORE beginWatch for better UI responsiveness
+                setIsTracking(true);
+                localStorage.setItem('ht-location-tracking', 'enabled');
+
+                await beginWatch(tripId);
+            } catch (err) {
+                console.error('[Tracking] Initialization failed:', err);
+                setIsTracking(false);
+                localStorage.setItem('ht-location-tracking', 'disabled');
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            // Site engineers don't need a trip
+            try {
+                setIsTracking(true);
+                localStorage.setItem('ht-location-tracking', 'enabled');
+                await beginWatch();
+            } catch (err) {
+                console.error('[Tracking] Engineer watch failed:', err);
+                setIsTracking(false);
+                localStorage.setItem('ht-location-tracking', 'disabled');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    };
+
+    const beginWatch = async (tripId?: string) => {
+        if (!user || !("geolocation" in navigator)) return;
+
+        // Clear any existing watch
+        if (watchId.current !== null) {
+            navigator.geolocation.clearWatch(watchId.current);
+        }
+
+        watchId.current = navigator.geolocation.watchPosition(
+            (position) => {
+                setIsPermissionDenied(false);
+                trackingService.updateLocation(
+                    user.id,
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    tripId
+                ).catch(err => console.error('[Tracking] Failed to update:', err));
+            },
+            (error) => {
+                console.error('[Tracking] Position error:', error);
+                if (error.code === error.PERMISSION_DENIED) {
+                    setIsPermissionDenied(true);
+                    setIsTracking(false);
+                    localStorage.setItem('ht-location-tracking', 'disabled');
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 10000
+            }
+        );
+    };
+
+    const stopTracking = () => {
+        setIsTracking(false);
+        setIsLoading(false);
+        localStorage.setItem('ht-location-tracking', 'disabled');
+        if (watchId.current !== null) {
+            navigator.geolocation.clearWatch(watchId.current);
+            watchId.current = null;
+        }
+        if (user?.id) {
             trackingService.setInactive(user.id).catch(() => { });
         }
-    }, [isTracking, profile?.role, user?.id]);
+    };
 
+    // Driver/Engineer Effect: Sync state changes to actual tracking
     useEffect(() => {
-        if (!user || profile?.role !== 'driver' || !isTracking) {
-            if (watchId.current !== null) {
-                navigator.geolocation.clearWatch(watchId.current);
-                watchId.current = null;
-            }
-            // Reset states when not tracking
-            setIsPermissionDenied(false);
-            setNoActiveTrip(false);
-            return;
+        const isTrackable = profile?.role === 'driver' || profile?.role === 'site_engineer';
+        if (!isTrackable || !user) return;
+
+        if (isTracking && watchId.current === null) {
+            startTracking();
+        } else if (!isTracking && watchId.current !== null) {
+            stopTracking();
         }
 
-        let lastUpdate = 0;
-        const UPDATE_INTERVAL = 30000; // 30 seconds
-
-        const startTracking = async () => {
-            // Find the most recent trip that is NOT completed
-            const { data: activeTrips } = await supabase
-                .from('trips')
-                .select('id')
-                .eq('driver_id', user.id)
-                .neq('status', 'completed') // Requirement: "else always active"
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (!activeTrips || activeTrips.length === 0) {
-                setNoActiveTrip(true);
-                setIsTracking(false);
-                trackingService.setInactive(user.id).catch(() => { });
-                return;
-            }
-
-            const tripId = activeTrips[0].id;
-
-            if ("geolocation" in navigator) {
-                watchId.current = navigator.geolocation.watchPosition(
-                    (position) => {
-                        const now = Date.now();
-                        setIsPermissionDenied(false); // Clear error if we get coordinates
-                        if (now - lastUpdate > UPDATE_INTERVAL) {
-                            trackingService.updateLocation(
-                                user.id,
-                                position.coords.latitude,
-                                position.coords.longitude,
-                                tripId
-                            ).catch(err => console.error('[Tracking] Failed to update:', err));
-                            lastUpdate = now;
-                        }
-                    },
-                    (error) => {
-                        console.error('[Tracking] Position error:', error);
-                        if (error.code === error.PERMISSION_DENIED) {
-                            setIsPermissionDenied(true);
-                            setIsTracking(false);
-                        }
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 10000,
-                        timeout: 5000
-                    }
-                );
-            }
-        };
-
-        startTracking();
-
         return () => {
-            if (watchId.current !== null) {
-                navigator.geolocation.clearWatch(watchId.current);
-                watchId.current = null;
-            }
+            // No automatic cleanup here to keep tracking running across page changes
+            // unless the component is truly unmounted and we want to stop it.
+            // But since this is used in DashboardLayout, it stays mounted.
         };
-    }, [user, profile, isTracking]);
+    }, [isTracking, profile?.role, user?.id]);
 
     const toggleTracking = () => {
-        setIsTracking(prev => !prev);
+        if (isTracking) {
+            stopTracking();
+        } else {
+            startTracking();
+        }
     };
 
     return {
         isTracking,
+        isLoading,
         toggleTracking,
         isPermissionDenied,
         noActiveTrip

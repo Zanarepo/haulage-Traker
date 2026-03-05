@@ -6,6 +6,7 @@ import { useLayout } from '@/hooks/useLayout';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { useCompanyModules } from '@/hooks/useCompanyModules';
 import { getItem, STORES } from '@/lib/indexedDB';
+import { supabase } from '@/lib/supabase';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import { useSubscription } from '@/hooks/useSubscription';
 import PlanBadge from '@/components/subscription/PlanBadge';
@@ -45,7 +46,11 @@ import {
   FileBarChart,
   BookOpen,
   Barcode,
-  LayoutGrid
+  LayoutGrid,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -128,7 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showSidebarUpgrade, setShowSidebarUpgrade] = useState(false);
 
   // Activate background location tracking
-  const { isTracking, toggleTracking, isPermissionDenied, noActiveTrip } = useLocationTracking();
+  const { isTracking, toggleTracking, isPermissionDenied, noActiveTrip, isLoading: isTrackingLoading } = useLocationTracking();
 
   // Show alerts for tracking issues
   useEffect(() => {
@@ -137,11 +142,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [isPermissionDenied]);
 
-  useEffect(() => {
-    if (noActiveTrip && isTracking) {
-      alert("🚛 No Active Trip: You cannot turn on live tracking without an 'Active' trip assigned to you. Please set a trip to active first.");
-    }
-  }, [noActiveTrip, isTracking]);
 
   // Guard: Ensure tenant profile is active in Fleet Dashboard
   useEffect(() => {
@@ -156,12 +156,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Read lastUpdated directly from IndexedDB after mount (avoids hydration mismatch)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+
   useEffect(() => {
     setMounted(true);
     getItem<string>(STORES.DASHBOARD, 'lastUpdated').then((val) => {
       if (val) setLastUpdated(val);
     });
   }, []);
+
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    supabase
+      .from('companies')
+      .select('name')
+      .eq('id', profile.company_id)
+      .single()
+      .then(({ data }) => {
+        if (data?.name) setCompanyName(data.name);
+      });
+  }, [profile?.company_id]);
 
   // Filter sidebar items: role + product module visibility
   const filteredItems = allSidebarItems.filter(item => {
@@ -188,6 +202,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const bottomItems = filteredItems.filter(i => i.key === 'settings');
 
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [isFooterExpanded, setIsFooterExpanded] = useState(false);
+
+  const toggleFooter = () => setIsFooterExpanded(!isFooterExpanded);
 
   useEffect(() => {
     if (profile?.id) {
@@ -230,9 +247,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="logo-section">
             <NexHaulLogo size={40} showText={!isCollapsed || isMobileOpen} className="brand-link" />
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <button onClick={toggleSidebar} className="toggle-btn desktop-only">
-                {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
-              </button>
             </div>
           </div>
 
@@ -262,68 +276,96 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="sidebar-footer">
-            <div className={`status-pill ${isOnline ? 'online' : 'offline'}`}>
-              {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
-              {(!isCollapsed || isMobileOpen) && (isOnline ? 'System Online' : 'Offline Mode')}
+          <div className={`sidebar-footer ${isFooterExpanded ? 'expanded' : 'collapsed-footer'}`}>
+            <div className="footer-accordion-header">
+              <div className={`status-pill ${isOnline ? 'online' : 'offline'}`}>
+                {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
+                {(!isCollapsed || isMobileOpen) && (isOnline ? 'System Online' : 'Offline Mode')}
+              </div>
+              <button onClick={toggleFooter} className="footer-accordion-toggle" title={isFooterExpanded ? "Collapse footer" : "Expand footer"}>
+                {isFooterExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              </button>
             </div>
 
-            {mounted && (!isCollapsed || isMobileOpen) && lastUpdated && (
-              <div className="last-sync">
-                Last cached: {new Date(lastUpdated).toLocaleTimeString()}
-              </div>
-            )}
-
-            {profile?.role === 'driver' && (
-              <button
-                onClick={toggleTracking}
-                className={`footer-btn tracking-btn ${isTracking ? 'active' : ''} ${isPermissionDenied ? 'denied' : ''} ${noActiveTrip ? 'warning' : ''}`}
-              >
-                <Navigation size={18} className={isTracking ? 'pulse-icon' : ''} />
-                {(!isCollapsed || isMobileOpen) && (
-                  <div className="tracking-label">
-                    <span>
-                      {isPermissionDenied ? 'Permission Denied' :
-                        (noActiveTrip && isTracking) ? 'No Active Trip' :
-                          isTracking ? 'Live Tracking ON' : 'Start Tracking'}
+            <div className="footer-accordion-content">
+              {/* User Profile Card */}
+              {(!isCollapsed || isMobileOpen) && profile && (
+                <div className="sidebar-user-card">
+                  <div className="sidebar-user-avatar">
+                    {profile.full_name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="sidebar-user-info">
+                    <span className="sidebar-user-name">{profile.full_name || 'User'}</span>
+                    <span className="sidebar-user-role">
+                      {profile.role?.replace(/_/g, ' ')?.replace(/\b\w/g, (c: string) => c.toUpperCase())}
                     </span>
                   </div>
-                )}
+                </div>
+              )}
+              {isCollapsed && !isMobileOpen && profile && (
+                <div className="sidebar-user-avatar sidebar-user-avatar--collapsed" title={`${profile.full_name} · ${profile.role}`}>
+                  {profile.full_name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
+
+
+              {(profile?.role === 'driver' || profile?.role === 'site_engineer') && (
+                <button
+                  onClick={toggleTracking}
+                  disabled={isTrackingLoading}
+                  className={`footer-btn tracking-btn ${isTracking ? 'active' : ''} ${isPermissionDenied ? 'denied' : ''} ${profile?.role === 'driver' && noActiveTrip ? 'warning' : ''} ${isTrackingLoading ? 'loading' : ''}`}
+                >
+                  <Navigation size={18} className={(isTracking && !isTrackingLoading) ? 'pulse-icon' : ''} />
+                  {(!isCollapsed || isMobileOpen) && (
+                    <div className="tracking-label">
+                      <span>
+                        {isTrackingLoading ? 'Connecting...' :
+                          isPermissionDenied ? 'Permission Denied' :
+                            (profile?.role === 'driver' && noActiveTrip) ? 'No Active Trip' :
+                              isTracking ? 'Live Tracking ON' : 'Start Tracking'}
+                      </span>
+                    </div>
+                  )}
+                </button>
+              )}
+
+              <button onClick={toggleDarkMode} className="footer-btn">
+                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                {(!isCollapsed || isMobileOpen) && <span>Appearance</span>}
               </button>
-            )}
 
-            <button onClick={toggleDarkMode} className="footer-btn">
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-              {(!isCollapsed || isMobileOpen) && <span>Appearance</span>}
-            </button>
+              {hasNexHaulAccess && (
+                <button
+                  onClick={() => {
+                    const platform = availableProfiles?.find(p => p.type === 'platform');
+                    if (platform) {
+                      switchProfile(platform.id, 'platform');
+                      router.push('/nexhaul');
+                    }
+                  }}
+                  className="footer-btn switch-btn"
+                >
+                  <ShieldCheck size={18} className="text-purple-400" />
+                  {(!isCollapsed || isMobileOpen) && <span>Switch to NexHaul</span>}
+                </button>
+              )}
 
-            {hasNexHaulAccess && (
-              <button
-                onClick={() => {
-                  const platform = availableProfiles?.find(p => p.type === 'platform');
-                  if (platform) {
-                    switchProfile(platform.id, 'platform');
-                    router.push('/nexhaul');
-                  }
-                }}
-                className="footer-btn switch-btn"
-              >
-                <ShieldCheck size={18} className="text-purple-400" />
-                {(!isCollapsed || isMobileOpen) && <span>Switch to NexHaul</span>}
+              <button onClick={handleLogout} className="footer-btn logout">
+                <LogOut size={18} />
+                {(!isCollapsed || isMobileOpen) && <span>Log out</span>}
               </button>
-            )}
-
-            <button onClick={handleLogout} className="footer-btn logout">
-              <LogOut size={18} />
-              {(!isCollapsed || isMobileOpen) && <span>Log out</span>}
-            </button>
+            </div>
           </div>
         </div>
       </aside>
 
       {/* Main Container */}
       <main className={`main-container ${isCollapsed ? 'expanded' : ''}`}>
-        <DashboardHeader onNotificationUpdate={loadUnreadCounts} />
+        <DashboardHeader
+          onNotificationUpdate={loadUnreadCounts}
+          isSidebarCollapsed={isCollapsed}
+          onToggleSidebar={toggleSidebar}
+        />
         <div className="content-wrapper">
           {children}
         </div>

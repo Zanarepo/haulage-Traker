@@ -2,6 +2,8 @@ import { workOrderService } from './maintain/workOrderService';
 import { assetService } from './maintain/assetService';
 import { dieselService } from './maintain/dieselService';
 import { inventoryService } from './maintain/inventoryService';
+import { visitService } from './maintain/visitService';
+import { siteService } from './siteService';
 
 /**
  * Maintain Module — Service Layer (Unified Wrapper)
@@ -23,6 +25,12 @@ export const maintainService = {
 
     // ── Inventory & Stocks ──
     ...inventoryService,
+
+    // ── Site Visits ──
+    ...visitService,
+
+    // ── Sites & Locations ──
+    ...siteService,
 };
 
 // Re-export types for convenience

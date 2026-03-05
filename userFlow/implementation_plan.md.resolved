@@ -1,0 +1,41 @@
+# Implementation Plan - SOP & Work Order Integration
+
+This plan details the steps to integrate Standard Operating Procedures (SOPs) directly into the Work Order workflow for engineers.
+
+## Proposed Changes
+
+### [Work Order Module]
+
+#### [MODIFY] [WorkOrderDetailsModal.tsx](file:///c:/Users/princ/3D%20Objects/HaulageTracker/src/app/dashboard/maintain/work-orders/components/WorkOrderDetailsModal.tsx)
+- **New State**: Add `showSOPChecklist` and `selectedSOP` states.
+- **SOP Lookup**: When the modal opens, if an asset is linked, search the local SOPs for a matching `asset_type`.
+- **"Execute SOP Checklist" Button**:
+    - Add a button in the **Asset** detail row of the View Mode.
+    - Visibility: Only show when `workOrder.status === 'in_progress'`.
+    - Styling: Use a distinct maintenance color (emerald or blue) with a `ClipboardCheck` icon.
+- **SOP Modal Integration**:
+    - Render the [SOPModal](file:///c:/Users/princ/3D%20Objects/HaulageTracker/src/app/dashboard/maintain/knowledge-base/components/SOPModal.tsx#50-414) as a child component.
+    - Configure it for `isEngineer` (checklist) mode.
+    - Pass the current `workOrder.id` to the [SOPModal](file:///c:/Users/princ/3D%20Objects/HaulageTracker/src/app/dashboard/maintain/knowledge-base/components/SOPModal.tsx#50-414) props.
+
+## User Flow
+1. Engineer opens an **Assigned** Work Order.
+2. Engineer clicks **"Start Work"**.
+3. Once the status is **"In Progress"**, the **"Execute SOP Checklist"** button becomes active.
+4. Engineer clicks the button to open the procedure.
+5. Engineer ticks off steps as they work.
+6. Engineer clicks **"Submit Execution"** to save the record permanently.
+7. Engineer records final diesel/meter readings and closes the Work Order.
+
+## Verification Plan
+
+### Automated Tests
+- N/A (Manual Verification in Browser)
+
+### Manual Verification
+1. Log in as an **Engineer**.
+2. Open a Work Order and click **"Start Work"**.
+3. Verify that the **"Execute SOP Checklist"** button appears.
+4. Click the button and verify the correct SOP opens for that asset type.
+5. Tick multiple steps and click **"Submit Execution"**.
+6. Switch to an **Admin** account and verify the execution record appears in the database/logs.

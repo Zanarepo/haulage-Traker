@@ -208,6 +208,11 @@
     box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
 }
 
+.avatar-initials.engineer {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    box-shadow: 0 4px 10px rgba(139, 92, 246, 0.2);
+}
+
 .driver-info {
     flex: 1;
     overflow: hidden;
@@ -239,6 +244,11 @@
     background: #10b981;
     box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
     border: 2px solid var(--bg-card);
+}
+
+.status-indicator.engineer {
+    background: #8b5cf6;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
 }
 
 /* Map View Container */

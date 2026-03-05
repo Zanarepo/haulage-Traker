@@ -21,7 +21,13 @@ import {
     Camera,
     Fuel,
     Plus,
+    ClipboardCheck,
+    Info,
+    Navigation
 } from 'lucide-react';
+import { useKnowledgeBase, SOP } from '../../knowledge-base/hooks/useKnowledgeBase';
+import SOPModal from '../../knowledge-base/components/SOPModal';
+import VisitWizardModal from '../../components/VisitWizardModal';
 
 interface WorkOrderDetailsModalProps {
     isOpen: boolean;
@@ -82,6 +88,14 @@ export default function WorkOrderDetailsModal({
     const [newItem, setNewItem] = useState({ item_name: '', quantity: '1', notes: '', master_id: '' as string | null });
     const [uploadingMedia, setUploadingMedia] = useState(false);
 
+    // SOP Integration State
+    const { sops, categories, submitExecution } = useKnowledgeBase();
+    const [showSOPChecklist, setShowSOPChecklist] = useState(false);
+    const [relevantSOPs, setRelevantSOPs] = useState<SOP[]>([]); // Multiple matching SOPs
+    const [activeSOP, setActiveSOP] = useState<SOP | null>(null); // Current SOP being executed
+    const [executionHistory, setExecutionHistory] = useState<{ sopLogs: any[], safetyLogs: any[] }>({ sopLogs: [], safetyLogs: [] });
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
     // Engineer Stock State
     const [engineerStock, setEngineerStock] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -97,6 +111,7 @@ export default function WorkOrderDetailsModal({
     const [engineerId, setEngineerId] = useState('');
     const [description, setDescription] = useState('');
     const [scheduledDate, setScheduledDate] = useState('');
+    const [showVisitWizard, setShowVisitWizard] = useState(false);
 
     const isAdmin = ['superadmin', 'admin', 'md'].includes(profile?.role || '');
 
@@ -126,6 +141,7 @@ export default function WorkOrderDetailsModal({
             setIsEditing(false);
             loadMedia();
             loadInventory();
+            loadExecutionHistory();
             if (workOrder.engineer_id) {
                 loadEngineerStock(workOrder.engineer_id);
             }
@@ -171,6 +187,19 @@ export default function WorkOrderDetailsModal({
             setInventoryItems(data || []);
         } catch (error) {
             console.error('Failed to load inventory:', error);
+        }
+    };
+
+    const loadExecutionHistory = async () => {
+        if (!workOrder?.id) return;
+        try {
+            setLoadingHistory(true);
+            const data = await maintainService.getWorkOrderExecutionHistory(workOrder.id);
+            setExecutionHistory(data);
+        } catch (error) {
+            console.error('Failed to load execution history:', error);
+        } finally {
+            setLoadingHistory(false);
         }
     };
 
@@ -231,8 +260,26 @@ export default function WorkOrderDetailsModal({
         ? (assets || []).filter((a: any) => a.site_id === siteId)
         : (assets || []);
 
+    const linkedAsset = workOrder?.asset_id ? assets.find((a: any) => a.id === workOrder.asset_id) : null;
+
+    // Auto-fetch matching SOPs whenever asset selection changes
+    useEffect(() => {
+        const currentAssetId = isEditing ? assetId : workOrder?.asset_id;
+        const asset = assets.find((a: any) => a.id === currentAssetId);
+
+        if (asset && sops.length > 0) {
+            const matches = sops.filter(s =>
+                s.asset_type?.toLowerCase() === asset.type?.toLowerCase() ||
+                s.category?.toLowerCase() === asset.type?.toLowerCase()
+            );
+            setRelevantSOPs(matches);
+        } else {
+            setRelevantSOPs([]);
+        }
+    }, [assetId, workOrder?.asset_id, sops, assets, isEditing]);
+
     const handleSave = () => {
-        if (!title.trim()) return;
+        if (!title.trim() || !workOrder) return;
         onUpdate(workOrder.id, {
             title: title.trim(),
             type,
@@ -268,7 +315,7 @@ export default function WorkOrderDetailsModal({
                             {isEditing ? 'Cancel' : 'Close'}
                         </button>
                         {!isEditing ? (
-                            workOrder.status !== 'completed' && (
+                            workOrder.status !== 'completed' && profile?.role !== 'site_engineer' && (
                                 <button className="btn-submit" onClick={() => setIsEditing(true)}>
                                     <Edit3 size={16} /> Edit Work Order
                                 </button>
@@ -351,7 +398,39 @@ export default function WorkOrderDetailsModal({
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
                                         <Wrench size={14} /> ASSET
                                     </label>
-                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>Linked Asset #{workOrder.asset_id.slice(0, 8)}</p>
+                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                                        {linkedAsset
+                                            ? `${linkedAsset.type?.replace('_', ' ').charAt(0).toUpperCase() + linkedAsset.type?.replace('_', ' ').slice(1)} — ${linkedAsset.make_model || linkedAsset.serial_number || 'Unknown'}`
+                                            : `Linked Asset #${workOrder.asset_id.slice(0, 8)}`
+                                        }
+                                    </p>
+                                    {workOrder?.status === 'in_progress' && relevantSOPs.length > 0 && (
+                                        <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Procedural Checklists</label>
+                                            {relevantSOPs.map(sop => (
+                                                <button
+                                                    key={sop.id}
+                                                    className="btn-maintain-action"
+                                                    style={{
+                                                        width: '100%',
+                                                        background: 'rgba(16, 185, 129, 0.1)',
+                                                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                                                        color: '#10b981',
+                                                        justifyContent: 'center',
+                                                        padding: '8px',
+                                                        fontSize: '0.8rem'
+                                                    }}
+                                                    onClick={() => {
+                                                        setActiveSOP(sop);
+                                                        setShowSOPChecklist(true);
+                                                    }}
+                                                >
+                                                    <ClipboardCheck size={16} />
+                                                    {sop.title}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -359,37 +438,37 @@ export default function WorkOrderDetailsModal({
                         <div className="detail-section">
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'block', fontWeight: 600 }}>DESCRIPTION</label>
                             <div style={{ background: 'var(--bg-hover)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontSize: '0.9rem', color: 'var(--text-main)', minHeight: '60px', whiteSpace: 'pre-wrap' }}>
-                                {workOrder.description || "No description provided."}
+                                {workOrder?.description || "No description provided."}
                             </div>
                         </div>
 
-                        {/* Quick Status Actions for Engineers */}
-                        {profile?.role === 'site_engineer' && workOrder.status !== 'completed' && (
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
-                                {workOrder.status === 'assigned' && (
-                                    <button
-                                        className="btn-submit"
-                                        style={{ background: '#f59e0b', width: '100%' }}
-                                        onClick={() => onUpdateStatus(workOrder.id, 'in_progress')}
-                                    >
-                                        Start Work
-                                    </button>
-                                )}
-                                {workOrder.status === 'in_progress' && (
-                                    <button
-                                        className="btn-submit"
-                                        style={{ background: '#10b981', width: '100%' }}
-                                        onClick={() => {
-                                            if (workOrder.type === 'preventive' && !hourMeter) {
-                                                alert('Please enter the current Hour Meter reading before completing PM.');
-                                                return;
-                                            }
-                                            onUpdateStatus(workOrder.id, 'completed', { hour_meter: hourMeter ? parseFloat(hourMeter) : undefined });
-                                        }}
-                                    >
-                                        <CheckCircle size={18} /> Mark as Completed
-                                    </button>
-                                )}
+                        {/* Visit Flow Actions for Engineers & Admins */}
+                        {(profile?.role === 'site_engineer' || isAdmin) && workOrder?.status !== 'completed' && (
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                                <button
+                                    className="btn-maintain-action"
+                                    style={{
+                                        width: '100%',
+                                        background: workOrder?.status === 'assigned' ? '#3b82f6' : '#10b981',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px'
+                                    }}
+                                    onClick={() => setShowVisitWizard(true)}
+                                >
+                                    {workOrder?.status === 'assigned' ? (
+                                        <>
+                                            <Navigation size={18} />
+                                            START SITE VISIT
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ClipboardCheck size={18} />
+                                            CONTINUE / COMPLETE VISIT
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         )}
 
@@ -546,6 +625,147 @@ export default function WorkOrderDetailsModal({
                             )}
                         </div>
 
+                        {/* Compliance Audit Trail Section */}
+                        <div className="detail-section" style={{ marginTop: '1rem' }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                                <ClipboardCheck size={14} /> COMPLIANCE AUDIT TRAIL
+                            </label>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {/* Safety Logs */}
+                                {executionHistory.safetyLogs.map(log => (
+                                    <div key={log.id} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '10px 12px',
+                                        background: 'var(--bg-hover)',
+                                        borderRadius: '8px',
+                                        border: `1px solid ${log.passed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}`
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{
+                                                width: '32px',
+                                                height: '32px',
+                                                borderRadius: '50%',
+                                                background: log.passed ? '#10b98120' : '#ef444420',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: log.passed ? '#10b981' : '#ef4444'
+                                            }}>
+                                                <AlertTriangle size={16} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Safety Sign-off</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>by {log.userName} • {new Date(log.created_at).toLocaleTimeString()}</div>
+                                            </div>
+                                        </div>
+                                        <span style={{
+                                            fontSize: '0.65rem',
+                                            fontWeight: 700,
+                                            color: log.passed ? '#10b981' : '#ef4444',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {log.passed ? 'PASSED' : 'FAILED'}
+                                        </span>
+                                    </div>
+                                ))}
+
+                                {/* SOP Logs */}
+                                {executionHistory.sopLogs.map(log => (
+                                    <div key={log.id}
+                                        onClick={() => {
+                                            const sop = sops.find(s => s.id === log.sop_id);
+                                            if (sop) {
+                                                setActiveSOP(sop);
+                                                setShowSOPChecklist(true);
+                                            }
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '10px 12px',
+                                            background: 'var(--bg-hover)',
+                                            borderRadius: '8px',
+                                            border: '1px solid var(--border-color)',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{
+                                                width: '32px',
+                                                height: '32px',
+                                                borderRadius: '50%',
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#3b82f6'
+                                            }}>
+                                                <ClipboardCheck size={16} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{log.maintain_asset_sops?.title || 'SOP Check'}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>by {log.users?.full_name} • {new Date(log.submitted_at).toLocaleDateString()}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>COMPLETED</div>
+                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Click to View</div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Pending / Unmet SOPs */}
+                                {relevantSOPs.filter(sop => !executionHistory.sopLogs.some(log => log.sop_id === sop.id)).map(sop => (
+                                    <div key={`pending-${sop.id}`}
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '10px 12px',
+                                            background: 'rgba(245, 158, 11, 0.03)',
+                                            borderRadius: '8px',
+                                            border: '1px dashed rgba(245, 158, 11, 0.3)',
+                                            opacity: 0.8
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{
+                                                width: '32px',
+                                                height: '32px',
+                                                borderRadius: '50%',
+                                                background: 'rgba(245, 158, 11, 0.1)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#f59e0b'
+                                            }}>
+                                                <ClipboardList size={14} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{sop.title}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requirement not yet fulfilled</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>PENDING</div>
+                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Checklist Missing</div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {executionHistory.safetyLogs.length === 0 && executionHistory.sopLogs.length === 0 && relevantSOPs.length === 0 && !loadingHistory && (
+                                    <div style={{ padding: '1.5rem', textAlign: 'center', background: 'var(--bg-hover)', borderRadius: '0.75rem', border: '1px dashed var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                        No compliance logs found for this work order.
+                                    </div>
+                                )}
+                                {loadingHistory && <div style={{ textAlign: 'center', padding: '1rem' }}><Loader2 size={20} className="spinning" /></div>}
+                            </div>
+                        </div>
+
                         {/* Media Section */}
                         <div className="detail-section">
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
@@ -668,7 +888,9 @@ export default function WorkOrderDetailsModal({
                                         >
                                             <option value="">Select Asset</option>
                                             {filteredAssets.map((a: any) => (
-                                                <option key={a.id} value={a.id}>{a.site_id_code || a.id.slice(0, 8)} ({a.type})</option>
+                                                <option key={a.id} value={a.id}>
+                                                    {a.type?.replace('_', ' ').charAt(0).toUpperCase() + a.type?.replace('_', ' ').slice(1)} — {a.make_model || a.serial_number || 'Unknown'}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -823,12 +1045,22 @@ export default function WorkOrderDetailsModal({
                                     <option value="">Select Asset (optional)</option>
                                     {filteredAssets.map((a: any) => (
                                         <option key={a.id} value={a.id}>
-                                            {a.type?.replace('_', ' ')} — {a.make_model || a.serial_number || 'Unknown'}
+                                            {a.type?.replace('_', ' ').charAt(0).toUpperCase() + a.type?.replace('_', ' ').slice(1)} — {a.make_model || a.serial_number || 'Unknown'}
                                         </option>
                                     ))}
                                 </select>
                             </div>
                         </div>
+
+                        {/* Relevant SOPs Info (Edit Mode) */}
+                        {relevantSOPs.length > 0 && (
+                            <div style={{ background: 'rgba(59, 130, 246, 0.05)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Info size={16} style={{ color: '#3b82f6' }} />
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>
+                                    <strong>{relevantSOPs.length} SOP(s) matched</strong> for this asset type ({relevantSOPs.map(s => s.title).join(', ')}). These will be available for the engineer to follow.
+                                </div>
+                            </div>
+                        )}
 
                         {/* Description */}
                         <div className="form-group">
@@ -847,6 +1079,55 @@ export default function WorkOrderDetailsModal({
                 )
                 }
             </div >
+
+            {/* SOP Checklist Interaction */}
+            {activeSOP && (
+                <SOPModal
+                    isOpen={showSOPChecklist}
+                    onClose={() => {
+                        setShowSOPChecklist(false);
+                        setActiveSOP(null);
+                    }}
+                    sop={activeSOP}
+                    categories={categories}
+                    userRole={profile?.role}
+                    workOrderId={workOrder.id}
+                    onSave={async (data) => {
+                        try {
+                            await submitExecution(activeSOP.id, data.steps_json, workOrder.id);
+                            setShowSOPChecklist(false);
+                            setActiveSOP(null);
+                            loadExecutionHistory(); // Refresh history
+                        } catch (err) {
+                            console.error('Failed to submit SOP execution:', err);
+                        }
+                    }}
+                />
+            )}
+
+            {showVisitWizard && (
+                <VisitWizardModal
+                    isOpen={showVisitWizard}
+                    onClose={() => setShowVisitWizard(false)}
+                    workOrder={workOrder}
+                    engineerId={profile?.id || ''}
+                    onComplete={() => {
+                        // If it's the first time starting, move to in_progress
+                        if (workOrder?.status === 'assigned') {
+                            onUpdateStatus(workOrder.id, 'in_progress');
+                        }
+                        // If it's finishing, it should realistically mark WO as completed
+                        // but we leave that to the service or user choice?
+                        // Actually, the user said "engineer can just proceed with the work order and thedeailswouldbe captured in the site visit reports"
+                        // I'll mark as completed if they finished step 3
+                        if (workOrder?.status === 'in_progress') {
+                            onUpdateStatus(workOrder.id, 'completed');
+                        }
+                        setShowVisitWizard(false);
+                        onUpdate(workOrder.id, {}); // Trigger refresh
+                    }}
+                />
+            )}
         </Modal >
     );
 }

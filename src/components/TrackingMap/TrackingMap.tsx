@@ -17,7 +17,14 @@ L.Icon.Default.mergeOptions({
 
 // Custom Icon for Trucks
 const truckIcon = new L.Icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2554/2554978.png', // Replace with a local SVG if possible
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2554/2554978.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+});
+
+const engineerIcon = new L.Icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1077/1077114.png', // Person icon
     iconSize: [32, 32],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
@@ -58,12 +65,16 @@ const TrackingMap: React.FC<TrackingMapProps> = ({ locations, selectedDriverId }
                 <Marker
                     key={loc.driver_id}
                     position={[Number(loc.latitude), Number(loc.longitude)]}
-                    icon={truckIcon}
+                    icon={loc.user?.role === 'site_engineer' ? engineerIcon : truckIcon}
                 >
                     <Popup>
                         <div className="map-popup-content">
-                            <strong>{loc.user?.full_name || 'Unknown Driver'}</strong>
-                            <p>Asset: {loc.trips?.truck_plate_number || 'N/A'}</p>
+                            <strong>{loc.user?.full_name || 'Unknown User'}</strong>
+                            {loc.user?.role === 'site_engineer' ? (
+                                <p>Staff: Site Engineer</p>
+                            ) : (
+                                <p>Asset: {loc.trips?.truck_plate_number || 'N/A'}</p>
+                            )}
                             <p>Status: <span className="status-badge">{loc.trips?.status || 'Active'}</span></p>
                             <small>Updated: {new Date(loc.updated_at).toLocaleTimeString()}</small>
                         </div>

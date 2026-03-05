@@ -20,7 +20,8 @@ import {
     Filter,
     RefreshCcw,
     Hash,
-    Edit2
+    Edit2,
+    BookOpen
 } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { useClusters } from '@/hooks/useClusters';
@@ -221,6 +222,7 @@ export default function PMSchedulePage() {
                 return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <span className={`service-status ${asset.projections.healthStatus}`}>
+                            {isOverdue && <span className="urgent-pulse-dot" />}
                             {isOverdue ? 'OVERDUE' : (dueDate ? `Due ${format(dueDate, 'MMM dd, yyyy')}` : 'No date')}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -295,6 +297,22 @@ export default function PMSchedulePage() {
                     <h1>PM Schedule</h1>
                     <p>Intelligent service forecasting across all clusters and sites.</p>
                 </div>
+                <div className="header-actions">
+                    <button
+                        className="btn-maintain-action secondary"
+                        onClick={() => window.location.href = '/dashboard/maintain/knowledge-base'}
+                    >
+                        <BookOpen size={18} />
+                        View SOPs
+                    </button>
+                    <button
+                        className="btn-maintain-action"
+                        onClick={() => window.location.href = '/dashboard/maintain/work-orders'}
+                    >
+                        <Calendar size={18} />
+                        Service Logs
+                    </button>
+                </div>
             </header>
 
             <div className="maintain-stats">
@@ -303,8 +321,9 @@ export default function PMSchedulePage() {
                     onClick={() => handleMetricClick('overdue')}
                     style={{ cursor: 'pointer' }}
                 >
-                    <div className="icon-box" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                    <div className="icon-box" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', position: 'relative' }}>
                         <AlertTriangle size={18} />
+                        {stats.overdue > 0 && <span className="status-notification-dot overdue" />}
                     </div>
                     <div className="card-content">
                         <h3>Overdue PMs</h3>
@@ -338,8 +357,8 @@ export default function PMSchedulePage() {
                 </div>
             </div>
 
-            <div className="inventory-controls" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div className="search-pill-wrapper" style={{ flex: '1 1 300px' }}>
+            <div className="schedule-filters-bar">
+                <div className="search-pill-wrapper main-search">
                     <Search size={16} className="search-icon" />
                     <input
                         type="text"
@@ -350,61 +369,56 @@ export default function PMSchedulePage() {
                     />
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 auto' }}>
-                    <select
-                        value={clusterFilter}
-                        onChange={(e) => setClusterFilter(e.target.value)}
-                        className="inventory-search-input"
-                        style={{ paddingLeft: '1.25rem', width: 'auto', flex: 1, minWidth: '160px' }}
-                    >
-                        <option value="all">All Clusters</option>
-                        {clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                <div className="filter-group-container">
+                    <div className="select-pill-wrapper">
+                        <select
+                            value={clusterFilter}
+                            onChange={(e) => setClusterFilter(e.target.value)}
+                            className="inventory-search-input"
+                        >
+                            <option value="all">All Clusters</option>
+                            {clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
 
-                    <div className="search-pill-wrapper" style={{ flex: 1.5, minWidth: '240px' }}>
+                    <div className="search-pill-wrapper date-range-pill">
                         <Calendar size={16} className="search-icon" />
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            width: '100%',
-                            paddingLeft: '3rem',
-                            paddingRight: '1rem'
-                        }}>
+                        <div className="date-inputs-flex">
                             <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.8rem', width: '100%' }}
+                                className="date-field"
                             />
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>TO</span>
+                            <span className="date-separator">TO</span>
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.8rem', width: '100%' }}
+                                className="date-field"
                             />
                         </div>
                     </div>
 
-                    {(clusterFilter !== 'all' || searchQuery || startDate || endDate) && (
+                    <div className="action-pills-flex">
+                        {(clusterFilter !== 'all' || searchQuery || startDate || endDate) && (
+                            <button
+                                className="btn-refresh-pill clear-btn"
+                                onClick={resetFilters}
+                                title="Clear Filters"
+                            >
+                                <X size={18} />
+                            </button>
+                        )}
+
                         <button
                             className="btn-refresh-pill"
-                            onClick={resetFilters}
-                            title="Clear Filters"
-                            style={{ color: '#ef4444' }}
+                            onClick={() => window.location.reload()}
+                            title="Refresh Data"
                         >
-                            <X size={18} />
+                            <RefreshCcw size={18} />
                         </button>
-                    )}
-
-                    <button
-                        className="btn-refresh-pill"
-                        onClick={() => window.location.reload()}
-                        title="Refresh Data"
-                    >
-                        <RefreshCcw size={18} />
-                    </button>
+                    </div>
                 </div>
             </div>
 

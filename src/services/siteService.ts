@@ -6,6 +6,8 @@ export interface Site {
     client_id: string;
     name: string;
     site_id_code: string;
+    latitude?: number;
+    longitude?: number;
     tank_capacity: number;
     host_community?: string;
     is_hybrid?: boolean;

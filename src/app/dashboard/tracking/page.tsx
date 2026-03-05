@@ -8,10 +8,12 @@ import {
     RefreshCcw,
     Truck,
     Search,
+    MapPin,
     Map as MapIcon
 } from 'lucide-react';
 import { trackingService, DriverLocation } from '@/services/trackingService';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import LoadingScreen from '@/components/common/LoadingScreen';
 import './tracking.css';
 
@@ -66,30 +68,77 @@ export default function TrackingDashboard() {
         }
     };
 
-    const handleRealtimeUpdate = (payload: any) => {
+    const handleRealtimeUpdate = async (payload: any) => {
         const { eventType, new: newRecord, old: oldRecord } = payload;
 
-        setLocations(prev => {
-            if (eventType === 'INSERT' || eventType === 'UPDATE') {
-                if (!newRecord.is_active) {
-                    return prev.filter(l => l.driver_id !== newRecord.driver_id);
-                }
+        if (eventType === 'INSERT' || eventType === 'UPDATE') {
+            if (!newRecord.is_active) {
+                // Driver stopped tracking
+                setLocations(prev => prev.filter(l => l.driver_id !== newRecord.driver_id));
+                if (selectedId === newRecord.driver_id) setSelectedId(null);
+                return;
+            }
 
+            // Check if we already have this driver
+            setLocations(prev => {
                 const exists = prev.find(l => l.driver_id === newRecord.driver_id);
                 if (exists) {
                     return prev.map(l => l.driver_id === newRecord.driver_id ? { ...l, ...newRecord } : l);
-                } else {
-                    // If it's a new active driver, we might need to re-fetch to get joined user/trip data
-                    // For simplicity in this demo, we'll just wait for the next full refresh or 
-                    // implement a single fetch for the new driver.
-                    loadInitialData();
-                    return prev;
                 }
-            } else if (eventType === 'DELETE') {
-                return prev.filter(l => l.driver_id !== oldRecord.driver_id);
+                return prev;
+            });
+
+            // If new driver wasn't in our list, we need to fetch their basic info
+            const alreadyShowing = locations.some(l => l.driver_id === newRecord.driver_id);
+            if (!alreadyShowing) {
+                try {
+                    const clusterIds = (profile?.role === 'admin' || profile?.role === 'site_engineer')
+                        ? profile?.cluster_ids
+                        : undefined;
+
+                    let selectStr = `
+                        *,
+                        user:users!driver_id (full_name, role),
+                        trips:trips!trip_id (truck_plate_number, status, cluster_id)
+                    `;
+
+                    if (clusterIds && clusterIds.length > 0) {
+                        selectStr = `
+                            *,
+                            user:users!driver_id (full_name, role),
+                            trips:trips!trip_id!inner (truck_plate_number, status, cluster_id)
+                        `;
+                    }
+
+                    let query = supabase
+                        .from('driver_locations')
+                        .select(selectStr)
+                        .eq('driver_id', newRecord.driver_id)
+                        .eq('is_active', true);
+
+                    if (clusterIds && clusterIds.length > 0) {
+                        query = query.in('trips.cluster_id', clusterIds);
+                    }
+
+                    const { data: details } = await query.single();
+                    const validDetails = details as any as DriverLocation;
+
+                    if (validDetails) {
+                        setLocations(prev => {
+                            if (prev.some(l => l.driver_id === validDetails.driver_id)) return prev;
+                            return [...prev, validDetails];
+                        });
+                    }
+                } catch (err) {
+                    // This might error with 'JSON object requested, but no rows were returned' 
+                    // if the driver doesn't match the cluster filter, which is fine.
+                    console.debug('Driver skipped or fetch failed (likely cluster mismatch)');
+                }
             }
-            return prev;
-        });
+        } else if (eventType === 'DELETE') {
+            setLocations(prev => prev.filter(l => l.driver_id !== oldRecord.driver_id));
+            if (selectedId === oldRecord.driver_id) setSelectedId(null);
+        }
     };
 
     const filteredLocations = useMemo(() => {
@@ -125,7 +174,7 @@ export default function TrackingDashboard() {
                     <div className="list-header">
                         <h3>
                             <Navigation size={18} />
-                            Active Drivers
+                            Active Fleet
                             <span className="active-count">{locations.length}</span>
                         </h3>
                         <div className="search-bar" style={{ marginTop: '1rem' }}>
@@ -149,14 +198,18 @@ export default function TrackingDashboard() {
                                     className={`driver-tracking-item ${selectedId === loc.driver_id ? 'selected' : ''}`}
                                     onClick={() => setSelectedId(loc.driver_id)}
                                 >
-                                    <div className="avatar-initials">
+                                    <div className={`avatar-initials ${loc.user?.role === 'site_engineer' ? 'engineer' : ''}`}>
                                         {loc.user?.full_name?.split(' ').map(n => n[0]).join('') || 'DR'}
                                     </div>
                                     <div className="driver-info">
                                         <h4>{loc.user?.full_name}</h4>
-                                        <p><Truck size={10} /> {loc.trips?.truck_plate_number || 'No active trip'}</p>
+                                        {loc.user?.role === 'site_engineer' ? (
+                                            <p><MapPin size={10} /> Site Engineer</p>
+                                        ) : (
+                                            <p><Truck size={10} /> {loc.trips?.truck_plate_number || 'No active trip'}</p>
+                                        )}
                                     </div>
-                                    <div className="status-indicator" />
+                                    <div className={`status-indicator ${loc.user?.role === 'site_engineer' ? 'engineer' : ''}`} />
                                 </div>
                             ))
                         )}

@@ -1,4 +1,4 @@
-export type UserRole = 'superadmin' | 'md' | 'accountant' | 'auditor' | 'admin' | 'driver' | 'site_engineer' | 'nexsuper' | 'nexadmin' | 'nexsupport';
+export type UserRole = 'superadmin' | 'md' | 'accountant' | 'auditor' | 'admin' | 'manager' | 'driver' | 'site_engineer' | 'warehouse_manager' | 'store_manager' | 'storekeeper' | 'nexsuper' | 'nexadmin' | 'nexsupport';
 export type DriverType = 'internal' | 'external';
 export type TripStatus = 'pending' | 'active' | 'dispensed' | 'reconciled' | 'completed';
 

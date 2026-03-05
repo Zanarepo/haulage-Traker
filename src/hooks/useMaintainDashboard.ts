@@ -64,11 +64,13 @@ export function useMaintainDashboard() {
                     setFailureAnalysis(analysisData);
 
                     // Filter alerts for high-priority health issues
-                    const alerts = assetsData.filter(a => a.projections?.healthStatus !== 'healthy');
-                    setProactiveAlerts(alerts);
+                    if (Array.isArray(assetsData)) {
+                        const alerts = assetsData.filter(a => a.projections?.healthStatus !== 'healthy');
+                        setProactiveAlerts(alerts);
+                    }
                 }
-            } catch (err) {
-                console.error('[Maintain Dashboard]', err);
+            } catch (err: any) {
+                console.error('[Maintain Dashboard Error]:', err?.message || err);
             } finally {
                 setLoading(false);
             }

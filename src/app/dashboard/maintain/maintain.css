@@ -7,7 +7,7 @@
     padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
     animation: maintainFadeIn 0.4s ease-out;
 }
 
@@ -29,7 +29,7 @@
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 2rem !important;
+    margin-bottom: 1.25rem !important;
     width: 100%;
 }
 
@@ -101,6 +101,19 @@
 .btn-maintain-action:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-maintain-action.secondary {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    box-shadow: none;
+}
+
+.btn-maintain-action.secondary:hover {
+    background: var(--bg-hover);
+    border-color: #3b82f640;
+    color: #3b82f6;
 }
 
 /* ── Filter Bar ── */
@@ -598,7 +611,12 @@
 @media (max-width: 768px) {
     .maintain-page {
         padding: 0.75rem;
-        gap: 1.25rem;
+        gap: 0.5rem !important;
+    }
+
+    .maintain-page .page-header,
+    .supplies-page .page-header {
+        margin-bottom: 0.5rem !important;
     }
 
     .maintain-page .header-info h1 {
@@ -798,6 +816,7 @@
 
     .maintain-page {
         padding: 1rem !important;
+        gap: 0.5rem !important;
     }
 
     .stat-card {
@@ -884,5 +903,223 @@
         flex-direction: column !important;
         align-items: flex-start !important;
         gap: 1rem !important;
+    }
+}
+
+/* -- Row Status Overrides -- */
+.dt-table tr.overdue-row {
+    background: rgba(239, 68, 68, 0.03);
+}
+
+.dt-table tr.overdue-row:hover {
+    background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.dt-table tr.overdue-row td:first-child {
+    border-left: 4px solid #ef4444;
+}
+
+.dt-table tr.due-soon-row {
+    background: rgba(245, 158, 11, 0.03);
+}
+
+.dt-table tr.due-soon-row:hover {
+    background: rgba(245, 158, 11, 0.08) !important;
+}
+
+.dt-table tr.due-soon-row td:first-child {
+    border-left: 4px solid #f59e0b;
+}
+
+/* Very Mobile Responsive Button Stacking */
+@media (max-width: 640px) {
+    .header-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+    }
+
+    .header-actions button {
+        margin: 0 !important;
+        width: 100% !important;
+        font-size: 0.8rem !important;
+        padding: 0.6rem 0.5rem !important;
+    }
+}
+
+/* ── Maintenance Modals ── */
+.maintain-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1.5rem;
+    animation: modalBackdropFade 0.3s ease-out;
+}
+
+.maintain-modal-content {
+    background: var(--bg-sidebar);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    border-radius: 1.25rem;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: modalContentSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.maintain-modal-content.wide {
+    max-width: 800px;
+}
+
+.maintain-modal-content .modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.maintain-modal-content .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.maintain-modal-content .header-left h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.maintain-modal-content .header-left p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.maintain-modal-content .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.summary-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    background: var(--bg-hover);
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+@media (max-width: 480px) {
+    .summary-card-grid {
+        grid-template-columns: 1fr 1fr;
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+}
+
+.maintain-modal-content .modal-footer {
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.form-grid .full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.025em;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+@keyframes modalBackdropFade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalContentSlide {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .maintain-modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .maintain-modal-content {
+        max-height: 95vh;
+        border-radius: 1.5rem 1.5rem 0 0;
+        border-bottom: none;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
     }
 }

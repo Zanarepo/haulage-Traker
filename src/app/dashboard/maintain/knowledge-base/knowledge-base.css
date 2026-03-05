@@ -1,0 +1,621 @@
+/* ─── Knowledge Base (Teams UI Style) ─────────────────── */
+
+.knowledge-base-page {
+    padding: 0;
+}
+
+/* Page Header alignment with Teams */
+.knowledge-base-page .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.knowledge-base-page .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.knowledge-base-page .page-header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 4px 0 0;
+}
+
+/* Stats Chips (Copied from Users UI) */
+.user-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.stat-chip {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.stat-chip.clickable:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f640;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.stat-chip.active {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.stat-chip .stat-value {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 16px;
+}
+
+.stat-chip .stat-label {
+    font-size: 12px;
+}
+
+/* Add SOP Button (Matches btn-add-user) */
+.btn-new-sop {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff !important;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-new-sop:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* Table Row Enhancements for Docs */
+.sop-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sop-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.sop-title {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 13px;
+}
+
+.sop-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Category Pills */
+.category-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: var(--bg-hover);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .knowledge-base-page .dt-table td:first-child::before {
+        content: 'DOCUMENT' !important;
+        background: rgba(59, 130, 246, 0.15) !important;
+        color: #3b82f6 !important;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 900;
+        margin-bottom: 12px;
+    }
+}
+
+/* ─── SOP Builder Component Styles ───────────────────── */
+
+.structured-sop-modal {
+    max-width: 800px !important;
+    height: 85vh;
+    /* Fixed height for sticky footer pattern */
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-form-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.structured-sop-modal .modal-body {
+    flex: 1;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.structured-sop-modal .modal-footer {
+    flex-shrink: 0;
+    padding: 1.25rem 2rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 20;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    /* Subtle lift */
+}
+
+.sop-header-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: rgba(59, 130, 246, 0.02);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.sop-header-fields .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sop-header-fields .field-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.sop-header-fields .field-group input,
+.sop-header-fields .custom-select select {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.sop-header-fields .field-group input:focus,
+.sop-header-fields .custom-select select:focus {
+    border-color: #3b82f6;
+    outline: none;
+}
+
+.custom-select {
+    position: relative;
+}
+
+.custom-select .icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.custom-select select {
+    padding-left: 2.25rem;
+    cursor: pointer;
+}
+
+.sop-builder-container {
+    padding: 1.5rem 2rem;
+    min-height: 300px;
+    height: auto;
+}
+
+.builder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.builder-header h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.btn-add-section {
+    background: rgba(59, 130, 246, 0.08);
+    color: #3b82f6;
+    border: 1px dashed rgba(59, 130, 246, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-section:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+}
+
+.sop-builder-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.sop-builder-section:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.sop-builder-section .section-head {
+    background: var(--bg-hover);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-head .drag-handle {
+    color: var(--text-muted);
+    opacity: 0.5;
+    cursor: grab;
+}
+
+.section-title-input {
+    background: transparent;
+    border: none;
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    flex: 1;
+    outline: none;
+}
+
+.btn-remove-section {
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 0.4rem;
+    transition: all 0.2s;
+}
+
+.btn-remove-section:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.steps-list {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.step-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.step-num {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.step-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.4rem 0;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.step-input:focus {
+    border-bottom-color: #3b82f6;
+}
+
+.btn-item-action {
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+}
+
+.btn-item-action:hover {
+    opacity: 1;
+    color: #ef4444;
+}
+
+.btn-add-step {
+    margin-top: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.4rem 0;
+    width: fit-content;
+}
+
+.btn-add-step:hover {
+    text-decoration: underline;
+    opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+    .sop-header-fields .field-row {
+        grid-template-columns: 1fr;
+    }
+
+    .sop-builder-container {
+        max-height: 45vh;
+    }
+}
+
+/* ─── Custom Category & Linking UI ─────────────────── */
+
+.custom-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid #3b82f6;
+    border-radius: 0.5rem;
+    padding: 0 0.5rem;
+}
+
+.custom-input-wrap input {
+    border: none !important;
+    padding: 0.6rem 0.25rem !important;
+}
+
+.btn-cancel-custom {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.linking-badge {
+    background: rgba(59, 130, 246, 0.08);
+    color: #3b82f6;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    margin-right: 12px;
+}
+
+/* ─── Section Guidance ────────────────────────────── */
+
+.section-guidance {
+    padding: 0.25rem 1rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* ─── SOP Execution Table (Premium Spaced Layout) ─── */
+
+.sop-execution-table-wrap {
+    background: rgba(59, 130, 246, 0.03);
+    /* Subtle backdrop */
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 0.75rem;
+    margin-bottom: 2rem;
+    /* Space between headers */
+}
+
+.sop-execution-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.unified-table .sop-execution-table {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.sop-section-header-row td {
+    background: rgba(59, 130, 246, 0.05) !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+.sop-section-header-row .section-title-label {
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.8;
+}
+
+.sop-execution-table thead th {
+    display: table-cell !important;
+    background: rgba(59, 130, 246, 0.12);
+    /* Slightly darker header */
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+
+.sop-execution-table thead th:last-child {
+    border-right: none;
+}
+
+.sop-execution-table tbody td {
+    display: table-cell !important;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.sop-execution-table tbody td:last-child {
+    border-right: none;
+}
+
+.sop-execution-table tbody tr {
+    transition: background 0.1s ease;
+    cursor: pointer;
+    background: var(--bg-card);
+}
+
+.sop-execution-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.06);
+}
+
+.sop-execution-table td:first-child {
+    width: 60px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.02);
+    /* Shaded status col */
+}
+
+.sop-execution-table .task-text {
+    font-weight: 600;
+    color: var(--text-main);
+    min-width: 200px;
+}
+
+.sop-execution-table .time-col {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: right;
+    width: 130px;
+    background: rgba(0, 0, 0, 0.02);
+    /* Shaded time col */
+}
+
+.checklist-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-maintain-action.disabled {
+    filter: grayscale(1);
+    opacity: 0.5;
+}
+
+.checklist-tick.ticked {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+    transform: scale(1.1);
+}
+
+.step-row.completed .step-input {
+    opacity: 0.5;
+    color: var(--text-muted);
+}
+
+.checklist-mode .step-input {
+    cursor: default;
+    border-bottom: none;
+}

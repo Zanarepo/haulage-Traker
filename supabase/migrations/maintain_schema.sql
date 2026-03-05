@@ -270,10 +270,21 @@ CREATE POLICY "company_isolation" ON maintain.generated_reports
         SELECT company_id FROM public.users WHERE id = auth.uid()
     ));
 
-CREATE POLICY "company_isolation" ON maintain.asset_sops
-    FOR ALL USING (
+CREATE POLICY "select_asset_sops" ON maintain.asset_sops
+    FOR SELECT USING (
         company_id = (SELECT company_id FROM public.users WHERE id = auth.uid())
         OR is_global = true
+    );
+
+CREATE POLICY "manage_asset_sops" ON maintain.asset_sops
+    FOR ALL 
+    WITH CHECK (
+        (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'manager', 'superadmin', 'warehouse_manager', 'storekeeper')
+        OR EXISTS (SELECT 1 FROM public.nexhaul_admins WHERE id = auth.uid())
+    )
+    USING (
+        (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'manager', 'superadmin', 'warehouse_manager', 'storekeeper')
+        OR EXISTS (SELECT 1 FROM public.nexhaul_admins WHERE id = auth.uid())
     );
 
 -- Visit reports, safety checklists, tasks: access via work_order → company chain

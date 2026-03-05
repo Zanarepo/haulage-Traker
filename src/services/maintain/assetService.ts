@@ -13,7 +13,7 @@ export const assetService = {
         }
 
         if (options?.clusterIds && options.clusterIds.length > 0) {
-            query = query.in('sites.cluster_id', options.clusterIds);
+            query = query.in('site.cluster_id', options.clusterIds);
         }
 
         const { data, error } = await query.order('created_at', { ascending: false });

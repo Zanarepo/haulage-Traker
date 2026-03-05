@@ -146,7 +146,7 @@ export const workOrderService = {
     async getFailureAnalysis(companyId: string, clusterIds?: string[]) {
         let query = supabase
             .from('maintain_work_orders')
-            .select('fault_category, type, assets(make_model), sites!inner(cluster_id)')
+            .select('fault_category, type, maintain_assets(make_model), sites!inner(cluster_id)')
             .eq('company_id', companyId)
             .eq('status', 'completed')
             .not('fault_category', 'is', null);
@@ -417,5 +417,46 @@ export const workOrderService = {
         }));
 
         return enriched;
+    },
+
+    async getWorkOrderExecutionHistory(workOrderId: string) {
+        // 1. SOP Logs
+        const { data: sopLogs } = await supabase
+            .from('maintain_sop_execution_logs')
+            .select(`
+                id,
+                sop_id,
+                submitted_at,
+                execution_data,
+                locked_at,
+                maintain_asset_sops(title),
+                users(full_name)
+            `)
+            .eq('work_order_id', workOrderId)
+            .order('submitted_at', { ascending: false });
+
+        // 2. Safety Checklists (linked via visit reports)
+        const { data: safetyLogs } = await supabase
+            .from('maintain_safety_checklists')
+            .select(`
+                id,
+                passed,
+                created_at,
+                maintain_visit_reports(
+                    id,
+                    work_order_id,
+                    users(full_name)
+                )
+            `)
+            .eq('maintain_visit_reports.work_order_id', workOrderId)
+            .order('created_at', { ascending: false });
+
+        return {
+            sopLogs: sopLogs || [],
+            safetyLogs: (safetyLogs || []).map((l: any) => ({
+                ...l,
+                userName: l.maintain_visit_reports?.users?.full_name || 'System'
+            }))
+        };
     },
 };
