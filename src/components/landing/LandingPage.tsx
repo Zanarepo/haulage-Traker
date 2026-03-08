@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
     Truck,
     Shield,
@@ -20,12 +21,21 @@ import {
     Mail,
     MapPin,
     MessageSquare,
-    Play
+    Play,
+    MessageCircle,
+    History,
+    HeartPulse,
+    MousePointerClick,
+    ChevronDown,
+    ChevronUp,
+    LineChart,
+    HelpCircle
 } from 'lucide-react';
 import NexHaulLogo from '@/components/NexHaulLogo';
 import ProductShowcase from './ProductShowcase';
 import MaintainShowcase from './MaintainShowcase';
 import FeatureVideoSection from './FeatureVideoSection';
+import DigitalWaybillDemo from './DigitalWaybillDemo';
 import Modal from '@/components/Modal/Modal';
 import { useAuth } from '@/hooks/useAuth';
 import './landing.css';
@@ -36,9 +46,41 @@ interface LandingPageProps {
     onRegister: () => void;
 }
 
+const FAQS = [
+    {
+        question: "How does NexHaul help eliminate fuel theft in Nigeria?",
+        answer: "NexHaul provides tamper-proof digital verification for every fuel drop. By using geo-fenced proof of work and real-time reconciliation, we ensure that every liter dispatched is actually delivered to the site, eliminating the 'lost in transit' issue common in paper-based systems."
+    },
+    {
+        question: "How do I set up my team and staff on NexHaul?",
+        answer: "Inviting your team is simple. Use the Staff Management section to add employees and assign them specific roles like Admin, Cluster Manager, or Field Engineer. This ensures everyone sees only the data relevant to their specific tasks."
+    },
+    {
+        question: "How do I create and manage site clusters?",
+        answer: "Clusters allow you to group sites (like telecoms towers) by region or category. You can easily create a cluster, assign it to a manager, and manage dispatches and work orders for all sites within that specific group for better organization."
+    },
+    {
+        question: "Can I track my cargo and fuel movements live?",
+        answer: "Yes! The InfraSupply module features a live tracking dashboard. You can see your active trips on a map, monitor driver progress, and get instant updates as they move between your warehouse and the destination sites."
+    },
+    {
+        question: "How does automated supply reconciliation work?",
+        answer: "When supplies are delivered, the site team signs off via the app. NexHaul instantly compares the quantity sent from the hub with the quantity received at the site. If there is a mismatch, the system flags it immediately for your review."
+    },
+    {
+        question: "What is the difference between NexHaul and Sellytics?",
+        answer: "NexHaul is our platform for logistics visibility and field service (Maintain). Sellytics Retail Intelligence is our parent platform for multi-channel retail inventory. Together, they provide a full-spectrum supply chain solution."
+    },
+    {
+        question: "How does the Automated Work Order system work?",
+        answer: "Our 'NexHaul Maintain' module monitors asset health. It automatically predicts when an asset is due for service, triggers a work order, and alerts the cluster engineer responsible, ensuring your critical infrastructure stays online."
+    }
+];
+
 export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showVideoModal, setShowVideoModal] = useState(false);
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
     const { user, profile, availableProfiles, loading } = useAuth();
     const router = useRouter();
 
@@ -87,8 +129,9 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
 
                 <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
                     <a href="#problem" onClick={() => setMobileMenuOpen(false)}>Solution</a>
-                    <a href="#academy-preview" onClick={() => setMobileMenuOpen(false)}>Academy</a>
+                    <Link href="/academy" onClick={() => setMobileMenuOpen(false)}>Academy</Link>
                     <a href="#ecosystem" onClick={() => setMobileMenuOpen(false)}>Ecosystem</a>
+                    <a href="#faqs" onClick={() => setMobileMenuOpen(false)}>FAQs</a>
                     <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
 
                     {!loading && user ? (
@@ -106,11 +149,11 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             <header className="hero-section">
                 <div className="hero-glow"></div>
                 <div className="hero-content">
-                    <div className="badge">Next-Gen Asset Mission Control</div>
-                    <h1>Stop the Bleeding. Regain 100% Control Over Your Field Assets.</h1>
+                    <div className="badge">Next-Gen Logistics Visibility</div>
+                    <h1>Stop the Bleeding. Get 100% Field Service Management Visibility.</h1>
                     <p>
-                        Eliminate fuel leakage, verify maintenance tasks in real-time, and slash
-                        operational downtime for Telecom and Data Center teams—without the manual paperwork.
+                        Eliminate fuel leakage, automate <strong>digital waybills</strong>, and verify maintenance tasks in real-time.
+                        The all-in-one <strong>logistics tracking platform</strong> for Telecom, Data Centers, and Fleet operations in Nigeria.
                     </p>
                     <div className="hero-actions">
                         {!loading && user ? (
@@ -145,9 +188,9 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             {/* PROBLEM / SOLUTION 1: INFRA-SUPPLY */}
             <section id="problem" className="comparison-section">
                 <div className="section-header">
-                    <div className="category-badge">Logistics & Supply</div>
-                    <h2>Turn Your Supply Chain Into a Profit Center</h2>
-                    <p>Stop the bleeding in your fuel and supply chain management with iron-clad accountability.</p>
+                    <div className="category-badge">Logistics Visibility</div>
+                    <h2>The Digital Waybill System Your Supply Chain Needs</h2>
+                    <p>Stop the bleeding in your fuel and supply chain management with iron-clad accountability and real-time tracking.</p>
                 </div>
 
                 <div className="comparison-grid">
@@ -183,9 +226,9 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
             {/* PROBLEM / SOLUTION 2: MAINTENANCE */}
             <section className="comparison-section alt-bg">
                 <div className="section-header">
-                    <div className="category-badge maintain">Operations & Maintenance</div>
-                    <h2>Predictive Maintenance. Zero Surprises.</h2>
-                    <p>Break the cycle of emergency repairs. Because "Reactive" is just a fancy word for expensive.</p>
+                    <div className="category-badge maintain">Field Service Management</div>
+                    <h2>Automated Preventative Maintenance. Zero Surprises.</h2>
+                    <p>The smartest <strong>telecom site maintenance software</strong>. Break the cycle of emergency repairs with real-time proof of work tracking.</p>
                 </div>
 
                 <div className="comparison-grid">
@@ -217,6 +260,63 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
 
             {/* Product Showcase: Maintain */}
             <MaintainShowcase />
+
+            {/* NEW SECTION: PROOF OF WORK & INTELLIGENCE */}
+            <section className="proof-work-section">
+                <div className="section-header">
+                    <div className="category-badge">Asset Intelligence</div>
+                    <h2>Proof of Work: Beyond the WhatsApp Chat</h2>
+                    <p>Stop chasing photos in group chats. NexHaul provides iron-clad, real-time verification and predictive maintenance that scales.</p>
+                </div>
+
+                <div className="proof-comparison-grid">
+                    <div className="pow-card legacy">
+                        <div className="pow-header">
+                            <MessageCircle size={32} />
+                            <h3>The WhatsApp Way</h3>
+                        </div>
+                        <ul className="pow-list">
+                            <li><X size={18} /> Photos buried in unorganized group chats</li>
+                            <li><X size={18} /> "He-said-she-said" manual verification</li>
+                            <li><X size={18} /> Zero proof of actual GPS location</li>
+                            <li><X size={18} /> Impossible to audit or search months later</li>
+                        </ul>
+                    </div>
+
+                    <div className="pow-card next-gen">
+                        <div className="pow-header">
+                            <Zap size={32} />
+                            <h3>The NexHaul Way</h3>
+                        </div>
+                        <ul className="pow-list">
+                            <li><Check size={18} /> <strong>Real-Time PoW:</strong> Geo-fenced & time-stamped photos.</li>
+                            <li><Check size={18} /> <strong>Digital Signatures:</strong> Instant sign-off from site teams.</li>
+                            <li><Check size={18} /> <strong>Centralized Audit:</strong> Every site visit linked to an asset ID.</li>
+                            <li><Check size={18} /> <strong>Instant Reporting:</strong> Live dashboard updates as work happens.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="intelligence-features">
+                    <div className="intel-card">
+                        <div className="intel-icon"><MousePointerClick size={28} /></div>
+                        <h4>Predictive Work Orders</h4>
+                        <p>NexHaul predicts when assets are due for service, automatically triggering workflows and alerting the cluster engineer responsible, ensuring on-time servicing with verified inventory stocks.</p>
+                    </div>
+                    <div className="intel-card">
+                        <div className="intel-icon"><LineChart size={28} /></div>
+                        <h4>Predictive Failures</h4>
+                        <p>NexHaul analyzes run-hours and historical patterns to predict when an asset might fail, triggering a PM before it stops.</p>
+                    </div>
+                    <div className="intel-card">
+                        <div className="intel-icon"><HeartPulse size={28} /></div>
+                        <h4>Asset Longevity</h4>
+                        <p>Consistent, verified maintenance increases asset lifespan by 40%, reducing total cost of ownership for your fleet and sites.</p>
+                    </div>
+                </div>
+            </section>
+
+            <DigitalWaybillDemo />
 
             {/* Ecosystem Section */}
             <section className="ecosystem-section" id="ecosystem">
@@ -346,6 +446,57 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                 </div>
             </section>
 
+            {/* FAQ Section */}
+            <section className="faq-section" id="faqs">
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "FAQPage",
+                            "mainEntity": FAQS.map(faq => ({
+                                "@type": "Question",
+                                "name": faq.question,
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": faq.answer
+                                }
+                            }))
+                        })
+                    }}
+                />
+                <div className="section-header">
+                    <div className="category-badge">Support</div>
+                    <h2>Frequently Asked Questions</h2>
+                    <p>Everything you need to know about NexHaul and our logistics ecosystem.</p>
+                </div>
+
+                <div className="faq-container">
+                    {FAQS.map((faq, index) => (
+                        <div
+                            key={index}
+                            className={`faq-item ${openFaq === index ? 'open' : ''}`}
+                            onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                        >
+                            <div className="faq-question">
+                                <h3>{faq.question}</h3>
+                                {openFaq === index ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </div>
+                            <div className="faq-answer">
+                                <p>{faq.answer}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="faq-cta">
+                    <p>Still have questions?</p>
+                    <a href="https://wa.me/2349167690043" target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                        <MessageCircle size={18} style={{ marginRight: '8px' }} /> Chat with Support
+                    </a>
+                </div>
+            </section>
+
             {/* Footer */}
             <footer style={{ padding: '4rem 5%', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
                 <div className="footer-logo">
@@ -364,11 +515,16 @@ export default function LandingPage({ onLogin, onRegister }: LandingPageProps) {
                     </div>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem', color: '#64748b', fontSize: '0.85rem' }}>
-                    NexHaul InfraSupply • <span style={{ opacity: 0.6 }}>NexHaul for Oil & Gas • NexHaul for Construction • NexHaul for Mining (Coming Soon)</span>
+                <div style={{ marginBottom: '1rem', color: '#64748b', fontSize: '0.85rem' }}>
+                    NexHaul InfraSupply • NexHaul Maintain • <span style={{ opacity: 0.6 }}>NexHaul for Oil & Gas • NexHaul for Construction • NexHaul for Mining (Coming Soon)</span>
                 </div>
+
+                <div style={{ marginBottom: '2rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                    Need multi-channel retail inventory management? Visit our parent platform: <a href="https://sellyticshq.com" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', fontWeight: 600, textDecoration: 'none' }}>Sellytics Retail Intelligence</a>
+                </div>
+
                 <p style={{ color: '#475569', fontSize: '0.85rem' }}>
-                    &copy; {new Date().getFullYear()} Sellytics. All rights reserved. Built for modern haulage.
+                    &copy; {new Date().getFullYear()} Sellytics. All rights reserved. The leading <strong>haulage tracker</strong> and field service management app in <strong>Nigeria</strong>.
                 </p>
             </footer>
 

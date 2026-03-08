@@ -1,4 +1,5 @@
-import { MetadataRoute } from 'next'
+import { MetadataRoute } from 'next';
+import { ACADEMY_BLOGS } from '@/lib/academy-data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://nexhaul.sellyticshq.com'
@@ -21,6 +22,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
             lastModified: new Date(),
             changeFrequency: 'daily',
             priority: 0.5,
-        }
+        },
+        {
+            url: `${baseUrl}/academy`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.9,
+        },
+        ...ACADEMY_BLOGS.map((blog) => ({
+            url: `${baseUrl}/academy/${blog.slug}`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        })),
     ]
 }

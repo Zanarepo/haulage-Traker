@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { ToastContainer } from "@/components/Toast";
+import InstallPWA from "@/components/InstallPWA";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -130,6 +131,7 @@ export default function RootLayout({
         <AuthProvider>
           <ServiceWorkerRegistration />
           <ToastContainer />
+          <InstallPWA />
           {children}
         </AuthProvider>
       </body>

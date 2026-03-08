@@ -1,6 +1,6 @@
 /* Product Showcase Section */
 .showcase-section {
-    padding: 8rem 5%;
+    padding: 3.5rem 5%;
     background: linear-gradient(180deg, #020617 0%, #0f172a 50%, #020617 100%);
     position: relative;
     overflow: hidden;
@@ -8,7 +8,7 @@
 
 .showcase-section .section-header {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: 2.5rem;
 }
 
 .showcase-section .section-header h2 {
@@ -30,7 +30,7 @@
     display: flex;
     justify-content: center;
     gap: 0.75rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
 }
 

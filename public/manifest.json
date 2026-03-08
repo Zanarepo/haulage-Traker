@@ -47,6 +47,28 @@
             "purpose": "maskable"
         }
     ],
-    "screenshots": [],
+    "screenshots": [
+        {
+            "src": "/screenshots/landingageimage.png",
+            "type": "image/png",
+            "sizes": "1920x1080",
+            "form_factor": "wide",
+            "label": "NexHaul Landing Page"
+        },
+        {
+            "src": "/screenshots/livetracking.png",
+            "type": "image/png",
+            "sizes": "393x852",
+            "form_factor": "narrow",
+            "label": "Live Cargo Tracking"
+        },
+        {
+            "src": "/screenshots/Workorder.png",
+            "type": "image/png",
+            "sizes": "393x852",
+            "form_factor": "narrow",
+            "label": "Automated Work Orders"
+        }
+    ],
     "prefer_related_applications": false
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Play, Zap, Wrench, ShieldCheck, ArrowRight } from 'lucide-react';
 import Modal from '@/components/Modal/Modal';
 
@@ -90,9 +91,17 @@ export default function FeatureVideoSection() {
                 ))}
             </div>
 
+            <div className="academy-cta">
+                <Link href="/academy" className="btn-visit-academy">
+                    <span>Visit Full Academy Hub</span>
+                    <ArrowRight size={20} />
+                </Link>
+                <p>Access 50+ tutorials, industry whitepapers, and blogs.</p>
+            </div>
+
             <style jsx>{`
                 .feature-video-section {
-                    padding: 8rem 5%;
+                    padding: 3.5rem 5%;
                     background: #020617;
                     position: relative;
                 }
@@ -218,6 +227,21 @@ export default function FeatureVideoSection() {
                     .video-grid {
                         grid-template-columns: 1fr;
                     }
+                }
+
+                .academy-cta {
+                    margin-top: 3.5rem;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1.5rem;
+                }
+                
+                .academy-cta p {
+                    color: #64748b;
+                    font-size: 0.95rem;
+                    max-width: 500px;
                 }
             `}</style>
 

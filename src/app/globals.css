@@ -40,3 +40,50 @@ a {
     color-scheme: dark;
   }
 }
+
+/* PWA Optimization & Touch Targets */
+@media (max-width: 768px) {
+
+  button,
+  a.btn,
+  .clickable {
+    min-height: 48px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Prevent accidental text selection on UI elements */
+  button,
+  .nav-item,
+  .logo {
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Ensure images don't break layout on small screens */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Scrollbar styling for a cleaner look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.4);
+}
