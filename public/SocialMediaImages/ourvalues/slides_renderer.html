@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, height=1920">
+    <title>Sellyticshq IG Highlight Slides</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #070a13;
+            --blue: #3b82f6;
+            --amber: #f59e0b;
+            --green: #4ade80;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .slide {
+            width: 1080px;
+            height: 1920px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: radial-gradient(circle at center, #111827 0%, #070a13 100%);
+            padding: 80px;
+            box-sizing: border-box;
+            text-align: center;
+            border-bottom: 4px solid #1e293b;
+        }
+
+        /* Branding: Sellyticshq text only */
+        .branding {
+            position: absolute;
+            top: 120px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
+            opacity: 0.9;
+        }
+
+        .icon-container {
+            width: 280px;
+            height: 280px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 140px;
+            margin-bottom: 80px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 100px;
+            font-weight: 800;
+            margin: 0 0 50px 0;
+            line-height: 1.1;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .body-text {
+            font-size: 44px;
+            line-height: 1.6;
+            color: #d1d5db;
+            max-width: 880px;
+            font-weight: 400;
+        }
+
+        .highlight-line {
+            display: block;
+            margin-bottom: 30px;
+        }
+
+        .tagline {
+            position: absolute;
+            bottom: 120px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 40px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* Ambient Glows */
+        .glow {
+            position: absolute;
+            width: 1000px;
+            height: 1000px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .glow-blue {
+            background: var(--blue);
+            top: 10%;
+            left: -20%;
+        }
+
+        .glow-amber {
+            background: var(--amber);
+            bottom: 10%;
+            right: -20%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Slide 1: Cover -->
+    <div class="slide" id="slide-ourvalues-1">
+        <div class="glow glow-amber" style="opacity: 0.2; top: 30%; left: 10%;"></div>
+        <div class="branding">Sellyticshq</div>
+        <h1>Our Values</h1>
+        <div class="body-text" style="font-size: 48px; color: var(--text-muted);">
+            The principles behind every line of code we write and every client we serve.
+        </div>
+    </div>
+
+    <!-- Slide 2: Accountability -->
+    <div class="slide" id="slide-ourvalues-2">
+        <div class="glow glow-blue"></div>
+        <div class="branding">Sellyticshq</div>
+        <div class="icon-container">🛡️</div>
+        <h1>Accountability First</h1>
+        <div class="body-text">
+            Every liter, every task, and every naira should be accounted for.<br><br>
+            We replace "he said, she said" with verified, tamper-proof digital proof.<br><br>
+            <strong>If it can't be proven, it didn't happen.</strong>
+        </div>
+    </div>
+
+    <!-- Slide 6: African-First Innovation (FIXED TEXT) -->
+    <div class="slide" id="slide-ourvalues-6">
+        <div class="glow" style="background: var(--green); top: 20%; left: 0;"></div>
+        <div class="branding">Sellyticshq</div>
+        <div class="icon-container">🌍</div>
+        <h1>African-First Innovation</h1>
+        <div class="body-text">
+            <span class="highlight-line">Built from Africa, for Africa, to the world.</span>
+            <span class="highlight-line">Designed for the realities of African logistics — power outages, remote sites,
+                offline needs.</span>
+            <span>We don't adapt foreign tools. We create our own.</span>
+        </div>
+    </div>
+
+    <!-- Slide 8: Closing (FIXED BRANDING) -->
+    <div class="slide" id="slide-ourvalues-8">
+        <div class="glow glow-amber"></div>
+        <div class="branding">Sellyticshq</div>
+        <div class="content" style="z-index: 10;">
+            <h1>These Aren't Just Words.</h1>
+            <div class="body-text">
+                Every feature we build, every pixel we design, and every client we onboard is measured against these
+                values.<br><br>
+                This is the <strong>Sellyticshq</strong> standard.
+            </div>
+        </div>
+        <div class="tagline">sellyticshq.com</div>
+    </div>
+
+</body>
+
+</html>
